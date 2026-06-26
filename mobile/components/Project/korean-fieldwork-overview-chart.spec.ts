@@ -1,0 +1,154 @@
+import {
+  Document,
+  KoreanFieldworkReadinessIssue,
+  KoreanFieldworkTodaySummary,
+} from 'idai-field-core';
+import { KOREAN_FIELDWORK_CATEGORIES } from './korean-fieldwork-categories';
+import { getKoreanFieldworkOverviewChartData } from './korean-fieldwork-overview-chart';
+
+const C = KOREAN_FIELDWORK_CATEGORIES;
+
+describe('Korean fieldwork overview chart data', () => {
+  it('summarizes investigation units, feature status, process, and review issues', () => {
+    const documents = [
+      createDoc('boundary-1', C.SURVEY_BOUNDARY, '경계 1'),
+      createDoc('operation-1', C.OPERATION, '조사구역 1'),
+      createDoc('trench-1', C.TRENCH, 'T1', {
+        liesWithin: ['operation-1'],
+      }),
+      createDoc('feature-group-1', C.FEATURE_GROUP, '유구군 1', {
+        liesWithin: ['trench-1'],
+      }),
+      createDoc('feature-1', C.FEATURE, '수혈 1', {
+        liesWithin: ['trench-1'],
+      }, {
+        featureRecordingStatus: 'candidate',
+        featureInvestigationChecklist: ['preInvestigationPhotoTaken'],
+      }),
+      createDoc('feature-2', C.FEATURE, '수혈 2', {
+        liesWithin: ['trench-1'],
+      }, {
+        featureRecordingStatus: 'confirmed',
+        featureInvestigationChecklist: [
+          'preInvestigationPhotoTaken',
+          'inProgressPhotoTaken',
+        ],
+      }),
+      createDoc('segment-1', C.FEATURE_SEGMENT, '피트 1', {
+        liesWithin: ['feature-1'],
+      }, {
+        featureRecordingStatus: 'investigating',
+        featureInvestigationChecklist: ['inProgressPhotoTaken'],
+      }),
+      createDoc('photo-1', C.PHOTO, '사진 1', {
+        depicts: ['feature-1'],
+      }),
+    ];
+
+    const data = getKoreanFieldworkOverviewChartData(
+      createSummary([
+        createIssue('feature-1', 'warning'),
+        createIssue('feature-2', 'critical'),
+      ]),
+      documents
+    );
+
+    expect(data.totalDocumentCount).toBe(8);
+    expect(data.investigationUnitCount).toBe(7);
+    expect(data.operationCount).toBe(1);
+    expect(data.trenchCount).toBe(1);
+    expect(data.featureCount).toBe(2);
+    expect(data.featureSegmentCount).toBe(1);
+    expect(data.checklistDone).toBe(4);
+    expect(data.checklistTotal).toBe(27);
+    expect(data.openIssueCount).toBe(2);
+    expect(data.criticalIssueCount).toBe(1);
+    expect(data.investigationSegments.find((segment) =>
+      segment.id === 'operation'
+    )).toMatchObject({
+      label: '조사',
+      count: 1,
+      percent: 14,
+    });
+    expect(data.featureStatusSegments.map((segment) => [
+      segment.id,
+      segment.count,
+    ])).toEqual([
+      ['candidate', 1],
+      ['investigating', 1],
+      ['confirmed', 1],
+      ['unclassified', 0],
+    ]);
+    expect(data.metrics.find((metric) => metric.id === 'review')).toMatchObject({
+      value: 2,
+      detail: '필수 1건',
+      tone: 'danger',
+    });
+  });
+
+  it('includes trench checklist progress for trial trench investigations', () => {
+    const trench = createDoc('trench-1', C.TRENCH, 'T1', {}, {
+      featureInvestigationChecklist: [
+        'trenchSoilCleaned',
+        'trenchFeatureChecked',
+      ],
+    });
+
+    const data = getKoreanFieldworkOverviewChartData(
+      createSummary([]),
+      [trench],
+      'trialTrench'
+    );
+
+    expect(data.checklistDone).toBe(2);
+    expect(data.checklistTotal).toBe(9);
+    expect(data.checklistPercent).toBe(22);
+  });
+});
+
+const createDoc = (
+  id: string,
+  category: string,
+  identifier: string,
+  relations: Record<string, string[]> = {},
+  extraResource: Record<string, unknown> = {}
+): Document => ({
+  _id: id,
+  created: { user: 'test', date: new Date('2026-06-27T00:00:00.000Z') },
+  modified: [],
+  resource: {
+    id,
+    identifier,
+    category,
+    relations,
+    ...extraResource,
+  },
+});
+
+const createSummary = (
+  openIssues: KoreanFieldworkReadinessIssue[]
+): KoreanFieldworkTodaySummary => ({
+  dailyLogs: [],
+  surveyBoundaries: [],
+  featureCandidates: [],
+  openIssues,
+  issueCountByDocumentId: openIssues.reduce((index, issue) => {
+    index[issue.documentId] = (index[issue.documentId] ?? 0) + 1;
+    return index;
+  }, {} as Record<string, number>),
+});
+
+const createIssue = (
+  documentId: string,
+  severity: KoreanFieldworkReadinessIssue['severity']
+): KoreanFieldworkReadinessIssue => ({
+  ruleId: 'test-rule',
+  documentId,
+  identifier: documentId,
+  category: C.FEATURE,
+  severity,
+  message: '확인 필요',
+  relatedFields: ['featureInvestigationChecklist'],
+  recommendedAction: '현장에서 확인하세요.',
+  blocksSave: severity === 'critical',
+});

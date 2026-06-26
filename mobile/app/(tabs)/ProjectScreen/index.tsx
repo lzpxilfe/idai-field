@@ -28,6 +28,7 @@ import KoreanFieldworkFieldNotePanel from '@/components/Project/KoreanFieldworkF
 import KoreanFieldworkHierarchyBoard from '@/components/Project/KoreanFieldworkHierarchyBoard';
 import KoreanFieldworkInvestigationModePanel from '@/components/Project/KoreanFieldworkInvestigationModePanel';
 import KoreanFieldworkNotebookLedger from '@/components/Project/KoreanFieldworkNotebookLedger';
+import KoreanFieldworkOverviewChart from '@/components/Project/KoreanFieldworkOverviewChart';
 import KoreanFieldworkPriorityTaskList from '@/components/Project/KoreanFieldworkPriorityTaskList';
 import KoreanFieldworkProgressBoard from '@/components/Project/KoreanFieldworkProgressBoard';
 import KoreanFieldworkSelectedRecordWorkbench from '@/components/Project/KoreanFieldworkSelectedRecordWorkbench';
@@ -530,6 +531,13 @@ const DocumentsList: React.FC = () => {
       )
       && !!config.getCategory(KOREAN_FIELDWORK_CATEGORIES.DAILY_LOG)
     );
+  const overviewScopeLabel = selectedWorkbenchDocumentId && selectedWorkbenchDocument
+    ? `선택: ${
+      getKoreanFieldworkDisplayIdentifier(
+        selectedWorkbenchDocument.resource.identifier
+      ) || selectedWorkbenchDocument.resource.id
+    }`
+    : hierarchyLabel;
   const selectWorkbenchDocument = (
     document: Document,
     options?: { expand?: boolean }
@@ -769,6 +777,16 @@ const DocumentsList: React.FC = () => {
         return;
     }
   };
+  const returnToInvestigationOverview = () => {
+    clearHierarchy();
+    setSelectedWorkbenchDocumentId(undefined);
+    setIsSelectedWorkbenchExpanded(false);
+    setFieldNoteContinuation(undefined);
+    setShowFieldworkDetails(false);
+    setActiveFilter('all');
+    setActiveWorkFilter('all');
+    setQuery('');
+  };
 
   return (
     <View style={styles.screen}>
@@ -815,21 +833,33 @@ const DocumentsList: React.FC = () => {
 
         {hasFieldRecords && (
           <>
-        <View style={styles.metricsBand}>
-          <Metric label="전체 기록" value={documents.length} icon="inventory-2" />
-          <Metric label="오늘 일지" value={todaySummary.dailyLogs.length} icon="event-note" />
-          <Metric
-            label="유구"
-            value={todaySummary.featureCandidates.length}
-            icon="add-location-alt"
-          />
-          <Metric
-            label="확인 필요"
-            value={todaySummary.openIssues.length}
-            icon="priority-high"
-            warning={todaySummary.openIssues.length > 0}
-          />
-        </View>
+            <KoreanFieldworkOverviewChart
+              summary={todaySummary}
+              documents={documents}
+              currentScopeLabel={overviewScopeLabel}
+              investigationModeId={investigationModeId}
+              onReturnToInvestigationOverview={returnToInvestigationOverview}
+            />
+
+            <View style={styles.metricsBand}>
+              <Metric label="전체 기록" value={documents.length} icon="inventory-2" />
+              <Metric
+                label="오늘 일지"
+                value={todaySummary.dailyLogs.length}
+                icon="event-note"
+              />
+              <Metric
+                label="유구"
+                value={todaySummary.featureCandidates.length}
+                icon="add-location-alt"
+              />
+              <Metric
+                label="확인 필요"
+                value={todaySummary.openIssues.length}
+                icon="priority-high"
+                warning={todaySummary.openIssues.length > 0}
+              />
+            </View>
 
         <View style={styles.actionBand}>
           <QuickAction
