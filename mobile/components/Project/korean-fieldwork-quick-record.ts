@@ -43,13 +43,6 @@ export const FIELDWORK_QUICK_FIELDS = {
   timing: 'recordCreationTiming',
 } as const;
 
-export const LONG_AXIS_ORIENTATION_QUICK_OPTIONS: readonly KoreanFieldworkQuickOption[] = [
-  { value: 'N-E', label: 'N-E' },
-  { value: 'N-W', label: 'N-W' },
-  { value: 'S-E', label: 'S-E' },
-  { value: 'S-W', label: 'S-W' },
-];
-
 export const FEATURE_STATUS_QUICK_OPTIONS: readonly KoreanFieldworkQuickOption[] = [
   { value: 'candidate', label: '조사 전' },
   { value: 'investigating', label: '조사 중' },
@@ -357,6 +350,44 @@ export const normalizeKoreanFieldworkLongAxisOrientation = (value: string): stri
 
 export const isKoreanFieldworkLongAxisOrientation = (value: string): boolean =>
   parseLongAxisOrientation(value) !== undefined;
+
+export interface KoreanFieldworkLongAxisOrientationParts {
+  degrees?: number;
+  end: string;
+  start: string;
+}
+
+export const getKoreanFieldworkLongAxisOrientationParts = (
+  value: string
+): KoreanFieldworkLongAxisOrientationParts | undefined =>
+  parseLongAxisOrientation(value);
+
+export const buildKoreanFieldworkLongAxisOrientation = (
+  start: string,
+  degrees: string,
+  end: string
+): string | undefined => {
+  const normalizedStart = normalizeCardinalDirectionToken(start);
+  const normalizedEnd = normalizeCardinalDirectionToken(end);
+  const trimmedDegrees = degrees.trim();
+  if (!trimmedDegrees) return undefined;
+
+  const numericDegrees = Number(trimmedDegrees);
+
+  if (
+    !normalizedStart
+    || !normalizedEnd
+    || !Number.isInteger(numericDegrees)
+    || numericDegrees < 0
+    || numericDegrees > 90
+    || normalizedStart === normalizedEnd
+    || OPPOSITE_DIRECTION[normalizedStart] === normalizedEnd
+  ) {
+    return undefined;
+  }
+
+  return `${normalizedStart}-${numericDegrees}°-${normalizedEnd}`;
+};
 
 export const describeKoreanFieldworkLongAxisOrientation = (
   value: string

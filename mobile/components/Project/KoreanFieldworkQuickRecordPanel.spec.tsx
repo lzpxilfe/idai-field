@@ -340,13 +340,13 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
     expect(getByText('장축 방위')).toBeTruthy();
     expect(getByText('N-23°-E = 북에서 동쪽으로 23°')).toBeTruthy();
     expect(getByText('방위 메모')).toBeTruthy();
-    expect(getByText('N-E')).toBeTruthy();
+    expect(getByTestId('quickRecordAxisDegreeInput')).toBeTruthy();
 
     fireEvent.changeText(
       getByTestId('quickRecordInput_longAxisOrientation'),
       'N-23°-E'
     );
-    fireEvent.press(getByTestId('quickRecordOption_N-W'));
+    fireEvent.press(getByTestId('quickRecordAxisEnd_W'));
     fireEvent.changeText(
       getByTestId('quickRecordInput_orientationNote'),
       'GPS 나침반 기준, 재측정 필요'
@@ -360,7 +360,7 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
     expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
       2,
       FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-      'N-W'
+      'N-23°-W'
     );
     expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
       3,
@@ -371,6 +371,43 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
       4,
       FIELDWORK_QUICK_FIELDS.orientationNote,
       'GPS 나침반 기준, 재측정 필요'
+    );
+  });
+
+  it('keeps the bearing degree in the middle when choosing directions', () => {
+    const handleUpdateResourceField = jest.fn();
+    const { getByTestId } = render(
+      <KoreanFieldworkQuickRecordPanel
+        category={createCategoryForm([
+          FIELDWORK_QUICK_FIELDS.longAxisOrientation,
+          FIELDWORK_QUICK_FIELDS.orientationReference,
+        ])}
+        resource={createResource(C.FEATURE, {
+          longAxisOrientation: '',
+          orientationReference: '',
+        })}
+        onUpdateResourceField={handleUpdateResourceField}
+        onUpdateResourceFields={(updates) =>
+          Object.entries(updates).forEach(([fieldName, value]) =>
+            handleUpdateResourceField(fieldName, value)
+          )}
+      />
+    );
+
+    fireEvent.press(getByTestId('quickRecordAxisEnd_W'));
+    expect(handleUpdateResourceField).not.toHaveBeenCalled();
+
+    fireEvent.changeText(getByTestId('quickRecordAxisDegreeInput'), '37');
+
+    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
+      1,
+      FIELDWORK_QUICK_FIELDS.longAxisOrientation,
+      'N-37°-W'
+    );
+    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
+      2,
+      FIELDWORK_QUICK_FIELDS.orientationReference,
+      '자북'
     );
   });
 

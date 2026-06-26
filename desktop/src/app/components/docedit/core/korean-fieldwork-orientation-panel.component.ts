@@ -2,11 +2,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { Document, Field } from 'idai-field-core';
 
 
-type OrientationOption = {
-    value: string;
-    label: string;
-};
-
 type ParsedOrientation = {
     start: Direction;
     degrees?: number;
@@ -73,12 +68,10 @@ export class KoreanFieldworkOrientationPanelComponent {
 
     public readonly fields = ORIENTATION_FIELDS;
 
-    public readonly orientationPresets: readonly OrientationOption[] = [
-        { value: 'N-E', label: 'N-E' },
-        { value: 'N-W', label: 'N-W' },
-        { value: 'S-E', label: 'S-E' },
-        { value: 'S-W', label: 'S-W' }
-    ];
+    public readonly cardinalDirections: readonly Direction[] = ['N', 'S', 'E', 'W'];
+    private bearingDraftDegrees = '';
+    private bearingDraftEnd: Direction = 'E';
+    private bearingDraftStart: Direction = 'N';
 
     public shouldShow(): boolean {
 
@@ -122,21 +115,72 @@ export class KoreanFieldworkOrientationPanelComponent {
     }
 
 
-    public applyOrientationPreset(value: string) {
+    public getBearingStart(): Direction {
 
-        this.setLongAxisOrientation(value);
+        return this.parseLongAxisOrientation(
+            this.getValue(ORIENTATION_FIELDS.longAxisOrientation)
+        )?.start ?? this.bearingDraftStart;
     }
 
 
-    public isOrientationPresetActive(value: string): boolean {
+    public getBearingEnd(): Direction {
 
         const parsedOrientation = this.parseLongAxisOrientation(
             this.getValue(ORIENTATION_FIELDS.longAxisOrientation)
         );
+        const start = parsedOrientation?.start ?? this.bearingDraftStart;
+        const end = parsedOrientation?.end;
 
-        return parsedOrientation
-            ? `${parsedOrientation.start}-${parsedOrientation.end}` === value
-            : false;
+        return end && this.getCompatibleBearingEnds(start).includes(end)
+            ? end
+            : this.getCompatibleBearingEnds(start).includes(this.bearingDraftEnd)
+                ? this.bearingDraftEnd
+                : this.getCompatibleBearingEnds(start)[0];
+    }
+
+
+    public getBearingDegrees(): string {
+
+        const degrees = this.parseLongAxisOrientation(
+            this.getValue(ORIENTATION_FIELDS.longAxisOrientation)
+        )?.degrees;
+
+        return degrees === undefined ? this.bearingDraftDegrees : degrees.toString();
+    }
+
+
+    public getCompatibleBearingEnds(start: Direction): readonly Direction[] {
+
+        return this.cardinalDirections.filter(direction =>
+            direction !== start && OPPOSITE_DIRECTION[start] !== direction
+        );
+    }
+
+
+    public setBearingStart(start: Direction) {
+
+        const currentEnd = this.getBearingEnd();
+        const end = this.getCompatibleBearingEnds(start).includes(currentEnd)
+            ? currentEnd
+            : this.getCompatibleBearingEnds(start)[0];
+
+        this.applyBearingDraft(start, this.getBearingDegrees(), end);
+    }
+
+
+    public setBearingEnd(end: Direction) {
+
+        this.applyBearingDraft(this.getBearingStart(), this.getBearingDegrees(), end);
+    }
+
+
+    public setBearingDegrees(value: string) {
+
+        this.applyBearingDraft(
+            this.getBearingStart(),
+            value.replace(/\D/g, ''),
+            this.getBearingEnd()
+        );
     }
 
 
@@ -302,6 +346,21 @@ export class KoreanFieldworkOrientationPanelComponent {
         return orientation.degrees === undefined
             ? `${orientation.start}-${orientation.end}`
             : `${orientation.start}-${orientation.degrees}°-${orientation.end}`;
+    }
+
+
+    private applyBearingDraft(start: Direction, degreesValue: string, end: Direction) {
+
+        this.bearingDraftStart = start;
+        this.bearingDraftDegrees = degreesValue;
+        this.bearingDraftEnd = end;
+
+        if (!degreesValue.trim()) return;
+
+        const degrees = Number(degreesValue);
+        if (!this.isValidDegrees(degrees)) return;
+
+        this.setLongAxisOrientation(`${start}-${degrees}°-${end}`);
     }
 
 

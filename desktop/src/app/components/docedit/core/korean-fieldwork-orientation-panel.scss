@@ -33,6 +33,24 @@ korean-fieldwork-orientation-panel {
     margin-top: 8px;
   }
 
+  .korean-fieldwork-bearing-builder {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+
+    .korean-fieldwork-orientation-chip-row {
+      margin-top: 0;
+    }
+  }
+
+  .korean-fieldwork-bearing-degree-input {
+    font-weight: 700;
+    max-width: 80px;
+    text-align: center;
+  }
+
   .korean-fieldwork-orientation-chip {
     background: #fff;
     border: 1px solid #9cc2f2;

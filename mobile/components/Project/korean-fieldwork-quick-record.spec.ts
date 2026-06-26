@@ -4,8 +4,10 @@ import {
 } from 'idai-field-core';
 import {
   FIELDWORK_QUICK_FIELDS,
+  buildKoreanFieldworkLongAxisOrientation,
   describeKoreanFieldworkLongAxisOrientation,
   getKoreanFieldworkChecklistQuickOptions,
+  getKoreanFieldworkLongAxisOrientationParts,
   getKoreanFieldworkFeatureTypeUpdates,
   getKoreanFieldworkQuickRecordAvailability,
   getKoreanFieldworkQuickPresetUpdates,
@@ -13,7 +15,6 @@ import {
   hasKoreanFieldworkQuickRecordActions,
   isKoreanFieldworkLongAxisOrientation,
   isKoreanFieldworkChecklistRecord,
-  LONG_AXIS_ORIENTATION_QUICK_OPTIONS,
   normalizeKoreanFieldworkLongAxisOrientation,
   toggleStringArrayFieldValue,
 } from './korean-fieldwork-quick-record';
@@ -153,13 +154,6 @@ describe('Korean fieldwork quick record helpers', () => {
   });
 
   it('normalizes quadrant-bearing long-axis orientation entries', () => {
-    expect(LONG_AXIS_ORIENTATION_QUICK_OPTIONS.map((option) => option.value))
-      .toEqual([
-        'N-E',
-        'N-W',
-        'S-E',
-        'S-W',
-      ]);
     expect(normalizeKoreanFieldworkLongAxisOrientation('n-e'))
       .toBe('N-E');
     expect(normalizeKoreanFieldworkLongAxisOrientation('북에서 동쪽으로'))
@@ -196,6 +190,19 @@ describe('Korean fieldwork quick record helpers', () => {
     expect(isKoreanFieldworkLongAxisOrientation('북-23도-남')).toBe(false);
     expect(isKoreanFieldworkLongAxisOrientation('N-23°-S')).toBe(false);
     expect(isKoreanFieldworkLongAxisOrientation('N-120°-E')).toBe(false);
+  });
+
+  it('builds long-axis orientation values with the degree in the middle', () => {
+    expect(buildKoreanFieldworkLongAxisOrientation('N', '23', 'W'))
+      .toBe('N-23°-W');
+    expect(buildKoreanFieldworkLongAxisOrientation('북', '37', '서'))
+      .toBe('N-37°-W');
+    expect(buildKoreanFieldworkLongAxisOrientation('N', '', 'W'))
+      .toBeUndefined();
+    expect(buildKoreanFieldworkLongAxisOrientation('N', '120', 'W'))
+      .toBeUndefined();
+    expect(getKoreanFieldworkLongAxisOrientationParts('N-23°-W'))
+      .toEqual({ start: 'N', degrees: 23, end: 'W' });
   });
 
   it('describes valid long-axis orientation entries in Korean', () => {
