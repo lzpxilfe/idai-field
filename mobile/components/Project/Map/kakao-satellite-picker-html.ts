@@ -2,16 +2,19 @@ interface KakaoSatellitePickerHtmlOptions {
   javaScriptKey: string;
   latitude: number;
   longitude: number;
+  webViewBaseUrl?: string;
 }
 
 export const buildKakaoSatellitePickerHtml = ({
   javaScriptKey,
   latitude,
   longitude,
+  webViewBaseUrl,
 }: KakaoSatellitePickerHtmlOptions): string => {
   const safeKey = encodeURIComponent(javaScriptKey.trim());
   const safeLatitude = Number.isFinite(latitude) ? latitude : 37.5665;
   const safeLongitude = Number.isFinite(longitude) ? longitude : 126.9780;
+  const safeWebViewBaseUrl = JSON.stringify(webViewBaseUrl ?? '');
 
   return `<!doctype html>
 <html>
@@ -95,7 +98,11 @@ export const buildKakaoSatellitePickerHtml = ({
     function post(type, payload) {
       window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
         type: type,
-        payload: payload || {}
+        payload: Object.assign({
+          href: window.location && window.location.href,
+          referrer: document.referrer,
+          webViewBaseUrl: ${safeWebViewBaseUrl}
+        }, payload || {})
       }));
     }
 
