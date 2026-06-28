@@ -764,6 +764,13 @@ function getReadmeImageLine(entry: FieldworkImageExportManifestEntry): string {
             : '',
         entry.fieldHubStoredSha256MatchesSourceFile !== undefined
             ? `Field Hub SHA-256 일치: ${entry.fieldHubStoredSha256MatchesSourceFile}`
+            : '',
+        hasAnnotationValue(entry.fieldContext.fieldworkPhotoAnnotationStrokes)
+            ? 'photoAnnotations: present'
+            : '',
+        hasAnnotationValue(entry.fieldContext.soilProfileAnnotationStrokes)
+            || hasAnnotationValue(entry.fieldContext.soilProfilePhotoAnnotationStrokes)
+            ? 'soilProfilePhotoAnnotations: present'
             : ''
     ].filter(hasExportableValue).join('; ');
 
@@ -771,6 +778,14 @@ function getReadmeImageLine(entry: FieldworkImageExportManifestEntry): string {
         `- ${formatReadmeValue(entry.exportedFilename)}: ${entry.category}/${formatReadmeValue(entry.identifier)} (${entry.id})`,
         details ? `; ${details}` : ''
     ].join('');
+}
+
+
+function hasAnnotationValue(value: ManifestValue|undefined): boolean {
+
+    const text = formatManifestValue(value).trim();
+
+    return text !== '' && text !== '[]' && text !== '{}';
 }
 
 

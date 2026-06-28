@@ -711,6 +711,16 @@ function checkDesktopImageExportContract() {
   );
   requireIncludes(
     source,
+    'photoAnnotations: present',
+    'desktop image export README must flag exported photos that have tablet pen memos'
+  );
+  requireIncludes(
+    source,
+    'soilProfilePhotoAnnotations: present',
+    'desktop image export README must flag exported soil-profile photos that have tablet pen memos'
+  );
+  requireIncludes(
+    source,
     'exportedFileSha256',
     'desktop image export README must explain long-term exported-file SHA-256 checks'
   );
@@ -1366,6 +1376,16 @@ function checkContractCoverage() {
     exportImagesSpec,
     'Field Hub SHA-256',
     'desktop image export tests must assert README Field Hub SHA-256 summaries'
+  );
+  requireIncludes(
+    exportImagesSpec,
+    'photoAnnotations: present',
+    'desktop image export tests must assert README field-photo annotation summaries'
+  );
+  requireIncludes(
+    exportImagesSpec,
+    'soilProfilePhotoAnnotations: present',
+    'desktop image export tests must assert README soil-profile annotation summaries'
   );
   requireIncludes(
     exportImagesSpec,

@@ -281,6 +281,8 @@ describe('exportImages', () => {
             expect(writtenReadme).toContain('태블릿 MD5 일치: true');
             expect(writtenReadme).toContain('태블릿 크기 일치: true');
             expect(writtenReadme).toContain('Field Hub SHA-256 일치: true');
+            expect(writtenReadme).toContain('photoAnnotations: present');
+            expect(writtenReadme).toContain('soilProfilePhotoAnnotations: present');
             expect(writtenReadme).toContain('P-001.jpg: Photo/P-001 (photo-1); 관련 기록: depicts:Feature/수혈 1(feature-1); 태블릿 MD5 일치: true; 태블릿 크기 일치: true; Field Hub SHA-256 일치: true');
         } finally {
             isoStringSpy.mockRestore();
