@@ -2915,6 +2915,11 @@ function validateScopeMetricWording() {
       || !desktopBoundarySummarySpecText.includes('GeoJSON')) {
     findings.push('desktop boundary summary test must cover tablet GeoJSON imports after sync');
   }
+  if (!desktopBoundarySummarySpecText.includes('keeps tablet imported boundary file details visible with the project boundary summary')
+      || !desktopBoundarySummarySpecText.includes('boundary.geojson (EPSG:4326, 5점)')
+      || !desktopBoundarySummaryText.includes('getBoundaryImportDetailLabel')) {
+    findings.push('desktop boundary summary must keep tablet imported file names and coordinate counts visible');
+  }
   if (!desktopScopeSummaryText.includes('getKoreanFieldworkBoundarySummaryLabel')
       || !desktopWorkflowText.includes('getKoreanFieldworkBoundarySummaryLabel')) {
     findings.push('desktop scope and workflow summaries must use the shared boundary source label helper');

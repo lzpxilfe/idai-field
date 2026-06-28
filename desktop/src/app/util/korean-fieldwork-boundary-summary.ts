@@ -44,15 +44,17 @@ export function getKoreanFieldworkBoundarySummaryLabel(documents: Document[],
     if (surveyBoundaryDocuments.length === 0) return normalizedBoundarySummary || '경계 없음';
 
     const primaryBoundary = surveyBoundaryDocuments[0];
+    const boundaryDocumentLabel = getBoundaryDocumentLabel(primaryBoundary);
     const baseLabel = normalizedBoundarySummary
-        || getBoundaryDocumentLabel(primaryBoundary)
+        || boundaryDocumentLabel
         || `경계 ${surveyBoundaryDocuments.length}건`;
+    const importDetailLabel = getBoundaryImportDetailLabel(boundaryDocumentLabel, normalizedBoundarySummary);
     const methodLabel = getKoreanFieldworkBoundaryMethodLabel(primaryBoundary);
     const countLabel = surveyBoundaryDocuments.length > 1
         ? `경계 ${surveyBoundaryDocuments.length}건`
         : undefined;
 
-    return [baseLabel, methodLabel, countLabel]
+    return [baseLabel, importDetailLabel, methodLabel, countLabel]
         .filter((label): label is string => !!label && label.length > 0)
         .join(' · ');
 }
@@ -101,6 +103,18 @@ function getBoundaryDocumentLabel(document: Document): string|undefined {
     return normalizeText(document.resource.shortDescription)
         || normalizeText(document.resource.surveyBoundaryNote)
         || normalizeText(document.resource.identifier);
+}
+
+
+function getBoundaryImportDetailLabel(boundaryDocumentLabel: string|undefined,
+                                      boundarySummary: string|undefined): string|undefined {
+
+    if (!boundaryDocumentLabel || !boundarySummary) return undefined;
+    const prefix = `${boundarySummary} - `;
+
+    return boundaryDocumentLabel.startsWith(prefix)
+        ? boundaryDocumentLabel.slice(prefix.length).trim()
+        : undefined;
 }
 
 

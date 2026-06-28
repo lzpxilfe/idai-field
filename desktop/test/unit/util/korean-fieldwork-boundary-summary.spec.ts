@@ -52,6 +52,21 @@ describe('korean-fieldwork-boundary-summary', () => {
     });
 
 
+    it('keeps tablet imported boundary file details visible with the project boundary summary', () => {
+
+        const boundary = createBoundary({
+            shortDescription: 'A구역 - boundary.geojson (EPSG:4326, 5점)',
+            surveyBoundaryAccuracy: 'importedReference',
+            surveyBoundarySource: 'geoJsonImport',
+            referenceBasemapProvider: 'importedVectorLayer'
+        });
+
+        expect(getKoreanFieldworkBoundarySummaryLabel([boundary], 'A구역')).toBe(
+            'A구역 · boundary.geojson (EPSG:4326, 5점) · GeoJSON 가져오기 · 가져온 참고자료'
+        );
+    });
+
+
     it('keeps Kakao satellite boundaries visible as satellite-based boundaries on desktop', () => {
 
         const boundary = createBoundary({
