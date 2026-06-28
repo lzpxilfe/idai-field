@@ -274,9 +274,11 @@ describe('KoreanFieldworkReadinessPanelComponent', () => {
 
         expect(component.shouldShow()).toBe(true);
         expect(component.getEvidenceMetrics()).toEqual(expect.arrayContaining([
+            { id: 'soilProfilePhotos', label: '토층사진', count: 1 },
             { id: 'photoAnnotations', label: '사진 표시', count: 1 },
             { id: 'soilColorCandidates', label: '토색 후보', count: 1 }
         ]));
+        expect(component.getMissingEvidenceLabels()).not.toContain('사진 또는 토층사진');
         expect(component.getSoilColorCandidateSummaryLabels()).toEqual([
             'soil-photo-1 · 먼셀 후보 10YR 4/3'
         ]);
@@ -301,8 +303,10 @@ describe('KoreanFieldworkReadinessPanelComponent', () => {
         await component.refreshIssues();
 
         expect(component.getEvidenceMetrics()).toEqual(expect.arrayContaining([
+            { id: 'photos', label: '사진', count: 1 },
             { id: 'photoAnnotations', label: '사진 표시', count: 1 }
         ]));
+        expect(component.getMissingEvidenceLabels()).not.toContain('사진 또는 토층사진');
         expect(component.getPhotoAnnotationInsights()).toEqual([
             {
                 documentLabel: 'photo-1',

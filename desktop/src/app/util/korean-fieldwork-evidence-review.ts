@@ -74,18 +74,28 @@ export function makeKoreanFieldworkEvidenceReview(
     const bundle = buildEvidenceBundle(rootDocument, documents);
     const reviewPhotos = getKoreanFieldworkReviewPhotoDocuments(rootDocument, bundle);
     const reviewSoilProfilePhotos = getKoreanFieldworkReviewSoilProfilePhotoDocuments(rootDocument, bundle);
+    const reviewDrawings = getKoreanFieldworkReviewDrawingDocuments(rootDocument, bundle);
     const pendingPenMemoTranscriptions = getPendingPenMemoTranscriptionDocuments(bundle.penMemos);
     const penMemoTranscriptionSummaries = getPenMemoTranscriptionSummaries(pendingPenMemoTranscriptions);
     const penMemoSketchSummaries = getPenMemoSketchSummaries(bundle.penMemos);
     const soilColorCandidateSummaries = getSoilColorCandidateSummaries(reviewSoilProfilePhotos);
     const photoAnnotationSummaries = getPhotoAnnotationSummaries(reviewPhotos, reviewSoilProfilePhotos);
-    const missingEvidenceKinds = getMissingEvidenceKinds(bundle, pendingPenMemoTranscriptions);
+    const missingEvidenceKinds = getMissingEvidenceKinds(
+        bundle,
+        pendingPenMemoTranscriptions,
+        reviewPhotos,
+        reviewSoilProfilePhotos,
+        reviewDrawings
+    );
     const issues = bundle.issues.concat(
         getPendingPenMemoTranscriptionIssues(pendingPenMemoTranscriptions)
     );
 
     return {
         ...bundle,
+        photos: reviewPhotos,
+        soilProfilePhotos: reviewSoilProfilePhotos,
+        drawings: reviewDrawings,
         issues,
         hasOpenIssues: issues.length > 0,
         reportReady: issues.length === 0 && missingEvidenceKinds.length === 0,
@@ -106,9 +116,16 @@ export function getKoreanFieldworkReviewPhotoDocuments(rootDocument: Document,
 
 
 export function getKoreanFieldworkReviewSoilProfilePhotoDocuments(rootDocument: Document,
-                                                                  bundle: EvidenceBundle): Document[] {
+                                                                   bundle: EvidenceBundle): Document[] {
 
     return prependRootDocumentByCategory(rootDocument, bundle.soilProfilePhotos, 'SoilProfilePhoto');
+}
+
+
+export function getKoreanFieldworkReviewDrawingDocuments(rootDocument: Document,
+                                                        bundle: EvidenceBundle): Document[] {
+
+    return prependRootDocumentByCategory(rootDocument, bundle.drawings, 'Drawing');
 }
 
 export function getIssueSummary(issues: KoreanFieldworkReadinessIssue[]): string[] {
@@ -277,12 +294,15 @@ export function getPendingPenMemoTranscriptionIssues(
 
 
 function getMissingEvidenceKinds(bundle: EvidenceBundle,
-                                 pendingPenMemoTranscriptions: Document[]): string[] {
+                                 pendingPenMemoTranscriptions: Document[],
+                                 reviewPhotos: Document[],
+                                 reviewSoilProfilePhotos: Document[],
+                                 reviewDrawings: Document[]): string[] {
 
     const missing: string[] = [];
 
-    if (bundle.photos.length === 0 && bundle.soilProfilePhotos.length === 0) missing.push('photo');
-    if (bundle.drawings.length === 0) missing.push('drawing');
+    if (reviewPhotos.length === 0 && reviewSoilProfilePhotos.length === 0) missing.push('photo');
+    if (reviewDrawings.length === 0) missing.push('drawing');
     if (bundle.reportPreparationReviews.length === 0 && bundle.reportEditorialCrossChecks.length === 0) {
         missing.push('reportReview');
     }

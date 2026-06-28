@@ -320,6 +320,35 @@ describe('korean-fieldwork-evidence-review', () => {
     });
 
 
+    it('counts the opened tablet media record itself as desktop review evidence', () => {
+
+        const photo = createDocument('photo-1', 'Photo', {
+            fieldworkPhotoUri: 'file:///tablet/photos/photo-1.jpg'
+        });
+        const soilProfilePhoto = createDocument('soil-photo-1', 'SoilProfilePhoto', {
+            soilProfilePhotoUri: 'file:///tablet/photos/soil-photo-1.jpg'
+        });
+        const drawing = createDocument('drawing-1', 'Drawing', {
+            fileUri: 'file:///tablet/drawings/drawing-1.jpg'
+        });
+
+        const photoReview = makeKoreanFieldworkEvidenceReview(photo as any, [photo] as any);
+        const soilPhotoReview = makeKoreanFieldworkEvidenceReview(
+            soilProfilePhoto as any,
+            [soilProfilePhoto] as any
+        );
+        const drawingReview = makeKoreanFieldworkEvidenceReview(drawing as any, [drawing] as any);
+
+        expect(photoReview.photos.map(document => document.resource.id)).toEqual(['photo-1']);
+        expect(photoReview.missingEvidenceKinds).not.toContain('photo');
+        expect(soilPhotoReview.soilProfilePhotos.map(document => document.resource.id))
+            .toEqual(['soil-photo-1']);
+        expect(soilPhotoReview.missingEvidenceKinds).not.toContain('photo');
+        expect(drawingReview.drawings.map(document => document.resource.id)).toEqual(['drawing-1']);
+        expect(drawingReview.missingEvidenceKinds).not.toContain('drawing');
+    });
+
+
     it('summarizes photo-derived soil color candidates for desktop review panels', () => {
 
         const summaries = getSoilColorCandidateSummaries([
