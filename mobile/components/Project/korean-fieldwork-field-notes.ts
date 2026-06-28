@@ -1333,7 +1333,9 @@ const shouldPromptEvidenceNumbers = (
   document: Document
 ): boolean => {
   if (document.resource.category === C.PHOTO
+    || document.resource.category === C.SOIL_PROFILE_PHOTO
     || document.resource.category === C.DRAWING
+    || document.resource.category === C.PEN_MEMO
     || document.resource.category === C.FIND
     || document.resource.category === C.SAMPLE) {
     return true;

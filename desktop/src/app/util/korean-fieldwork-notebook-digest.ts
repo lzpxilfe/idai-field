@@ -47,7 +47,14 @@ interface KoreanFieldworkNotebookEntryWithSortKey extends KoreanFieldworkNoteboo
 const PEN_MEMO_CATEGORY = 'PenMemo';
 const DAILY_LOG_CATEGORY = 'DailyLog';
 
-const EVIDENCE_NUMBER_CATEGORIES = new Set(['Photo', 'Drawing', 'Find', 'Sample']);
+const EVIDENCE_NUMBER_CATEGORIES = new Set([
+    'Photo',
+    'SoilProfilePhoto',
+    'Drawing',
+    'PenMemo',
+    'Find',
+    'Sample'
+]);
 
 const CATEGORY_LABELS: { [categoryName: string]: string } = {
     DailyLog: '일지',

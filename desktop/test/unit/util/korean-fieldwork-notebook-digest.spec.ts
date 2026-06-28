@@ -140,6 +140,46 @@ describe('korean-fieldwork-notebook-digest', () => {
     });
 
 
+    it('keeps soil profile photos and sketch memos in evidence-number follow-up review', () => {
+
+        const soilProfilePhoto = createDoc('soil-photo-1', 'SoilProfilePhoto', '토층사진 1');
+        const sketchMemo = createDoc('sketch-1', 'PenMemo', '스케치 1');
+        const dailyLog = createDoc('daily-log-1', 'DailyLog', '2026-06-24 일지', {
+            date: '2026-06-24',
+            description: [
+                '09:20 토층사진 1 - [관찰 내용] 1번 층 경계 확인.',
+                '10:10 스케치 1 - [관찰 내용] 윤곽 보강.'
+            ].join('\n')
+        });
+
+        const entries = getKoreanFieldworkNotebookEntries([
+            soilProfilePhoto,
+            sketchMemo,
+            dailyLog
+        ] as any);
+
+        expect(entries.map(entry => ({
+            id: entry.id,
+            targetLabel: entry.targetLabel,
+            targetCategoryLabel: entry.targetCategoryLabel,
+            needsEvidenceNumbers: entry.needsEvidenceNumbers
+        }))).toEqual([
+            {
+                id: 'daily-log-1-1',
+                targetLabel: '스케치 1',
+                targetCategoryLabel: '메모',
+                needsEvidenceNumbers: true
+            },
+            {
+                id: 'daily-log-1-0',
+                targetLabel: '토층사진 1',
+                targetCategoryLabel: '토층사진',
+                needsEvidenceNumbers: true
+            }
+        ]);
+    });
+
+
     it('omits old notebook records from the daily digest', () => {
 
         const oldMemo = createDoc('memo-old', 'PenMemo', 'M-old', {

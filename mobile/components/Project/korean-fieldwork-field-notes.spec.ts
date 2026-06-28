@@ -559,6 +559,48 @@ describe('korean-fieldwork-field-notes', () => {
     });
   });
 
+  it('keeps soil profile photos and sketch memos in evidence-number follow-up review', () => {
+    const soilProfilePhoto = createDoc(
+      'soil-photo-1',
+      C.SOIL_PROFILE_PHOTO,
+      '토층사진 1'
+    );
+    const sketchMemo = createDoc('sketch-1', C.PEN_MEMO, '스케치 1');
+    const dailyLog = createDoc('daily-log-1', C.DAILY_LOG, '6월 23일 작업일지', {
+      date: '2026-06-23',
+      description: [
+        '09:20 토층사진 1 - [관찰 내용] 1번 층 경계 확인.',
+        '10:10 스케치 1 - [관찰 내용] 윤곽 보강.',
+      ].join('\n'),
+    });
+
+    const entries = getKoreanFieldworkNotebookEntries([
+      soilProfilePhoto,
+      sketchMemo,
+      dailyLog,
+    ]);
+
+    expect(entries.map((entry) => ({
+      id: entry.id,
+      targetLabel: entry.targetLabel,
+      targetCategoryLabel: entry.targetCategoryLabel,
+      needsEvidenceNumbers: entry.needsEvidenceNumbers,
+    }))).toEqual([
+      {
+        id: 'daily-log-1-1',
+        targetLabel: '스케치 1',
+        targetCategoryLabel: '펜메모',
+        needsEvidenceNumbers: true,
+      },
+      {
+        id: 'daily-log-1-0',
+        targetLabel: '토층사진 1',
+        targetCategoryLabel: '토층 단면 사진',
+        needsEvidenceNumbers: true,
+      },
+    ]);
+  });
+
   it('builds a today digest for tablet daily note review', () => {
     const operation = createDoc('operation-1', C.OPERATION, 'A 구역');
     const feature = createDoc('feature-1', C.FEATURE, '수혈 1');

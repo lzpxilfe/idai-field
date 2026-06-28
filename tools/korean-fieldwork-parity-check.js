@@ -2658,6 +2658,33 @@ function validateRecordPanelOrder() {
     { label: 'desktop notebook digest', text: desktopNotebookDigestText },
     { label: 'tablet field notes', text: tabletFieldNotesText }
   ]) {
+    const evidenceNumberCategoryChecks = label === 'desktop notebook digest'
+      ? [
+        {
+          pattern: /EVIDENCE_NUMBER_CATEGORIES[\s\S]*'SoilProfilePhoto'/,
+          finding: `${label} must require evidence numbers for soil profile photo note targets`
+        },
+        {
+          pattern: /EVIDENCE_NUMBER_CATEGORIES[\s\S]*'PenMemo'/,
+          finding: `${label} must require evidence numbers for sketch memo note targets`
+        }
+      ]
+      : [
+        {
+          pattern: /shouldPromptEvidenceNumbers[\s\S]*C\.SOIL_PROFILE_PHOTO/,
+          finding: `${label} must require evidence numbers for soil profile photo note targets`
+        },
+        {
+          pattern: /shouldPromptEvidenceNumbers[\s\S]*C\.PEN_MEMO/,
+          finding: `${label} must require evidence numbers for sketch memo note targets`
+        }
+      ];
+
+    for (const check of evidenceNumberCategoryChecks) {
+      if (!check.pattern.test(text)) {
+        findings.push(check.finding);
+      }
+    }
     if (!text.includes('FIELD_NOTE_SECTION_ALIASES')
         || !text.includes('근거 번호')
         || !text.includes('스케치·약측/근거 번호')) {
@@ -2671,6 +2698,9 @@ function validateRecordPanelOrder() {
     { label: 'desktop notebook digest test', text: desktopNotebookDigestSpecText },
     { label: 'tablet field notes test', text: tabletFieldNotesSpecText }
   ]) {
+    if (!text.includes('keeps soil profile photos and sketch memos in evidence-number follow-up review')) {
+      findings.push(`${label} must cover soil profile photo and sketch memo evidence-number follow-up review`);
+    }
     if (!text.includes('[관찰 내용]\\n\\n[근거 번호]\\n\\n[다음 작업]')) {
       findings.push(`${label} must cover empty field-note templates`);
     }
