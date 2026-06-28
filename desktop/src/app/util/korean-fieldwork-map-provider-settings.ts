@@ -42,18 +42,18 @@ export function getKoreanFieldworkSatelliteMapProviderNotice(settings: any): str
     const normalized = normalizeKoreanFieldworkMapProviderSettings(settings);
 
     if (normalized.kakaoMapJavaScriptKey.trim()) {
-        return '카카오 지도 JavaScript 키가 저장되어 있습니다. 태블릿에서는 WebView 스카이뷰 선택창으로 조사 경계 초안을 만들 수 있고, 데스크톱에서는 SHP/DXF/CSV 경계를 가져와 같은 프로젝트로 동기화할 수 있습니다.';
+        return '카카오 지도 JavaScript 키가 저장되어 있습니다. 태블릿에서는 WebView 지도 선택창에서 일반지도, 위성지도, 하이브리드로 조사 경계를 만들 수 있고, 데스크톱에서는 동기화된 경계 기준과 SHP/DXF/GeoJSON/CSV 가져오기 경계를 함께 읽습니다.';
     }
 
     if (normalized.kakaoNativeAppKey.trim()) {
-        return '카카오 Native App 키가 저장되어 있습니다. 현재 태블릿 위성지도는 JavaScript 키 WebView 경로를 우선 사용합니다. 데스크톱에서는 SHP/DXF/CSV 경계를 가져와 같은 프로젝트로 동기화하세요.';
+        return '카카오 Native App 키가 저장되어 있습니다. 현재 태블릿 지도 선택은 JavaScript 키 WebView 경로를 우선 사용합니다. 데스크톱에서는 SHP/DXF/GeoJSON/CSV 경계를 가져오거나 태블릿에서 만든 경계를 동기화해 확인하세요.';
     }
 
     if (normalized.kakaoLocalRestApiKey.trim()) {
-        return '카카오 Local REST 키는 저장되어 있습니다. 이 키는 주소 검색과 좌표 변환용이며, 위성지도 화면에는 JavaScript 키 또는 Native App 키가 필요합니다.';
+        return '카카오 Local REST 키는 저장되어 있습니다. 이 키는 주소 검색과 좌표 변환용이며, 지도 선택 화면에는 JavaScript 키 또는 Native App 키가 필요합니다.';
     }
 
-    return '위성지도 경계 작업에는 카카오 지도 JavaScript 키를 우선 사용합니다. Native App 키는 네이티브 지도 연동용으로 보관할 수 있고, REST 키만으로는 지도 화면을 표시할 수 없습니다.';
+    return '지도 선택 경계 작업에는 카카오 지도 JavaScript 키를 우선 사용합니다. Native App 키는 네이티브 지도 연동용으로 보관할 수 있고, REST 키만으로는 지도 화면을 표시할 수 없습니다.';
 }
 
 function getString(value: unknown): string {

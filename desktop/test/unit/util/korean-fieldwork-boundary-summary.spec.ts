@@ -40,13 +40,27 @@ describe('korean-fieldwork-boundary-summary', () => {
         const boundary = createBoundary({
             surveyBoundaryAccuracy: 'visualReference',
             surveyBoundarySource: 'manualBasemapTrace',
-            referenceBasemapProvider: 'kakaoHybrid'
+            referenceBasemapProvider: 'kakaoSkyview'
         });
 
         expect(getKoreanFieldworkBoundaryMethodLabel(boundary)).toBe('카카오 위성지도 기준');
         expect(getKoreanFieldworkBoundarySummaryLabel([boundary], 'A구역')).toBe(
             'A구역 · 카카오 위성지도 기준'
         );
+    });
+
+
+    it('summarizes tablet Kakao roadmap and hybrid boundary basemaps distinctly', () => {
+
+        expect(getKoreanFieldworkBoundaryMethodLabel(createBoundary({
+            surveyBoundarySource: 'manualBasemapTrace',
+            referenceBasemapProvider: 'kakaoRoadmap'
+        }))).toBe('카카오 일반지도 기준');
+
+        expect(getKoreanFieldworkBoundaryMethodLabel(createBoundary({
+            surveyBoundarySource: 'manualBasemapTrace',
+            referenceBasemapProvider: 'kakaoHybrid'
+        }))).toBe('카카오 하이브리드 기준');
     });
 
 

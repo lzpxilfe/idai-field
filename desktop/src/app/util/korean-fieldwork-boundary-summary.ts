@@ -27,11 +27,11 @@ const BOUNDARY_BASEMAP_PROVIDER_LABELS: Readonly<Record<string, string>> = {
     googleSatellite: 'Google 위성',
     importedRasterLayer: '가져온 래스터',
     importedVectorLayer: '가져온 벡터',
-    kakaoHybrid: '카카오 위성지도',
+    kakaoHybrid: '카카오 하이브리드',
+    kakaoRoadmap: '카카오 일반지도',
+    kakaoSkyview: '카카오 위성지도',
     openStreetMap: 'OpenStreetMap'
 };
-
-const KAKAO_SATELLITE_BOUNDARY_METHOD_LABEL = '카카오 위성지도 기준';
 
 
 export function getKoreanFieldworkBoundarySummaryLabel(documents: Document[],
@@ -70,8 +70,8 @@ export function getKoreanFieldworkBoundaryMethodLabel(document: Document): strin
     const provider = normalizeText(document.resource.referenceBasemapProvider);
     const providerLabel = provider ? BOUNDARY_BASEMAP_PROVIDER_LABELS[provider] : undefined;
 
-    if (source === 'manualBasemapTrace' && provider === 'kakaoHybrid') {
-        return KAKAO_SATELLITE_BOUNDARY_METHOD_LABEL;
+    if (source === 'manualBasemapTrace' && isKakaoMapProvider(provider) && providerLabel) {
+        return `${providerLabel} 기준`;
     }
     if (source === 'manualBasemapTrace' && providerLabel) return `${providerLabel} 기준`;
 
@@ -81,6 +81,14 @@ export function getKoreanFieldworkBoundaryMethodLabel(document: Document): strin
     return [sourceLabel, accuracyLabel]
         .filter((label): label is string => !!label && label.length > 0)
         .join(' · ') || providerLabel;
+}
+
+
+function isKakaoMapProvider(provider: string|undefined): boolean {
+
+    return provider === 'kakaoRoadmap'
+        || provider === 'kakaoSkyview'
+        || provider === 'kakaoHybrid';
 }
 
 
