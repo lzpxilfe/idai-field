@@ -253,6 +253,61 @@ describe('Korean fieldwork closeout summary', () => {
     expect(summary.issues[0].recommendedAction).toContain('서버 업로드 시각');
   });
 
+  it('adds closeout review issues for tablet photo annotations without descriptions', () => {
+    const annotatedPhoto = createDocument('photo-annotated', 'Photo', 'Annotated photo', {
+      fieldworkPhotoCapturedAt: '2026-06-23T01:02:03.000Z',
+      originalFilename: 'photo-annotated.jpg',
+      width: 4032,
+      height: 3024,
+      fieldworkPhotoAnnotationStrokes:
+        '{"version":1,"strokes":[{"points":[{"x":1000,"y":1000},{"x":5000,"y":5000}]}]}',
+    });
+    const annotatedSoilPhoto = createDocument(
+      'soil-photo-annotated',
+      'SoilProfilePhoto',
+      'Annotated soil',
+      {
+        soilProfilePhotoCapturedAt: '2026-06-23T01:02:03.000Z',
+        originalFilename: 'soil-photo-annotated.jpg',
+        width: 3000,
+        height: 2000,
+        soilProfileColorSwatches: '10YR 4/3',
+        soilProfilePhotoAnnotationStrokes:
+          '{"version":1,"strokes":[{"points":[{"x":2000,"y":3000}]}]}',
+      }
+    );
+    const explainedPhoto = createDocument('photo-explained', 'Photo', 'Explained photo', {
+      description: '남쪽 벽면 균열 표시',
+      fieldworkPhotoCapturedAt: '2026-06-23T01:02:03.000Z',
+      originalFilename: 'photo-explained.jpg',
+      width: 4032,
+      height: 3024,
+      fieldworkPhotoAnnotationStrokes:
+        '{"version":1,"strokes":[{"points":[{"x":2000,"y":2000}]}]}',
+    });
+
+    const summary = makeKoreanFieldworkCloseoutSummary([
+      annotatedPhoto,
+      annotatedSoilPhoto,
+      explainedPhoto,
+    ] as any);
+
+    expect(summary.status).toBe('needsReview');
+    expect(summary.issues.map((issue) => issue.ruleId)).toEqual([
+      'fieldwork-photo-annotation-review',
+      'soil-profile-photo-annotation-review',
+    ]);
+    expect(summary.issues[0]).toMatchObject({
+      documentId: 'photo-annotated',
+      relatedFields: ['fieldworkPhotoAnnotationStrokes', 'description', 'shortDescription'],
+    });
+    expect(summary.issues[0].recommendedAction).toContain('description');
+    expect(summary.issues[1]).toMatchObject({
+      documentId: 'soil-photo-annotated',
+      relatedFields: ['soilProfilePhotoAnnotationStrokes', 'description', 'shortDescription'],
+    });
+  });
+
   it('keeps tablet media in closeout when upload audit fields are incomplete', () => {
     const partialUpload = createDocument('photo-1', 'Photo', 'A photo', {
       fieldworkPhotoCapturedAt: '2026-06-23T01:02:03.000Z',

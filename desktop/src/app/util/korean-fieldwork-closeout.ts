@@ -4,7 +4,11 @@ import {
     hasConfirmedKoreanFieldworkImageUpload,
     KoreanFieldworkReadinessIssue
 } from 'idai-field-core';
-import { getPenMemoSketchSummaryLabel, getPenMemoTranscriptionSummaryLabel } from './korean-fieldwork-evidence-review';
+import {
+    getPhotoAnnotationSummaryLabel,
+    getPenMemoSketchSummaryLabel,
+    getPenMemoTranscriptionSummaryLabel
+} from './korean-fieldwork-evidence-review';
 import { getMunsellCandidateSummaryLabel } from './korean-fieldwork-soil-color-candidates';
 
 
@@ -49,6 +53,11 @@ const DIRECT_FIELDWORK_PHOTO_CATEGORIES = new Set([
     'SurveyBoundary',
     'Trench'
 ]);
+const FIELDWORK_PHOTO_ANNOTATION_FIELDS = ['fieldworkPhotoAnnotationStrokes'];
+const SOIL_PROFILE_PHOTO_ANNOTATION_FIELDS = [
+    'soilProfilePhotoAnnotationStrokes',
+    'soilProfileAnnotationStrokes'
+];
 
 
 export function makeKoreanFieldworkCloseoutSummary(documents: Document[],
@@ -153,6 +162,12 @@ function getFieldworkPhotoCloseoutIssues(document: Document): KoreanFieldworkRea
             ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
             'fieldwork-photo-upload-missing',
             '현장사진 원본의 Field Hub 백업이 아직 확인되지 않았습니다.'
+        ),
+        ...getPhotoAnnotationCloseoutIssues(
+            document,
+            FIELDWORK_PHOTO_ANNOTATION_FIELDS,
+            'fieldwork-photo-annotation-review',
+            '사진 위에 남긴 표시가 보고서용 설명으로 옮겨지지 않았습니다.'
         )
     ];
 }
@@ -192,6 +207,11 @@ function getSoilProfilePhotoCloseoutIssues(document: Document): KoreanFieldworkR
         ['soilProfilePhotoUri', 'imageUri', 'fieldworkPhotoUri'],
         'soil-profile-photo-upload-missing',
         '토층사진 원본의 Field Hub 백업이 아직 확인되지 않았습니다.'
+    )).concat(getPhotoAnnotationCloseoutIssues(
+        document,
+        SOIL_PROFILE_PHOTO_ANNOTATION_FIELDS,
+        'soil-profile-photo-annotation-review',
+        '토층사진 위에 남긴 표시가 층위 설명으로 옮겨지지 않았습니다.'
     ));
 
     if (document.resource.soilColorAssistStatus === 'candidatesAvailable') {
@@ -225,6 +245,28 @@ function getSoilProfilePhotoCloseoutIssues(document: Document): KoreanFieldworkR
     }
 
     return issues;
+}
+
+
+function getPhotoAnnotationCloseoutIssues(document: Document,
+                                          strokeFields: string[],
+                                          ruleId: string,
+                                          message: string): KoreanFieldworkReadinessIssue[] {
+
+    const annotatedField = strokeFields.find(fieldName =>
+        hasTextValue(getPhotoAnnotationSummaryLabel(document.resource[fieldName]))
+    );
+    if (!annotatedField || hasPhotoAnnotationExplanation(document.resource)) return [];
+
+    const annotationSummary = getPhotoAnnotationSummaryLabel(document.resource[annotatedField]);
+
+    return [createCloseoutReviewIssue(
+        document,
+        ruleId,
+        message,
+        `${annotationSummary}. 표시한 위치가 무엇을 뜻하는지 description이나 shortDescription에 남겨 데스크톱 보고 정리에서 놓치지 않게 하세요.`,
+        [annotatedField, 'description', 'shortDescription']
+    )];
 }
 
 
@@ -306,6 +348,12 @@ function getMissingPhotoReportMetadataLabel(fields: string[]): string {
 
         return '촬영시각';
     }).join(', ');
+}
+
+
+function hasPhotoAnnotationExplanation(resource: Record<string, any>): boolean {
+
+    return hasTextValue(resource.description) || hasTextValue(resource.shortDescription);
 }
 
 

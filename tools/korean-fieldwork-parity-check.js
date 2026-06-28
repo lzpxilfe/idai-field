@@ -2919,6 +2919,8 @@ function validateSoilColorReviewWorkflow() {
   const tabletCameraTestText = readTextFile('mobile/components/Project/SoilProfileCameraButton.spec.ts');
   const desktopCloseoutText = readTextFile('desktop/src/app/util/korean-fieldwork-closeout.ts');
   const desktopCloseoutSpecText = readTextFile('desktop/test/unit/util/korean-fieldwork-closeout.spec.ts');
+  const tabletCloseoutText = readTextFile('mobile/components/Project/korean-fieldwork-closeout.ts');
+  const tabletCloseoutSpecText = readTextFile('mobile/components/Project/korean-fieldwork-closeout.spec.ts');
   const desktopWorkbenchText = readTextFile('desktop/src/app/util/korean-fieldwork-workbench.ts');
   const desktopWorkbenchSpecText = readTextFile('desktop/test/unit/util/korean-fieldwork-workbench.spec.ts');
   const desktopCandidateText = readTextFile('desktop/src/app/util/korean-fieldwork-soil-color-candidates.ts');
@@ -3040,6 +3042,28 @@ function validateSoilColorReviewWorkflow() {
   }
   if (desktopCloseoutText.includes('Munsell 값') || desktopCloseoutText.includes('Munsell 후보')) {
     findings.push('desktop closeout still uses mixed-language Munsell wording');
+  }
+
+  for (const [label, text] of [
+    ['desktop closeout', desktopCloseoutText],
+    ['tablet closeout', tabletCloseoutText]
+  ]) {
+    if (!text.includes('getPhotoAnnotationCloseoutIssues')
+        || !text.includes('fieldwork-photo-annotation-review')
+        || !text.includes('soil-profile-photo-annotation-review')
+        || !text.includes('shortDescription')) {
+      findings.push(`${label} must turn tablet photo annotations into closeout review work until they are described`);
+    }
+  }
+  for (const [label, text] of [
+    ['desktop closeout test', desktopCloseoutSpecText],
+    ['tablet closeout test', tabletCloseoutSpecText]
+  ]) {
+    if (!text.includes('adds closeout review issues for tablet photo annotations without descriptions')
+        || !text.includes('fieldwork-photo-annotation-review')
+        || !text.includes('soil-profile-photo-annotation-review')) {
+      findings.push(`${label} must cover annotated tablet photos in closeout`);
+    }
   }
 
   if (!tabletCameraText.includes('createSoilColorAssistUpdatesFromPhotoBase64')) {
