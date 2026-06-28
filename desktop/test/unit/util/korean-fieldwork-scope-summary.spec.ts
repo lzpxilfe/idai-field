@@ -174,6 +174,35 @@ describe('makeKoreanFieldworkScopeSummary', () => {
         expect(summary.evidenceCount).toBe(1);
         expect(summary.reviewCount).toBe(0);
     });
+
+
+    it('counts directly attached tablet photos in the desktop scope evidence count', () => {
+
+        const projectDocument = createDocument('project', 'Project', {
+            projectInvestigationMode: 'excavation',
+            projectBoundarySummary: 'A구역'
+        });
+
+        const summary = makeKoreanFieldworkScopeSummary([
+            projectDocument,
+            createDocument('operation-1', 'Operation'),
+            createDocument('boundary-1', 'SurveyBoundary', {
+                surveyBoundaryAccuracy: 'importedReference',
+                surveyBoundarySource: 'geojsonImport'
+            }),
+            createDocument('feature-1', 'Feature', {
+                fieldworkPhotoUri: 'file:///tablet/photos/feature-1.jpg'
+            }),
+            createDocument('trench-1', 'Trench', {
+                imageUri: 'content://tablet/photos/trench-1.jpg'
+            }),
+            createDocument('photo-1', 'Photo', {
+                fieldworkPhotoUri: 'file:///tablet/photos/photo-1.jpg'
+            })
+        ], projectDocument);
+
+        expect(summary.evidenceCount).toBe(3);
+    });
 });
 
 

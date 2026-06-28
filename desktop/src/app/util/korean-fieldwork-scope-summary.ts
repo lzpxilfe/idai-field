@@ -43,6 +43,22 @@ export interface KoreanFieldworkScopeSummary {
 const STRUCTURE_CATEGORIES = ['Operation', 'Trench', 'FeatureGroup', 'Feature', 'FeatureSegment', 'Layer'];
 const EVIDENCE_CATEGORIES = ['Find', 'FindCollection', 'Sample', 'Photo', 'SoilProfilePhoto', 'Drawing'];
 const REVIEW_CATEGORIES = ['DailyLog', 'FieldRecordQualityReview', 'SourceEvidenceIndex', 'SurveyBoundary'];
+const DIRECT_FIELDWORK_PHOTO_CATEGORIES = new Set([
+    'DailyLog',
+    'Feature',
+    'FeatureGroup',
+    'FeatureSegment',
+    'FieldRecordQualityReview',
+    'Find',
+    'FindCollection',
+    'Layer',
+    'Operation',
+    'Sample',
+    'Survey',
+    'SurveyBoundary',
+    'Trench'
+]);
+const DIRECT_FIELDWORK_PHOTO_URI_FIELDS = ['fieldworkPhotoUri', 'imageUri', 'fileUri'];
 
 
 export function makeKoreanFieldworkScopeSummary(documents: Document[],
@@ -65,7 +81,8 @@ export function makeKoreanFieldworkScopeSummary(documents: Document[],
     const surveyBoundaryDocuments = getKoreanFieldworkSurveyBoundaryDocuments(documents);
     const boundaryCount = surveyBoundaryDocuments.length;
     const structureCount = countCategoryGroup(categoryCounts, STRUCTURE_CATEGORIES);
-    const evidenceCount = countCategoryGroup(categoryCounts, EVIDENCE_CATEGORIES);
+    const evidenceCount = countCategoryGroup(categoryCounts, EVIDENCE_CATEGORIES)
+        + countDirectFieldworkPhotoEvidenceDocuments(documents);
     const reviewCount = countCategoryGroup(categoryCounts, REVIEW_CATEGORIES);
     const boundaryLabel = getKoreanFieldworkBoundarySummaryLabel(surveyBoundaryDocuments, boundarySummary);
     const legacyRootRecordCount = getLegacyRootDocumentsForOperation(documents).length;
@@ -182,4 +199,19 @@ function countCategoryGroup(categoryCounts: Map<string, number>, categoryNames: 
         (count, categoryName) => count + (categoryCounts.get(categoryName) ?? 0),
         0
     );
+}
+
+
+function countDirectFieldworkPhotoEvidenceDocuments(documents: Document[]): number {
+
+    return documents.filter(document =>
+        DIRECT_FIELDWORK_PHOTO_CATEGORIES.has(String(document.resource.category))
+        && DIRECT_FIELDWORK_PHOTO_URI_FIELDS.some(fieldName => hasTextValue(document.resource[fieldName]))
+    ).length;
+}
+
+
+function hasTextValue(value: unknown): boolean {
+
+    return typeof value === 'string' && value.trim().length > 0;
 }
