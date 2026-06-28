@@ -3,7 +3,7 @@ import { Document, ImageDocument, ImageStore, ImageVariant } from 'idai-field-co
 import { electronCrypto as crypto, electronFs as fs, electronRemote as remote } from 'src/app/electron/electron';
 
 const ERROR_ORIGINAL_IMAGE_FILE_NOT_FOUND: string = 'exportImages.error.originalImageFileNotFound';
-export const FIELDWORK_IMAGE_EXPORT_MANIFEST_VERSION = 2;
+export const FIELDWORK_IMAGE_EXPORT_MANIFEST_VERSION = 3;
 export const FIELDWORK_IMAGE_EXPORT_MANIFEST_FILENAME = 'fieldwork-image-export-manifest.json';
 export const FIELDWORK_IMAGE_EXPORT_CSV_MANIFEST_FILENAME = 'fieldwork-image-export-manifest.csv';
 export const FIELDWORK_IMAGE_EXPORT_README_FILENAME = 'fieldwork-image-export-readme.txt';
@@ -91,6 +91,11 @@ const FIELD_CONTEXT_FIELDS: string[] = [
     'artifactPhotoViewPlan',
     'soilProfileLayerMarkers',
     'soilProfileLayerIds',
+    'fieldworkPhotoAnnotationStrokes',
+    'fieldworkPhotoAnnotationUpdatedAt',
+    'soilProfileAnnotationStrokes',
+    'soilProfilePhotoAnnotationStrokes',
+    'soilProfilePhotoAnnotationUpdatedAt',
     'soilColorCaptureCondition',
     'soilColorAssistCandidates',
     'soilColorAssistStatus',

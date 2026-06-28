@@ -57,6 +57,13 @@ describe('exportImages', () => {
                     },
                     fieldworkPhotoUri: 'file:///tablet/DCIM/tablet-photo-1.jpg',
                     fieldworkPhotoCapturedAt: '2026-06-23T08:31:00.000Z',
+                    fieldworkPhotoAnnotationStrokes:
+                        '{"version":1,"strokes":[{"points":[{"x":100,"y":100},{"x":200,"y":200}]}]}',
+                    fieldworkPhotoAnnotationUpdatedAt: '2026-06-23T08:34:00.000Z',
+                    soilProfileAnnotationStrokes: 'legacy-soil-outline',
+                    soilProfilePhotoAnnotationStrokes:
+                        '{"version":1,"strokes":[{"points":[{"x":20,"y":30},{"x":40,"y":50}]}]}',
+                    soilProfilePhotoAnnotationUpdatedAt: '2026-06-23T08:35:00.000Z',
                     fieldworkImageUploadStatus: 'uploaded',
                     fieldworkImageUploadedAt: '2026-06-23T08:33:00.000Z',
                     fieldworkImageUploadedUri: 'file:///tablet/DCIM/tablet-photo-1.jpg',
@@ -212,6 +219,13 @@ describe('exportImages', () => {
                         fieldContext: {
                             fieldworkPhotoUri: 'file:///tablet/DCIM/tablet-photo-1.jpg',
                             fieldworkPhotoCapturedAt: '2026-06-23T08:31:00.000Z',
+                            fieldworkPhotoAnnotationStrokes:
+                                '{"version":1,"strokes":[{"points":[{"x":100,"y":100},{"x":200,"y":200}]}]}',
+                            fieldworkPhotoAnnotationUpdatedAt: '2026-06-23T08:34:00.000Z',
+                            soilProfileAnnotationStrokes: 'legacy-soil-outline',
+                            soilProfilePhotoAnnotationStrokes:
+                                '{"version":1,"strokes":[{"points":[{"x":20,"y":30},{"x":40,"y":50}]}]}',
+                            soilProfilePhotoAnnotationUpdatedAt: '2026-06-23T08:35:00.000Z',
                             fieldworkImageUploadStatus: 'uploaded',
                             fieldworkImageUploadedAt: '2026-06-23T08:33:00.000Z',
                             fieldworkImageUploadedUri: 'file:///tablet/DCIM/tablet-photo-1.jpg',
@@ -250,6 +264,12 @@ describe('exportImages', () => {
             expect(writtenCsv).toContain('relations=liesWithin:operation-1');
             expect(JSON.stringify(writtenManifest)).not.toContain('internalDraftNote');
             expect(writtenCsv).toContain('originalPhoto; webOrServerBackup; backupVerified');
+            expect(writtenCsv).toContain(
+                'fieldworkPhotoAnnotationStrokes,fieldworkPhotoAnnotationUpdatedAt,soilProfileAnnotationStrokes,soilProfilePhotoAnnotationStrokes,soilProfilePhotoAnnotationUpdatedAt'
+            );
+            expect(writtenCsv).toContain('legacy-soil-outline');
+            expect(writtenCsv).toContain('2026-06-23T08:34:00.000Z');
+            expect(writtenCsv).toContain('2026-06-23T08:35:00.000Z');
             expect(writtenCsv).toContain('linkedToFeature');
             expect(writtenReadme).toContain('한국 현장조사 이미지 인계 메모');
             expect(writtenReadme).toContain('조사 방식(projectInvestigationMode): trialTrench');

@@ -391,7 +391,7 @@ function checkDesktopImageExportContract() {
   );
   requireIncludes(
     source,
-    'FIELDWORK_IMAGE_EXPORT_MANIFEST_VERSION = 2',
+    'FIELDWORK_IMAGE_EXPORT_MANIFEST_VERSION = 3',
     'desktop image export manifest must version schema changes for long-term report handover'
   );
   requireIncludes(
@@ -588,6 +588,31 @@ function checkDesktopImageExportContract() {
     source,
     "'fieldworkImageUploadedUri'",
     'desktop image export manifest must preserve original tablet source URIs'
+  );
+  requireIncludes(
+    source,
+    "'fieldworkPhotoAnnotationStrokes'",
+    'desktop image export manifest must preserve tablet pen memos drawn on field photos'
+  );
+  requireIncludes(
+    source,
+    "'fieldworkPhotoAnnotationUpdatedAt'",
+    'desktop image export manifest must preserve tablet field-photo annotation timestamps'
+  );
+  requireIncludes(
+    source,
+    "'soilProfileAnnotationStrokes'",
+    'desktop image export manifest must preserve legacy tablet soil-profile annotation strokes'
+  );
+  requireIncludes(
+    source,
+    "'soilProfilePhotoAnnotationStrokes'",
+    'desktop image export manifest must preserve tablet pen memos drawn on soil-profile photos'
+  );
+  requireIncludes(
+    source,
+    "'soilProfilePhotoAnnotationUpdatedAt'",
+    'desktop image export manifest must preserve tablet soil-profile annotation timestamps'
   );
   requireIncludes(
     source,
@@ -1421,6 +1446,26 @@ function checkContractCoverage() {
     exportImagesSpec,
     'fieldworkImageUploadedMd5',
     'desktop image export tests must assert uploaded source MD5 hashes in the manifest'
+  );
+  requireIncludes(
+    exportImagesSpec,
+    'fieldworkPhotoAnnotationStrokes',
+    'desktop image export tests must assert field-photo tablet pen memos in the manifest and CSV'
+  );
+  requireIncludes(
+    exportImagesSpec,
+    'soilProfilePhotoAnnotationStrokes',
+    'desktop image export tests must assert soil-profile tablet pen memos in the manifest and CSV'
+  );
+  requireIncludes(
+    exportImagesSpec,
+    'fieldworkPhotoAnnotationUpdatedAt',
+    'desktop image export tests must assert field-photo annotation timestamps in the manifest and CSV'
+  );
+  requireIncludes(
+    exportImagesSpec,
+    'soilProfilePhotoAnnotationUpdatedAt',
+    'desktop image export tests must assert soil-profile annotation timestamps in the manifest and CSV'
   );
   requireIncludes(
     exportImagesSpec,
