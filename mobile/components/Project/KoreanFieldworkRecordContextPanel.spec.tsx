@@ -71,6 +71,29 @@ describe('KoreanFieldworkRecordContextPanel', () => {
     expect(handleAddDocumentOfCategory).not.toHaveBeenCalled();
   });
 
+  it('opens directly attached tablet photos instead of creating a duplicate record', () => {
+    const feature = createDoc('feature-1', C.FEATURE, '?섑삁 1', {}, {
+      fieldworkPhotoUri: 'file:///tablet/photos/feature-1.jpg',
+    });
+    const handleAddDocumentOfCategory = jest.fn();
+    const handleOpenDocument = jest.fn();
+    const { getByTestId, queryByText } = render(
+      <KoreanFieldworkRecordContextPanel
+        document={feature}
+        documents={[feature]}
+        allowedAddCategoryNames={[C.PHOTO]}
+        onAddDocumentOfCategory={handleAddDocumentOfCategory}
+        onOpenDocument={handleOpenDocument}
+      />
+    );
+
+    expect(queryByText('異붽?')).toBeNull();
+    fireEvent.press(getByTestId('evidenceMetric_photos'));
+
+    expect(handleOpenDocument).toHaveBeenCalledWith(feature);
+    expect(handleAddDocumentOfCategory).not.toHaveBeenCalled();
+  });
+
   it('opens linked tablet media records whose Field Hub original backup is not confirmed', () => {
     const feature = createDoc('feature-1', C.FEATURE, '?섑삁 1', {}, {
       featureRecordingStatus: 'confirmed',

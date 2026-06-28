@@ -76,6 +76,18 @@ describe('Korean fieldwork readiness', () => {
     });
 
 
+    it('counts directly attached tablet photos as photo evidence', () => {
+
+        const feature = makeDocument('feature-1', 'Feature', {
+            fieldworkPhotoUri: 'file:///tablet/photos/feature-1.jpg'
+        });
+
+        const bundle = buildEvidenceBundle(feature as any, [feature] as any);
+
+        expect(bundle.photos.map((document) => document.resource.id)).toEqual(['feature-1']);
+    });
+
+
     it('reports local tablet media without confirmed Field Hub original backup', () => {
 
         const documents: any[] = [

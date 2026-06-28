@@ -49,6 +49,10 @@ const files = {
   desktopDownloadSpec: readTextFile('desktop/test/unit/components/project/download-project.component.spec.ts'),
   desktopCloseout: readTextFile('desktop/src/app/util/korean-fieldwork-closeout.ts'),
   desktopCloseoutSpec: readTextFile('desktop/test/unit/util/korean-fieldwork-closeout.spec.ts'),
+  desktopRecordContextPanelSpec:
+    readTextFile('desktop/test/unit/components/docedit/core/korean-fieldwork-record-context-panel.component.spec.ts'),
+  mobileRecordContextPanelSpec:
+    readTextFile('mobile/components/Project/KoreanFieldworkRecordContextPanel.spec.tsx'),
   serverRouter: readTextFile('server/lib/field_hub_web/router.ex'),
   serverFileController: readTextFile('server/lib/field_hub_web/rest/api/file.ex'),
   serverFileStore: readTextFile('server/lib/field_hub/file_store.ex'),
@@ -837,6 +841,16 @@ function checkCoreReadinessAndConfigContract() {
     'DIRECT_FIELDWORK_PHOTO_CATEGORIES',
     'readiness rules must evaluate direct fieldwork record photos'
   );
+  requireIncludes(
+    source,
+    'filterDirectFieldworkPhotoEvidenceDocuments',
+    'readiness evidence bundles must count directly attached tablet photos as photo evidence'
+  );
+  requireIncludes(
+    source,
+    'photos: uniqueDocuments',
+    'readiness evidence bundles must merge linked Photo records with direct tablet photo records'
+  );
   requireIncludes(source, "ruleId: 'fieldwork-photo-upload-missing'", 'readiness rules must warn for unbacked tablet photos');
   requireIncludes(
     source,
@@ -1475,6 +1489,21 @@ function checkContractCoverage() {
     files.coreReadinessSpec,
     'reports local tablet media without confirmed Field Hub original backup',
     'core readiness tests must cover missing tablet media backups'
+  );
+  requireIncludes(
+    files.coreReadinessSpec,
+    'counts directly attached tablet photos as photo evidence',
+    'core readiness tests must cover direct tablet photo evidence counts'
+  );
+  requireIncludes(
+    files.desktopRecordContextPanelSpec,
+    'counts directly attached tablet photos in record evidence metrics',
+    'desktop record context tests must cover direct tablet photo evidence counts'
+  );
+  requireIncludes(
+    files.mobileRecordContextPanelSpec,
+    'opens directly attached tablet photos instead of creating a duplicate record',
+    'tablet record context tests must open direct tablet photo evidence instead of duplicating it'
   );
   requireIncludes(
     files.coreReadinessSpec,

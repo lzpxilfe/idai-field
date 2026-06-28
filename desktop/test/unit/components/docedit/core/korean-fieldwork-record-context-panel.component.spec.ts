@@ -105,6 +105,28 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('counts directly attached tablet photos in record evidence metrics', async () => {
+
+        const feature = createDocument('feature-1', 'Feature', 'F1', {}, {
+            fieldworkPhotoUri: 'file:///tablet/photos/feature-1.jpg',
+            featureRecordingStatus: 'investigating'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [feature] })
+        });
+        component.document = feature as any;
+        component.fieldDefinitions = [
+            field('featureRecordingStatus')
+        ] as any;
+
+        await component.ngOnChanges();
+
+        expect(component.getEvidenceMetrics()).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: 'photos', count: 1, canCreate: false })
+        ]));
+    });
+
+
     it('warns when a selected feature type has no core attributes recorded', async () => {
 
         const feature = createDocument('feature-1', 'Feature', 'F1', {}, {

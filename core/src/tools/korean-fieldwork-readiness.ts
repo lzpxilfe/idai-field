@@ -94,6 +94,7 @@ const DIRECT_FIELDWORK_PHOTO_CATEGORIES = [
     'SurveyBoundary',
     'Trench'
 ];
+const DIRECT_FIELDWORK_PHOTO_URI_FIELDS = ['fieldworkPhotoUri', 'imageUri', 'fileUri'];
 const FIELDWORK_IMAGE_UPLOAD_RULES = [
     {
         categories: ['Photo'],
@@ -115,7 +116,7 @@ const FIELDWORK_IMAGE_UPLOAD_RULES = [
     },
     {
         categories: DIRECT_FIELDWORK_PHOTO_CATEGORIES,
-        uriFields: ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
+        uriFields: DIRECT_FIELDWORK_PHOTO_URI_FIELDS,
         ruleId: 'fieldwork-attached-photo-upload-missing',
         message: '기록에 직접 붙은 태블릿 사진의 Field Hub 원본 백업이 아직 확인되지 않았습니다.'
     }
@@ -331,7 +332,8 @@ export function buildEvidenceBundle(rootDocument: Document, documents: Document[
         rootDocument,
         featureSegments: filterByCategory(relatedDocuments, 'FeatureSegment'),
         layers: filterByCategory(relatedDocuments, 'Layer'),
-        photos: filterByCategory(relatedDocuments, 'Photo'),
+        photos: uniqueDocuments(filterByCategory(relatedDocuments, 'Photo')
+            .concat(filterDirectFieldworkPhotoEvidenceDocuments(issueDocuments))),
         soilProfilePhotos: filterByCategory(relatedDocuments, 'SoilProfilePhoto'),
         drawings: filterByCategory(relatedDocuments, 'Drawing'),
         penMemos: filterByCategory(relatedDocuments, 'PenMemo'),
@@ -460,6 +462,28 @@ function getRelationTargets(document: Document): string[] {
 function filterByCategory(documents: Document[], category: string): Document[] {
 
     return documents.filter((document) => document.resource.category === category);
+}
+
+function filterDirectFieldworkPhotoEvidenceDocuments(documents: Document[]): Document[] {
+
+    return documents.filter((document) =>
+        DIRECT_FIELDWORK_PHOTO_CATEGORIES.includes(document.resource.category)
+        && DIRECT_FIELDWORK_PHOTO_URI_FIELDS
+            .map((fieldName) => getTextValue(document.resource[fieldName]))
+            .some(isUploadableLocalUri)
+    );
+}
+
+function uniqueDocuments(documents: Document[]): Document[] {
+
+    const seenDocumentIds = new Set<string>();
+
+    return documents.filter((document) => {
+        if (seenDocumentIds.has(document.resource.id)) return false;
+
+        seenDocumentIds.add(document.resource.id);
+        return true;
+    });
 }
 
 function isFeatureLike(document: Document): boolean {
