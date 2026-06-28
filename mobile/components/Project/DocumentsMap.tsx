@@ -220,7 +220,7 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
           style={styles.visibleMapActionButton}
         />
         <Button
-          title="SHP/DXF"
+          title="SHP/DXF/GeoJSON"
           variant="secondary"
           onPress={openBoundaryFileImport}
           icon={<MaterialIcons name="folder-open" size={18} />}
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   visibleMapActionButton: {
-    minWidth: 136,
+    minWidth: 176,
   },
   container: {
     flex: 1,

@@ -1,5 +1,6 @@
 import {
   parseDxfBoundaryText,
+  parseGeoJsonBoundaryText,
   parseShpBoundaryBytes,
 } from './boundary-file-import';
 
@@ -54,6 +55,30 @@ describe('boundary-file-import', () => {
     );
 
     expect(result.coordinateSystem).toBe('EPSG:4326');
+    expect(result.geometry.coordinates).toHaveLength(4);
+    expect(result.geometry.coordinates[0][0]).not.toBeCloseTo(127.12);
+  });
+
+  it('parses GeoJSON polygon boundaries for tablet-to-desktop sync', () => {
+    const result = parseGeoJsonBoundaryText(JSON.stringify({
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            [127.12, 36.45],
+            [127.13, 36.45],
+            [127.13, 36.46],
+            [127.12, 36.45],
+          ]],
+        },
+      }],
+    }));
+
+    expect(result.coordinateSystem).toBe('EPSG:4326');
+    expect(result.geometry.type).toBe('LineString');
     expect(result.geometry.coordinates).toHaveLength(4);
     expect(result.geometry.coordinates[0][0]).not.toBeCloseTo(127.12);
   });

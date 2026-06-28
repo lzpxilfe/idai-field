@@ -1427,7 +1427,14 @@ function validateProjectSettingsCompleteness() {
     'mobile/components/Project/Map/korean-fieldwork-map-provider-status.spec.ts'
   );
   const mobilePackageText = readTextFile('mobile/package.json');
+  const mobileDocumentsMapText = readTextFile('mobile/components/Project/DocumentsMap.tsx');
   const mobileMapText = readTextFile('mobile/components/Project/Map/Map.tsx');
+  const mobileMapBottomSheetText = readTextFile(
+    'mobile/components/Project/Map/MapBottomSheet.tsx'
+  );
+  const mobileMapBottomSheetSpecText = readTextFile(
+    'mobile/components/Project/Map/MapBottomSheet.spec.tsx'
+  );
   const mobileKakaoSatellitePickerText = readTextFile(
     'mobile/components/Project/Map/KakaoSatellitePicker.tsx'
   );
@@ -1442,6 +1449,12 @@ function validateProjectSettingsCompleteness() {
   );
   const mobileBoundaryFileImportModalSpecText = readTextFile(
     'mobile/components/Project/Map/BoundaryFileImportModal.spec.tsx'
+  );
+  const mobileBoundaryFileImportText = readTextFile(
+    'mobile/components/Project/Map/boundary-file-import.ts'
+  );
+  const mobileBoundaryFileImportSpecText = readTextFile(
+    'mobile/components/Project/Map/boundary-file-import.spec.ts'
   );
   const desktopSettingsText = readTextFile('desktop/src/app/components/settings/settings.component.ts');
   const desktopSettingsTemplateText = readTextFile('desktop/src/app/components/settings/settings.html');
@@ -1679,7 +1692,22 @@ function validateProjectSettingsCompleteness() {
     findings.push('tablet package missing react-native-webview for Kakao satellite picker');
   }
   if (!mobilePackageText.includes('expo-document-picker')) {
-    findings.push('tablet package missing expo-document-picker for tablet SHP/DXF file selection');
+    findings.push('tablet package missing expo-document-picker for tablet SHP/DXF/GeoJSON file selection');
+  }
+  if (!mobileBoundaryFileImportText.includes('Enter a SHP, DXF, or GeoJSON file path.')) {
+    findings.push('tablet boundary import empty-path guidance must mention GeoJSON');
+  }
+  if (!mobileBoundaryFileImportSpecText.includes('parses GeoJSON polygon boundaries for tablet-to-desktop sync')) {
+    findings.push('tablet boundary import parser test must cover GeoJSON tablet-to-desktop sync');
+  }
+  for (const [label, text] of [
+    ['tablet visible map actions', mobileDocumentsMapText],
+    ['tablet selected-record map actions', mobileMapBottomSheetText],
+    ['tablet selected-record map action test', mobileMapBottomSheetSpecText]
+  ]) {
+    if (!text.includes('SHP/DXF/GeoJSON')) {
+      findings.push(`${label} must expose GeoJSON in the boundary file import action`);
+    }
   }
   for (const token of [
     'DocumentPicker.getDocumentAsync',
@@ -2826,6 +2854,11 @@ function validateScopeMetricWording() {
       || !desktopBoundarySummarySpecText.includes('SHP 가져오기 · 가져온 참고자료')
       || !desktopBoundarySummarySpecText.includes('GPS 임시 · GPS 대략')) {
     findings.push('desktop boundary summary test must cover GPS, import, and Kakao satellite labels');
+  }
+  if (!desktopBoundarySummarySpecText.includes('summarizes tablet GeoJSON boundary imports after sync to desktop')
+      || !desktopBoundarySummarySpecText.includes('geoJsonImport')
+      || !desktopBoundarySummarySpecText.includes('GeoJSON')) {
+    findings.push('desktop boundary summary test must cover tablet GeoJSON imports after sync');
   }
   if (!desktopScopeSummaryText.includes('getKoreanFieldworkBoundarySummaryLabel')
       || !desktopWorkflowText.includes('getKoreanFieldworkBoundarySummaryLabel')) {

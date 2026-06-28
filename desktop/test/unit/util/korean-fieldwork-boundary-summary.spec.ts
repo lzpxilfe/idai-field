@@ -35,6 +35,23 @@ describe('korean-fieldwork-boundary-summary', () => {
     });
 
 
+    it('summarizes tablet GeoJSON boundary imports after sync to desktop', () => {
+
+        const boundary = createBoundary({
+            shortDescription: 'A-zone north boundary',
+            surveyBoundaryAccuracy: 'importedReference',
+            surveyBoundarySource: 'geoJsonImport',
+            referenceBasemapProvider: 'importedVectorLayer'
+        });
+
+        const summary = getKoreanFieldworkBoundarySummaryLabel([boundary], 'A-zone');
+
+        expect(summary).toContain('A-zone');
+        expect(summary).toContain('GeoJSON');
+        expect(summary).not.toContain('boundary missing');
+    });
+
+
     it('keeps Kakao satellite boundaries visible as satellite-based boundaries on desktop', () => {
 
         const boundary = createBoundary({

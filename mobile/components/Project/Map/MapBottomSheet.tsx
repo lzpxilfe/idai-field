@@ -118,7 +118,7 @@ const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
         <Button
           style={styles.button}
           variant="secondary"
-          title="SHP/DXF"
+          title="SHP/DXF/GeoJSON"
           onPress={openBoundaryFileImport}
           icon={<MaterialIcons name="folder-open" size={iconSize} />}
           testID="mapBoundaryFileImportButton"

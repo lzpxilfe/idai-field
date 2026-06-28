@@ -192,7 +192,7 @@ export const parseGeoJsonBoundaryText = (
 
 const normalizeLocalFileUri = (filePath: string): string => {
   const trimmedPath = filePath.trim().replace(/^['"]|['"]$/g, '');
-  if (!trimmedPath) throw new Error('Enter a SHP or DXF file path.');
+  if (!trimmedPath) throw new Error('Enter a SHP, DXF, or GeoJSON file path.');
   if (FILE_URI_SCHEME_PATTERN.test(trimmedPath)) return trimmedPath;
   if (trimmedPath.startsWith('/')) return `file://${trimmedPath}`;
 

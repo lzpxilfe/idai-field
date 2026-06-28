@@ -78,9 +78,11 @@ describe('MapBottomSheet', () => {
 
   it('opens the boundary file import from the visible map action panel', () => {
     const openBoundaryFileImport = jest.fn();
-    const { getByTestId } = render(
+    const { getByTestId, getByText } = render(
       createBottomSheet({ openBoundaryFileImport })
     );
+
+    expect(getByText('SHP/DXF/GeoJSON')).toBeTruthy();
 
     fireEvent.press(getByTestId('mapBoundaryFileImportButton'));
 
