@@ -53,7 +53,10 @@ describe('buildKakaoSatellitePickerHtml', () => {
       longitude: 127,
     });
 
-    expect(html).toContain('JavaScript 키와 Kakao Developers의 http://localhost:8080 또는 https://localhost 도메인 등록');
+    expect(html).toContain('origin: window.location && window.location.origin');
+    expect(html).toContain('sdkUrl: "https://dapi.kakao.com/v2/maps/sdk.js?appkey=js-key&autoload=false"');
+    expect(html).toContain("failure: 'sdk-script-error'");
+    expect(html).toContain('WebView 출처를 Kakao Developers JavaScript SDK 도메인에 등록');
     expect(html).toContain('카카오 지도 SDK가 로드됐지만 지도 객체를 찾지 못했습니다');
   });
 });

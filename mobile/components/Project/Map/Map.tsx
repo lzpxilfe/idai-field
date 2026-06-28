@@ -40,7 +40,6 @@ import {
   getKakaoSatelliteBasemapStatusMessage,
   KAKAO_SATELLITE_BASEMAP_TITLE,
 } from './korean-fieldwork-map-provider-status';
-import { validateKakaoMapJavaScriptKey } from './kakao-map-javascript-key-validation';
 import KakaoSatellitePicker, {
   KakaoSatellitePickedBoundary,
   KakaoSatellitePickedLocation,
@@ -309,20 +308,9 @@ const Map: React.FC<MapProps> = (props) => {
     setIsBoundaryFileImportOpen(true);
   }, [config]);
 
-  const showSatelliteBasemapInfo = useCallback(async () => {
+  const showSatelliteBasemapInfo = useCallback(() => {
     const javaScriptKey = currentMapProviderSettings.kakaoMapJavaScriptKey.trim();
     if (javaScriptKey) {
-      const validationResult = await validateKakaoMapJavaScriptKey(javaScriptKey);
-      if (!validationResult.ok) {
-        Alert.alert(
-          KAKAO_SATELLITE_BASEMAP_TITLE,
-          validationResult.message
-            ?? getKakaoSatelliteBasemapStatusMessage(currentMapProviderSettings),
-          [{ text: '확인' }]
-        );
-        return;
-      }
-
       setIsKakaoSatellitePickerOpen(true);
       return;
     }
@@ -335,7 +323,7 @@ const Map: React.FC<MapProps> = (props) => {
   }, [currentMapProviderSettings]);
 
   const openSatellitePicker = useCallback(() => {
-    void showSatelliteBasemapInfo();
+    showSatelliteBasemapInfo();
   }, [showSatelliteBasemapInfo]);
 
   useEffect(() => {

@@ -84,7 +84,7 @@ describe('KakaoSatellitePicker', () => {
     });
 
     expect(getByText(
-      '공개 카카오 지도가 열렸습니다. 경계 저장은 SDK 도메인 등록 후 다시 시도하세요.'
+      '카카오 지도 SDK가 WebView 출처에서 거부되어 공개 카카오 지도를 열었습니다. Kakao Developers JavaScript SDK 도메인에 origin-7 등록 후 다시 시도하세요. 경계 저장은 SDK 지도가 열릴 때 사용할 수 있습니다.'
     )).toBeTruthy();
   });
 });

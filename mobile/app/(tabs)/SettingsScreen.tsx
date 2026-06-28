@@ -381,7 +381,7 @@ const SettingsScreen: React.FC = () => {
               }}
               autoCapitalize="none"
               autoCorrect={false}
-              helpText="WebView로 카카오 일반지도, 위성지도, 하이브리드를 선택해 경계를 찍을 때 사용합니다."
+              helpText="WebView로 카카오 일반지도, 위성지도, 하이브리드를 선택해 경계를 찍을 때 사용합니다. SDK가 막히면 지도 화면에 표시되는 WebView 출처를 Kakao Developers에 등록하세요."
               testID="settings-kakao-map-javascript-key-input"
               style={styles.input}
             />

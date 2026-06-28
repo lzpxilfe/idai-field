@@ -29,10 +29,10 @@ describe('korean-fieldwork-map-provider-status', () => {
     })).toContain('3개 이상의 꼭짓점');
     expect(getKakaoSatelliteBasemapStatusMessage({
       kakaoMapJavaScriptKey: 'js-key',
-    })).toContain('http://localhost:8080');
+    })).toContain('화면에 표시되는 WebView 출처');
     expect(getKakaoSatelliteBasemapStatusMessage({
       kakaoMapJavaScriptKey: 'js-key',
-    })).toContain('https://localhost');
+    })).toContain('Kakao Developers');
   });
 
   it('recognizes a stored Kakao native app key', () => {

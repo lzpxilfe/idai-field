@@ -80,20 +80,16 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
     }
   }, [javaScriptKey, visible]);
 
-  const openPublicMapFallback = () => {
-    setMessage(
-      'Kakao SDK 도메인 등록이 맞지 않아 공개 카카오 지도를 열었습니다. 경계 저장은 Kakao Developers JavaScript SDK 도메인 등록 후 사용할 수 있습니다.'
-    );
+  const openPublicMapFallback = (diagnostic?: Record<string, unknown>) => {
+    setMessage(getPublicMapFallbackMessage(diagnostic, webViewBaseUrl));
     setIsPublicMapFallbackOpen(true);
   };
 
-  const retryWithNextWebViewOrigin = () => {
+  const retryWithNextWebViewOrigin = (diagnostic?: Record<string, unknown>) => {
     if (baseUrlIndex >= KAKAO_MAP_WEBVIEW_BASE_URLS.length - 1) return false;
 
     const nextBaseUrl = KAKAO_MAP_WEBVIEW_BASE_URLS[baseUrlIndex + 1];
-    setMessage(
-      `카카오 지도 SDK가 현재 WebView 출처에서 거부되었습니다. ${nextBaseUrl} 경로로 다시 시도합니다.`
-    );
+    setMessage(getRetryMessage(diagnostic, webViewBaseUrl, nextBaseUrl));
     setBaseUrlIndex(baseUrlIndex + 1);
     return true;
   };
@@ -120,12 +116,9 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
       }
 
       if (data.type === 'error') {
-        if (retryWithNextWebViewOrigin()) return;
-        if (typeof data.payload?.webViewBaseUrl === 'string') {
-          openPublicMapFallback();
-          return;
-        }
-        setMessage(data.payload?.message ?? '카카오 지도를 불러오지 못했습니다.');
+        const diagnostic = getDiagnosticPayload(data.payload);
+        if (retryWithNextWebViewOrigin(diagnostic)) return;
+        openPublicMapFallback(diagnostic);
       }
     } catch {
       setMessage('카카오 지도 메시지를 읽지 못했습니다.');
@@ -167,33 +160,33 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
               );
               return;
             }
-            if (retryWithNextWebViewOrigin()) return;
-            openPublicMapFallback();
-            if (javaScriptKey !== undefined) return;
-            setMessage(
-              event.nativeEvent.description
-                ? `카카오 지도 WebView 오류: ${event.nativeEvent.description}`
-                : '카카오 지도 WebView를 불러오지 못했습니다.'
-            );
+            const diagnostic = {
+              message: event.nativeEvent.description,
+              webViewBaseUrl,
+            };
+            if (retryWithNextWebViewOrigin(diagnostic)) return;
+            openPublicMapFallback(diagnostic);
           }}
           onHttpError={(event) => {
             if (isPublicMapFallbackOpen) {
               setMessage(`공개 카카오 지도 요청이 HTTP ${event.nativeEvent.statusCode} 응답을 받았습니다.`);
               return;
             }
-            if (retryWithNextWebViewOrigin()) return;
-            openPublicMapFallback();
-            if (javaScriptKey !== undefined) return;
-            setMessage(
-              `카카오 지도 요청이 HTTP ${event.nativeEvent.statusCode} 응답을 받았습니다. JavaScript 키와 http://localhost:8080 또는 https://localhost 도메인 등록을 확인하세요.`
-            );
+            const diagnostic = {
+              statusCode: event.nativeEvent.statusCode,
+              webViewBaseUrl,
+            };
+            if (retryWithNextWebViewOrigin(diagnostic)) return;
+            openPublicMapFallback(diagnostic);
           }}
           onMessage={onMessage}
           key={isPublicMapFallbackOpen ? publicMapUrl : webViewBaseUrl}
           onLoadEnd={() => {
             if (isPublicMapFallbackOpen) {
-              setMessage(
-                '공개 카카오 지도가 열렸습니다. 경계 저장은 SDK 도메인 등록 후 다시 시도하세요.'
+              setMessage((currentMessage) =>
+                currentMessage.includes('Kakao Developers')
+                  ? currentMessage
+                  : '공개 카카오 지도가 열렸습니다. 경계 저장은 SDK 도메인 등록 후 다시 시도하세요.'
               );
             }
           }}
@@ -308,3 +301,55 @@ const getPickedMapTypeId = (
     ? value
     : undefined;
 };
+
+const getDiagnosticPayload = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === 'object' && value !== null
+    ? value as Record<string, unknown>
+    : undefined;
+
+const getRetryMessage = (
+  diagnostic: Record<string, unknown> | undefined,
+  attemptedBaseUrl: string,
+  nextBaseUrl: string
+): string => {
+  const attemptedOrigin = getDiagnosticOrigin(diagnostic) ?? attemptedBaseUrl;
+  return `카카오 지도 SDK가 ${attemptedOrigin} 출처에서 거부되었습니다. ${nextBaseUrl} 경로로 다시 시도합니다.`;
+};
+
+const getPublicMapFallbackMessage = (
+  diagnostic: Record<string, unknown> | undefined,
+  attemptedBaseUrl: string
+): string => {
+  const attemptedOrigin = getDiagnosticOrigin(diagnostic) ?? attemptedBaseUrl;
+  return `카카오 지도 SDK가 WebView 출처에서 거부되어 공개 카카오 지도를 열었습니다. Kakao Developers JavaScript SDK 도메인에 ${attemptedOrigin} 등록 후 다시 시도하세요. 경계 저장은 SDK 지도가 열릴 때 사용할 수 있습니다.`;
+};
+
+const getDiagnosticOrigin = (
+  diagnostic: Record<string, unknown> | undefined
+): string | undefined => {
+  const origin = getNonEmptyString(diagnostic?.origin);
+  if (origin && origin !== 'null') return origin;
+
+  const hrefOrigin = getOriginFromUrl(getNonEmptyString(diagnostic?.href));
+  if (hrefOrigin) return hrefOrigin;
+
+  const baseUrlOrigin = getOriginFromUrl(getNonEmptyString(diagnostic?.webViewBaseUrl));
+  if (baseUrlOrigin) return baseUrlOrigin;
+
+  return getNonEmptyString(diagnostic?.webViewBaseUrl);
+};
+
+const getOriginFromUrl = (value: string | undefined): string | undefined => {
+  if (!value) return undefined;
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
+};
+
+const getNonEmptyString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : undefined;

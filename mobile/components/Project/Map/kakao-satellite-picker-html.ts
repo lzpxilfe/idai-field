@@ -20,6 +20,8 @@ export const buildKakaoSatellitePickerHtml = ({
   const safeLongitude = Number.isFinite(longitude) ? longitude : 126.9780;
   const safeMapTypeId = getSafeMapTypeId(mapTypeId);
   const safeWebViewBaseUrl = JSON.stringify(webViewBaseUrl ?? '');
+  const kakaoSdkUrl = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${safeKey}&autoload=false`;
+  const safeKakaoSdkUrl = JSON.stringify(kakaoSdkUrl);
 
   return `<!doctype html>
 <html>
@@ -135,7 +137,11 @@ export const buildKakaoSatellitePickerHtml = ({
         type: type,
         payload: Object.assign({
           href: window.location && window.location.href,
+          origin: window.location && window.location.origin,
+          protocol: window.location && window.location.protocol,
+          host: window.location && window.location.host,
           referrer: document.referrer,
+          sdkUrl: ${safeKakaoSdkUrl},
           webViewBaseUrl: ${safeWebViewBaseUrl}
         }, payload || {})
       }));
@@ -143,7 +149,8 @@ export const buildKakaoSatellitePickerHtml = ({
 
     window.onerror = function(message, source, line, column) {
       post('error', {
-        message: '카카오 지도 SDK 실행 중 오류가 발생했습니다. JavaScript 키와 http://localhost:8080 또는 https://localhost 도메인 등록을 확인하세요.',
+        failure: 'runtime-error',
+        message: '카카오 지도 SDK 실행 중 오류가 발생했습니다. 메시지에 표시된 WebView 출처를 Kakao Developers JavaScript SDK 도메인에 등록했는지 확인하세요.',
         detail: String(message || '') + ' ' + String(source || '') + ':' + String(line || '') + ':' + String(column || '')
       });
       return false;
@@ -151,16 +158,22 @@ export const buildKakaoSatellitePickerHtml = ({
 
     function loadScript() {
       var script = document.createElement('script');
-      script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=${safeKey}&autoload=false';
+      script.src = ${safeKakaoSdkUrl};
       script.onload = function() {
         if (!window.kakao || !kakao.maps || !kakao.maps.load) {
-          post('error', { message: '카카오 지도 SDK가 로드됐지만 지도 객체를 찾지 못했습니다. JavaScript 키 종류와 WebView 도메인 등록을 확인하세요.' });
+          post('error', {
+            failure: 'missing-map-object',
+            message: '카카오 지도 SDK가 로드됐지만 지도 객체를 찾지 못했습니다. JavaScript 키 종류와 WebView 출처 등록을 확인하세요.'
+          });
           return;
         }
         kakao.maps.load(initMap);
       };
       script.onerror = function() {
-        post('error', { message: '카카오 지도 SDK 요청이 거부되었거나 네트워크에서 차단되었습니다. JavaScript 키와 Kakao Developers의 http://localhost:8080 또는 https://localhost 도메인 등록을 확인하세요.' });
+        post('error', {
+          failure: 'sdk-script-error',
+          message: '카카오 지도 SDK 요청이 거부되었거나 네트워크에서 차단되었습니다. 메시지에 표시된 WebView 출처를 Kakao Developers JavaScript SDK 도메인에 등록했는지 확인하세요.'
+        });
       };
       document.head.appendChild(script);
     }
