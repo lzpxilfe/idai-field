@@ -79,6 +79,9 @@ describe('Korean fieldwork readiness', () => {
     it('reports local tablet media without confirmed Field Hub original backup', () => {
 
         const documents: any[] = [
+            makeDocument('feature-photo-1', 'Feature', {
+                fieldworkPhotoUri: 'file:///tablet/photos/feature-1.jpg'
+            }),
             makeDocument('photo-1', 'Photo', {
                 fieldworkPhotoUri: 'file:///tablet/photos/photo-1.jpg'
             }),
@@ -113,12 +116,17 @@ describe('Korean fieldwork readiness', () => {
         const issues = getKoreanFieldworkReadinessIssues(documents as any);
 
         expect(issues.map((issue) => issue.ruleId)).toEqual([
+            'fieldwork-attached-photo-upload-missing',
             'fieldwork-photo-upload-missing',
             'soil-profile-photo-upload-missing',
             'fieldwork-drawing-upload-missing'
         ]);
-        expect(issues[0].documentId).toBe('photo-1');
-        expect(issues[0].relatedFields).toEqual([
+        expect(issues[0].documentId).toBe('feature-photo-1');
+        expect(issues[0].message).toBe(
+            '기록에 직접 붙은 태블릿 사진의 Field Hub 원본 백업이 아직 확인되지 않았습니다.'
+        );
+        expect(issues[1].documentId).toBe('photo-1');
+        expect(issues[1].relatedFields).toEqual([
             'fieldworkImageUploadStatus',
             'fieldworkImageUploadedAt',
             'fieldworkImageUploadedUri',

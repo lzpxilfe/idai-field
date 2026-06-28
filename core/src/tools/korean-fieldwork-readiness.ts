@@ -79,24 +79,45 @@ const FIELDWORK_IMAGE_UPLOAD_RELATED_FIELDS = [
     'fieldworkImageStoredSha256',
     'digitalSourcePreservation'
 ];
+const DIRECT_FIELDWORK_PHOTO_CATEGORIES = [
+    'DailyLog',
+    'Feature',
+    'FeatureGroup',
+    'FeatureSegment',
+    'FieldRecordQualityReview',
+    'Find',
+    'FindCollection',
+    'Layer',
+    'Operation',
+    'Sample',
+    'Survey',
+    'SurveyBoundary',
+    'Trench'
+];
 const FIELDWORK_IMAGE_UPLOAD_RULES = [
     {
-        category: 'Photo',
+        categories: ['Photo'],
         uriFields: ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
         ruleId: 'fieldwork-photo-upload-missing',
         message: 'Field Hub 원본 사진 백업이 아직 확인되지 않았습니다.'
     },
     {
-        category: 'SoilProfilePhoto',
+        categories: ['SoilProfilePhoto'],
         uriFields: ['soilProfilePhotoUri', 'imageUri', 'fieldworkPhotoUri'],
         ruleId: 'soil-profile-photo-upload-missing',
         message: 'Field Hub 토층 원본 사진 백업이 아직 확인되지 않았습니다.'
     },
     {
-        category: 'Drawing',
+        categories: ['Drawing'],
         uriFields: ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
         ruleId: 'fieldwork-drawing-upload-missing',
         message: 'Field Hub 원본 도면 백업이 아직 확인되지 않았습니다.'
+    },
+    {
+        categories: DIRECT_FIELDWORK_PHOTO_CATEGORIES,
+        uriFields: ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
+        ruleId: 'fieldwork-attached-photo-upload-missing',
+        message: '기록에 직접 붙은 태블릿 사진의 Field Hub 원본 백업이 아직 확인되지 않았습니다.'
     }
 ];
 
@@ -269,7 +290,7 @@ export const KOREAN_FIELDWORK_READINESS_RULES: KoreanFieldworkReadinessRule[] = 
         relatedFields: FIELDWORK_IMAGE_UPLOAD_RELATED_FIELDS,
         evaluate: (document) => {
             const rule = FIELDWORK_IMAGE_UPLOAD_RULES.find((candidate) =>
-                candidate.category === document.resource.category
+                candidate.categories.includes(document.resource.category)
             );
             if (!rule) return [];
 

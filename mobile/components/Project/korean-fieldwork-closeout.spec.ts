@@ -173,6 +173,9 @@ describe('Korean fieldwork closeout summary', () => {
     const drawing = createDocument('drawing-1', 'Drawing', 'D drawing', {
       fileUri: 'file:///tablet/drawings/drawing-1.jpg',
     });
+    const directFeaturePhoto = createDocument('feature-photo-1', 'Feature', 'Z direct', {
+      fieldworkPhotoUri: 'file:///tablet/photos/feature-1.jpg',
+    });
     const uploadedDrawing = createDocument('drawing-2', 'Drawing', 'E uploaded', {
       fileUri: 'file:///tablet/drawings/drawing-2.jpg',
       digitalSourcePreservation: [
@@ -198,15 +201,17 @@ describe('Korean fieldwork closeout summary', () => {
       soilProfilePhoto,
       uploadedPhoto,
       drawing,
+      directFeaturePhoto,
       uploadedDrawing,
     ] as any);
 
     expect(summary.status).toBe('needsReview');
-    expect(summary.counts.warning).toBe(3);
+    expect(summary.counts.warning).toBe(4);
     expect(summary.issues.map((issue) => issue.ruleId)).toEqual([
       'fieldwork-photo-upload-missing',
       'soil-profile-photo-upload-missing',
       'fieldwork-drawing-upload-missing',
+      'fieldwork-attached-photo-upload-missing',
     ]);
     expect(summary.issues[0]).toMatchObject({
       documentId: 'photo-1',
@@ -240,6 +245,10 @@ describe('Korean fieldwork closeout summary', () => {
         'fieldworkImageStoredSha256',
         'digitalSourcePreservation',
       ],
+    });
+    expect(summary.issues[3]).toMatchObject({
+      documentId: 'feature-photo-1',
+      message: '기록에 직접 붙은 태블릿 사진의 Field Hub 백업이 아직 확인되지 않았습니다.',
     });
     expect(summary.issues[0].recommendedAction).toContain('서버 업로드 시각');
   });

@@ -34,6 +34,21 @@ const PHOTO_CATEGORY = 'Photo';
 const DRAWING_CATEGORY = 'Drawing';
 const PEN_MEMO_CATEGORY = 'PenMemo';
 const SOIL_PROFILE_PHOTO_CATEGORY = 'SoilProfilePhoto';
+const DIRECT_FIELDWORK_PHOTO_CATEGORIES = new Set([
+    'DailyLog',
+    'Feature',
+    'FeatureGroup',
+    'FeatureSegment',
+    'FieldRecordQualityReview',
+    'Find',
+    'FindCollection',
+    'Layer',
+    'Operation',
+    'Sample',
+    'Survey',
+    'SurveyBoundary',
+    'Trench'
+]);
 
 
 export function makeKoreanFieldworkCloseoutSummary(documents: Document[],
@@ -115,6 +130,9 @@ function getKoreanFieldworkCloseoutReviewIssues(documents: Document[]): KoreanFi
         if (document.resource.category === PEN_MEMO_CATEGORY) {
             return getPenMemoCloseoutIssues(document);
         }
+        if (DIRECT_FIELDWORK_PHOTO_CATEGORIES.has(String(document.resource.category))) {
+            return getDirectFieldworkPhotoCloseoutIssues(document);
+        }
 
         return [];
     });
@@ -147,6 +165,17 @@ function getDrawingCloseoutIssues(document: Document): KoreanFieldworkReadinessI
         ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
         'fieldwork-drawing-upload-missing',
         '도면 원본의 Field Hub 백업이 아직 확인되지 않았습니다.'
+    );
+}
+
+
+function getDirectFieldworkPhotoCloseoutIssues(document: Document): KoreanFieldworkReadinessIssue[] {
+
+    return getPhotoUploadCloseoutIssues(
+        document,
+        ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
+        'fieldwork-attached-photo-upload-missing',
+        '기록에 직접 붙은 태블릿 사진의 Field Hub 백업이 아직 확인되지 않았습니다.'
     );
 }
 

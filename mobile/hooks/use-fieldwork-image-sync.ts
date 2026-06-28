@@ -40,11 +40,34 @@ export interface FieldworkImageUploadResult {
   storedSha256?: string;
 }
 
+const DIRECT_FIELDWORK_PHOTO_URI_FIELDS = ['fieldworkPhotoUri', 'imageUri', 'fileUri'];
+const DIRECT_FIELDWORK_PHOTO_CATEGORIES = [
+  'DailyLog',
+  'Feature',
+  'FeatureGroup',
+  'FeatureSegment',
+  'FieldRecordQualityReview',
+  'Find',
+  'FindCollection',
+  'Layer',
+  'Operation',
+  'Sample',
+  'Survey',
+  'SurveyBoundary',
+  'Trench',
+];
+
 const SYNCABLE_PHOTO_URI_FIELDS: Record<string, string[]> = {
   Image: ['imageUri', 'fieldworkPhotoUri', 'fileUri'],
   Photo: ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
   Drawing: ['fieldworkPhotoUri', 'imageUri', 'fileUri'],
   SoilProfilePhoto: ['soilProfilePhotoUri', 'imageUri', 'fieldworkPhotoUri'],
+  ...Object.fromEntries(
+    DIRECT_FIELDWORK_PHOTO_CATEGORIES.map((category) => [
+      category,
+      DIRECT_FIELDWORK_PHOTO_URI_FIELDS,
+    ])
+  ),
 };
 
 const SYNC_READY_STATUSES = new Set<SyncStatus>([

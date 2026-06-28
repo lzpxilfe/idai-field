@@ -186,6 +186,17 @@ function checkMobileUploadContract() {
     "SoilProfilePhoto: ['soilProfilePhotoUri', 'imageUri', 'fieldworkPhotoUri']",
     'tablet sync must include SoilProfilePhoto tablet URI fields'
   );
+  requireIncludes(
+    source,
+    'DIRECT_FIELDWORK_PHOTO_CATEGORIES',
+    'tablet sync must include direct fieldwork record photo categories'
+  );
+  requireIncludes(source, "'Feature'", 'tablet sync must include directly attached Feature photos');
+  requireIncludes(
+    source,
+    'DIRECT_FIELDWORK_PHOTO_URI_FIELDS',
+    'tablet sync must use direct fieldwork photo URI fields for non-media records'
+  );
   requireIncludes(source, "/^(file|content):\\/\\//", 'tablet sync must upload local file:// and content:// URIs');
   requireIncludes(
     source,
@@ -771,10 +782,20 @@ function checkCoreReadinessAndConfigContract() {
   const source = files.coreReadiness;
   const config = files.koreanConfig;
 
-  requireIncludes(source, "category: 'Photo'", 'readiness rules must evaluate Photo records');
-  requireIncludes(source, "category: 'SoilProfilePhoto'", 'readiness rules must evaluate SoilProfilePhoto records');
-  requireIncludes(source, "category: 'Drawing'", 'readiness rules must evaluate Drawing records');
+  requireIncludes(source, "categories: ['Photo']", 'readiness rules must evaluate Photo records');
+  requireIncludes(source, "categories: ['SoilProfilePhoto']", 'readiness rules must evaluate SoilProfilePhoto records');
+  requireIncludes(source, "categories: ['Drawing']", 'readiness rules must evaluate Drawing records');
+  requireIncludes(
+    source,
+    'DIRECT_FIELDWORK_PHOTO_CATEGORIES',
+    'readiness rules must evaluate direct fieldwork record photos'
+  );
   requireIncludes(source, "ruleId: 'fieldwork-photo-upload-missing'", 'readiness rules must warn for unbacked tablet photos');
+  requireIncludes(
+    source,
+    "ruleId: 'fieldwork-attached-photo-upload-missing'",
+    'readiness rules must warn for direct fieldwork record photos without Field Hub backups'
+  );
   requireIncludes(
     source,
     "ruleId: 'soil-profile-photo-upload-missing'",
@@ -818,6 +839,11 @@ function checkCoreReadinessAndConfigContract() {
       closeoutSource,
       'hasConfirmedKoreanFieldworkImageUpload',
       `${label} must use the core Field Hub backup completion rule`
+    );
+    requireIncludes(
+      closeoutSource,
+      'fieldwork-attached-photo-upload-missing',
+      `${label} must warn for direct fieldwork record photos without Field Hub backups`
     );
     requireIncludes(
       closeoutSource,

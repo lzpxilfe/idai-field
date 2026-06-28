@@ -701,7 +701,7 @@ describe('useFieldworkImageSync', () => {
     );
   });
 
-  it('collects uploadable photo, drawing, and soil profile photo records', () => {
+  it('collects uploadable photo, drawing, soil profile, and directly attached fieldwork records', () => {
     expect(collectFieldworkImageSyncTargets([
       createDocument('photo-1', 'Photo', {
         imageUri: 'https://field.example/existing.jpg',
@@ -731,6 +731,11 @@ describe('useFieldworkImageSync', () => {
         category: 'SoilProfilePhoto',
         resourceId: 'soil-photo-1',
         uri: 'file:///tablet/photos/soil-photo-1.jpg',
+      },
+      {
+        category: 'Feature',
+        resourceId: 'feature-1',
+        uri: 'file:///tablet/photos/feature-1.jpg',
       },
     ]);
   });
