@@ -1,4 +1,4 @@
-import { ImageDocument, ImageStore, ImageVariant } from 'idai-field-core';
+import { Document, ImageDocument, ImageStore, ImageVariant } from 'idai-field-core';
 
 import { electronCrypto as crypto, electronFs as fs, electronRemote as remote } from 'src/app/electron/electron';
 
@@ -12,6 +12,7 @@ const INVALID_EXPORT_FILENAME_CHARACTERS = /[<>:"/\\|?*\u0000-\u001F]/g;
 const RESERVED_WINDOWS_FILENAME_PATTERN = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
 type ManifestValue = string|number|boolean|any[]|Record<string, any>;
+export type FieldworkImageExportSourceDocument = ImageDocument|Document;
 
 export interface FieldworkImageExportManifest {
     manifestVersion: number;
@@ -183,7 +184,10 @@ const RELATED_DOCUMENT_CONTEXT_FIELDS: string[] = [
  * 
  * @author Thomas Kleinke
  */
-export function exportImages(imageStore: ImageStore, imageDocuments: Array<ImageDocument>,
+const FIELDWORK_IMAGE_SOURCE_URI_FIELDS = ['fieldworkPhotoUri', 'soilProfilePhotoUri', 'imageUri', 'fileUri'];
+
+
+export function exportImages(imageStore: ImageStore, imageDocuments: Array<FieldworkImageExportSourceDocument>,
                              targetDirectoryPath: string, project: string,
                              useOriginalFilenames: boolean,
                              relatedDocumentsById: FieldworkImageExportRelatedDocumentIndex = {},
@@ -203,9 +207,9 @@ export function exportImages(imageStore: ImageStore, imageDocuments: Array<Image
 }
 
 
-function copyImageFiles(imageStore: ImageStore, imageDocuments: Array<ImageDocument>,
+function copyImageFiles(imageStore: ImageStore, imageDocuments: Array<FieldworkImageExportSourceDocument>,
                         targetDirectoryPath: string, project: string,
-                        useOriginalFilenames: boolean): Array<{ imageDocument: ImageDocument,
+                        useOriginalFilenames: boolean): Array<{ imageDocument: FieldworkImageExportSourceDocument,
                             exportedFilename: string, exportedFileSizeBytes?: number, exportedFileMd5?: string,
                             exportedFileSha256?: string, sourceFileSizeBytes?: number, sourceFileMd5?: string,
                             sourceFileSha256?: string }> {
@@ -230,7 +234,7 @@ function copyImageFiles(imageStore: ImageStore, imageDocuments: Array<ImageDocum
 }
 
 
-function getExistingSourceFileMetadata(sourceFilePath: string, imageDocument: ImageDocument):
+function getExistingSourceFileMetadata(sourceFilePath: string, imageDocument: FieldworkImageExportSourceDocument):
         { sourceFileSizeBytes?: number, sourceFileMd5?: string, sourceFileSha256?: string } {
 
     if (!fs.existsSync(sourceFilePath)) {
@@ -305,22 +309,62 @@ function getExportedFilePath(targetDirectoryPath: string, targetFileName: string
 }
 
 
-function getTargetFileName(imageDocument: ImageDocument, useOriginalFilename: boolean): string {
+function getTargetFileName(imageDocument: FieldworkImageExportSourceDocument, useOriginalFilename: boolean): string {
 
     if (useOriginalFilename) {
         return sanitizeExportFileName(
-            imageDocument.resource.originalFilename
+            getOriginalFilename(imageDocument)
                 || imageDocument.resource.identifier
                 || imageDocument.resource.id,
             imageDocument.resource.id
         );
     } else {
         let targetFileName: string = imageDocument.resource.identifier || imageDocument.resource.id;
-        const fileExtension: string = ImageDocument.getOriginalFileExtension(imageDocument);
+        const fileExtension: string = getOriginalFileExtension(imageDocument);
         if (fileExtension && !targetFileName.toLowerCase().endsWith('.' + fileExtension)) {
             targetFileName += '.' + fileExtension;
         }
         return sanitizeExportFileName(targetFileName, imageDocument.resource.id);
+    }
+}
+
+
+function getOriginalFileExtension(imageDocument: FieldworkImageExportSourceDocument): string {
+
+    const originalFilename = getOriginalFilename(imageDocument);
+    if (!originalFilename) return '';
+
+    const extensionSeparatorIndex = originalFilename.lastIndexOf('.');
+    if (extensionSeparatorIndex < 0 || extensionSeparatorIndex === originalFilename.length - 1) return '';
+
+    return originalFilename.substring(extensionSeparatorIndex + 1)
+        .toLowerCase();
+}
+
+
+function getOriginalFilename(imageDocument: FieldworkImageExportSourceDocument): string|undefined {
+
+    return getTextValue((imageDocument.resource as Record<string, any>).originalFilename)
+        ?? getOriginalFilenameFromFieldworkUri(imageDocument.resource as Record<string, any>);
+}
+
+
+function getOriginalFilenameFromFieldworkUri(resource: Record<string, any>): string|undefined {
+
+    const uri = FIELDWORK_IMAGE_SOURCE_URI_FIELDS
+        .map(fieldName => getTextValue(resource[fieldName]))
+        .find(value => !!value);
+
+    if (!uri) return undefined;
+
+    const withoutQuery = uri.split(/[?#]/)[0];
+    const lastSegment = withoutQuery.split(/[\\/]/).filter(segment => segment.length > 0).pop();
+    if (!lastSegment) return undefined;
+
+    try {
+        return decodeURIComponent(lastSegment);
+    } catch (_) {
+        return lastSegment;
     }
 }
 
@@ -377,7 +421,7 @@ function appendFileNameSuffix(fileName: string, suffix: string): string {
 
 
 function buildFieldworkImageExportManifest(project: string,
-                                           exportedFiles: Array<{ imageDocument: ImageDocument,
+                                           exportedFiles: Array<{ imageDocument: FieldworkImageExportSourceDocument,
                                                exportedFilename: string, exportedFileSizeBytes?: number,
                                                exportedFileMd5?: string, exportedFileSha256?: string,
                                                sourceFileSizeBytes?: number, sourceFileMd5?: string,
@@ -413,8 +457,8 @@ function buildFieldworkImageExportManifest(project: string,
                 sourceFileMd5,
                 sourceFileSha256
             ),
-            ...(imageDocument.resource.originalFilename
-                ? { originalFilename: imageDocument.resource.originalFilename }
+            ...(getOriginalFilename(imageDocument)
+                ? { originalFilename: getOriginalFilename(imageDocument) }
                 : {}),
             ...(hasExportableRelations(imageDocument.resource.relations)
                 ? { relations: copyRelations(imageDocument.resource.relations) }
@@ -426,7 +470,7 @@ function buildFieldworkImageExportManifest(project: string,
 }
 
 
-function getTabletUploadMd5MatchEntry(imageDocument: ImageDocument,
+function getTabletUploadMd5MatchEntry(imageDocument: FieldworkImageExportSourceDocument,
                                       sourceFileMd5: string|undefined): { tabletUploadMd5MatchesSourceFile?: boolean } {
 
     const uploadedMd5 = getTextValue((imageDocument.resource as Record<string, any>).fieldworkImageUploadedMd5);
@@ -445,7 +489,7 @@ function getDesktopAppVersionEntry(): { desktopAppVersion?: string } {
 }
 
 
-function getTabletUploadSizeMatchEntry(imageDocument: ImageDocument,
+function getTabletUploadSizeMatchEntry(imageDocument: FieldworkImageExportSourceDocument,
                                        sourceFileSizeBytes: number|undefined):
         { tabletUploadSizeMatchesSourceFile?: boolean } {
 
@@ -459,7 +503,7 @@ function getTabletUploadSizeMatchEntry(imageDocument: ImageDocument,
 }
 
 
-function getFieldHubStoredMetadataMatchEntries(imageDocument: ImageDocument,
+function getFieldHubStoredMetadataMatchEntries(imageDocument: FieldworkImageExportSourceDocument,
                                                sourceFileSizeBytes: number|undefined,
                                                sourceFileMd5: string|undefined,
                                                sourceFileSha256: string|undefined):
@@ -743,7 +787,7 @@ function neutralizeSpreadsheetFormula(value: string): string {
 }
 
 
-function getFieldContext(imageDocument: ImageDocument): Record<string, ManifestValue> {
+function getFieldContext(imageDocument: FieldworkImageExportSourceDocument): Record<string, ManifestValue> {
 
     return getContext(imageDocument.resource as Record<string, any>, FIELD_CONTEXT_FIELDS);
 }
@@ -790,7 +834,7 @@ function getContext(resource: Record<string, any>, fieldNames: string[]): Record
 }
 
 
-function getRelatedDocumentsEntry(imageDocument: ImageDocument,
+function getRelatedDocumentsEntry(imageDocument: FieldworkImageExportSourceDocument,
                                   relatedDocumentsById: FieldworkImageExportRelatedDocumentIndex):
                                   { relatedDocuments?: FieldworkImageExportRelatedDocument[] } {
 

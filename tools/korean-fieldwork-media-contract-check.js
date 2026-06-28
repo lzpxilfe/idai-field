@@ -391,6 +391,21 @@ function checkDesktopImageExportContract() {
   );
   requireIncludes(
     source,
+    'FieldworkImageExportSourceDocument',
+    'desktop image export must accept directly attached fieldwork photo records, not only Image documents'
+  );
+  requireIncludes(
+    source,
+    'FIELDWORK_IMAGE_SOURCE_URI_FIELDS',
+    'desktop image export must derive filenames from tablet source URI fields for direct fieldwork photos'
+  );
+  requireIncludes(
+    source,
+    'getOriginalFilenameFromFieldworkUri',
+    'desktop image export must preserve original tablet filenames for direct fieldwork photos when possible'
+  );
+  requireIncludes(
+    source,
     'desktopAppVersion',
     'desktop image export manifest must preserve the Field Desktop version that generated the handover package'
   );
@@ -705,6 +720,26 @@ function checkDesktopImageExportContract() {
     modalSource,
     'relatedDocumentsById',
     'desktop image export modal must pass related record summaries into image export'
+  );
+  requireIncludes(
+    modalSource,
+    'DIRECT_FIELDWORK_PHOTO_CATEGORIES',
+    'desktop image export modal must know which field records can carry direct tablet photos'
+  );
+  requireIncludes(
+    modalSource,
+    'getExportableDirectFieldworkPhotoDocuments',
+    'desktop image export modal must include directly attached tablet photos in report handover exports'
+  );
+  requireIncludes(
+    modalSource,
+    'this.datastore.find({})',
+    'desktop image export modal must scan project records for directly attached tablet photos'
+  );
+  requireIncludes(
+    modalSource,
+    'this.imageStore.getFileInfos(project, [ImageVariant.ORIGINAL])',
+    'desktop image export modal must only include direct fieldwork photos whose originals are local on desktop'
   );
   requireIncludes(
     modalSource,
@@ -1378,6 +1413,11 @@ function checkContractCoverage() {
   );
   requireIncludes(
     exportImagesSpec,
+    'exports directly attached tablet photos from field records',
+    'desktop image export tests must cover direct fieldwork photo records'
+  );
+  requireIncludes(
+    exportImagesSpec,
     'relations: {',
     'desktop image export tests must assert record relation context in the manifest'
   );
@@ -1402,6 +1442,11 @@ function checkContractCoverage() {
     exportModalSpec,
     'uses related record ids as export context fallback when identifiers are missing',
     'desktop image export modal tests must cover related-record identifier fallback'
+  );
+  requireIncludes(
+    exportModalSpec,
+    'adds locally downloaded direct fieldwork photo records to the handover export',
+    'desktop image export modal tests must cover automatic direct fieldwork photo export inclusion'
   );
 
   requireIncludes(

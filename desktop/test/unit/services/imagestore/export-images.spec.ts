@@ -268,6 +268,102 @@ describe('exportImages', () => {
     });
 
 
+    it('exports directly attached tablet photos from field records', () => {
+
+        const expectedMd5 = getExpectedMd5();
+        const expectedSha256 = getExpectedSha256();
+        const imageStore = {
+            getDirectoryPath: jest.fn().mockReturnValue('C:/field/images/original/')
+        };
+        const featureDocument = {
+            resource: {
+                id: 'feature-1',
+                identifier: 'F-001',
+                category: 'Feature',
+                relations: {
+                    liesWithin: ['trench-1']
+                },
+                fieldworkPhotoUri: 'file:///tablet/DCIM/feature-photo-1.jpg?cache=1',
+                fieldworkImageUploadStatus: 'uploaded',
+                fieldworkImageUploadedAt: '2026-06-24T01:02:03.000Z',
+                fieldworkImageUploadedUri: 'file:///tablet/DCIM/feature-photo-1.jpg?cache=1',
+                fieldworkImageUploadTarget: 'https://field.example/files/fieldwork/feature-1?type=original_image',
+                fieldworkImageUploadedProject: 'fieldwork',
+                fieldworkImageUploadedSizeBytes: 481516,
+                fieldworkImageUploadedMd5: expectedMd5,
+                fieldworkImageStoredSizeBytes: 481516,
+                fieldworkImageStoredMd5: expectedMd5,
+                fieldworkImageStoredSha256: expectedSha256,
+                digitalSourcePreservation: ['originalPhoto', 'webOrServerBackup', 'backupVerified'],
+                featureRecordingStatus: 'confirmed'
+            }
+        } as any;
+
+        const manifest = exportImages(
+            imageStore as any,
+            [featureDocument],
+            'C:/export',
+            'fieldwork',
+            false,
+            {
+                'trench-1': {
+                    id: 'trench-1',
+                    identifier: 'TR-1',
+                    category: 'Trench',
+                    resource: {
+                        id: 'trench-1',
+                        identifier: 'TR-1',
+                        category: 'Trench',
+                        relations: {}
+                    }
+                }
+            }
+        );
+
+        expect(mockElectronFs.copyFileSync).toHaveBeenCalledWith(
+            'C:/field/images/original/feature-1',
+            'C:/export/F-001.jpg'
+        );
+        expect(manifest.images[0]).toMatchObject({
+            id: 'feature-1',
+            identifier: 'F-001',
+            category: 'Feature',
+            exportedFilename: 'F-001.jpg',
+            originalFilename: 'feature-photo-1.jpg',
+            relations: {
+                liesWithin: ['trench-1']
+            },
+            relatedDocuments: [
+                {
+                    relation: 'liesWithin',
+                    id: 'trench-1',
+                    identifier: 'TR-1',
+                    category: 'Trench'
+                }
+            ],
+            fieldContext: {
+                fieldworkPhotoUri: 'file:///tablet/DCIM/feature-photo-1.jpg?cache=1',
+                fieldworkImageUploadStatus: 'uploaded',
+                fieldworkImageUploadedAt: '2026-06-24T01:02:03.000Z',
+                fieldworkImageUploadedUri: 'file:///tablet/DCIM/feature-photo-1.jpg?cache=1',
+                fieldworkImageUploadTarget: 'https://field.example/files/fieldwork/feature-1?type=original_image',
+                fieldworkImageUploadedProject: 'fieldwork',
+                fieldworkImageUploadedSizeBytes: 481516,
+                fieldworkImageUploadedMd5: expectedMd5,
+                fieldworkImageStoredSizeBytes: 481516,
+                fieldworkImageStoredMd5: expectedMd5,
+                fieldworkImageStoredSha256: expectedSha256,
+                digitalSourcePreservation: ['originalPhoto', 'webOrServerBackup', 'backupVerified']
+            },
+            tabletUploadMd5MatchesSourceFile: true,
+            tabletUploadSizeMatchesSourceFile: true,
+            fieldHubStoredMd5MatchesSourceFile: true,
+            fieldHubStoredSizeMatchesSourceFile: true,
+            fieldHubStoredSha256MatchesSourceFile: true
+        });
+    });
+
+
     it('records tablet upload size mismatches in the report handover manifest', () => {
 
         const imageStore = {

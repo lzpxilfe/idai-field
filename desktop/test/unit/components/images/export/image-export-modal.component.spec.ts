@@ -124,6 +124,116 @@ describe('ImageExportModalComponent', () => {
     });
 
 
+    it('adds locally downloaded direct fieldwork photo records to the handover export', async () => {
+
+        const featureDocument = {
+            resource: {
+                id: 'feature-1',
+                identifier: 'F-001',
+                category: 'Feature',
+                fieldworkPhotoUri: 'file:///tablet/DCIM/feature-1.jpg',
+                relations: {
+                    liesWithin: ['trench-1']
+                }
+            }
+        } as any;
+        const skippedFeatureDocument = {
+            resource: {
+                id: 'feature-2',
+                identifier: 'F-002',
+                category: 'Feature',
+                fieldworkPhotoUri: 'file:///tablet/DCIM/feature-2.jpg',
+                relations: {}
+            }
+        } as any;
+        const datastore = {
+            find: jest.fn(async () => ({
+                documents: [
+                    featureDocument,
+                    skippedFeatureDocument,
+                    {
+                        resource: {
+                            id: 'feature-3',
+                            identifier: 'F-003',
+                            category: 'Feature',
+                            relations: {}
+                        }
+                    }
+                ],
+                totalCount: 3
+            })),
+            get: jest.fn(async (id: string) => {
+                if (id === 'project') {
+                    return { resource: { id: 'project', category: 'Project', relations: {} } };
+                }
+                if (id === 'trench-1') {
+                    return {
+                        resource: {
+                            id: 'trench-1',
+                            identifier: 'TR-1',
+                            category: 'Trench',
+                            relations: {}
+                        }
+                    };
+                }
+
+                throw new Error('missing document');
+            })
+        };
+        const imageStore = {
+            getFileInfos: jest.fn(async () => ({
+                'feature-1': { deleted: false, types: [], variants: [] }
+            }))
+        };
+        const imageDocument = {
+            resource: {
+                id: 'photo-1',
+                identifier: 'P-001',
+                category: 'Photo',
+                relations: {}
+            }
+        } as any;
+        const component = createComponent({
+            datastore,
+            imageStore,
+            selectedProject: 'fieldwork'
+        });
+        component.images = [imageDocument];
+        component.targetDirectoryPath = 'C:/export';
+
+        await component.startExport();
+
+        expect(imageStore.getFileInfos).toHaveBeenCalledWith('fieldwork', ['original_image']);
+        expect(datastore.find).toHaveBeenCalledWith({});
+        expect(datastore.get).toHaveBeenCalledWith('trench-1');
+        expect(exportImages).toHaveBeenCalledWith(
+            imageStore,
+            [imageDocument, featureDocument],
+            'C:/export',
+            'fieldwork',
+            false,
+            {
+                'trench-1': {
+                    id: 'trench-1',
+                    identifier: 'TR-1',
+                    category: 'Trench',
+                    resource: {
+                        id: 'trench-1',
+                        identifier: 'TR-1',
+                        category: 'Trench',
+                        relations: {}
+                    }
+                }
+            },
+            {
+                id: 'project',
+                category: 'Project',
+                relations: {}
+            }
+        );
+    });
+
+
     it('still exports images when the project document cannot be read', async () => {
 
         const imageStore = {};

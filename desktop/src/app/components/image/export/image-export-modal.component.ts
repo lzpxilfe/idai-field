@@ -5,6 +5,7 @@ import {
     Document,
     ImageStore,
     ImageDocument,
+    ImageVariant,
     ProjectConfiguration,
     Labels,
     Resource
@@ -13,6 +14,7 @@ import { AngularUtility } from '../../../angular/angular-utility';
 import { AppState } from '../../../services/app-state';
 import {
     exportImages,
+    FieldworkImageExportSourceDocument,
     FieldworkImageExportRelatedDocumentIndex
 } from '../../../services/imagestore/export-images';
 import { SettingsProvider } from '../../../services/settings/settings-provider';
@@ -25,6 +27,23 @@ import { electronRemote as remote } from 'src/app/electron/electron';
 
 
 type NamingOption = 'identifier'|'originalFilename';
+
+const DIRECT_FIELDWORK_PHOTO_CATEGORIES = new Set([
+    'DailyLog',
+    'Feature',
+    'FeatureGroup',
+    'FeatureSegment',
+    'FieldRecordQualityReview',
+    'Find',
+    'FindCollection',
+    'Layer',
+    'Operation',
+    'Sample',
+    'Survey',
+    'SurveyBoundary',
+    'Trench'
+]);
+const DIRECT_FIELDWORK_PHOTO_URI_FIELDS = ['fieldworkPhotoUri', 'imageUri', 'fileUri'];
 
 
 /**
@@ -83,21 +102,27 @@ export class ImageExportModalComponent implements OnInit {
         if (!this.targetDirectoryPath) return;
     
         try {
+            const project = this.settingsProvider.getSettings().selectedProject;
+            const fieldworkAttachedPhotoDocuments = await this.getExportableDirectFieldworkPhotoDocuments(project);
+            const exportDocuments = getUniqueExportDocuments([
+                ...this.images,
+                ...fieldworkAttachedPhotoDocuments
+            ]);
             const [relatedDocumentsById, projectContext] = await Promise.all([
-                this.getRelatedDocumentsById(this.images),
+                this.getRelatedDocumentsById(exportDocuments),
                 this.getProjectContext()
             ]);
 
             exportImages(
                 this.imageStore,
-                this.images,
+                exportDocuments,
                 this.targetDirectoryPath,
-                this.settingsProvider.getSettings().selectedProject,
+                project,
                 this.selectedNamingOption === 'originalFilename',
                 relatedDocumentsById,
                 projectContext
             );
-            this.showSuccessMessage();
+            this.showSuccessMessage(exportDocuments.length);
             this.activeModal.close();
         } catch (err) {
             console.error(err);
@@ -124,20 +149,20 @@ export class ImageExportModalComponent implements OnInit {
     }
 
 
-    private showSuccessMessage() {
+    private showSuccessMessage(exportedDocumentCount: number = this.images.length) {
 
-        if (this.images.length === 1) {
+        if (exportedDocumentCount === 1) {
             this.messages.add([M.IMAGES_SUCCESS_IMAGES_EXPORTED_SINGLE]);
         } else {
             this.messages.add([
                 M.IMAGES_SUCCESS_IMAGES_EXPORTED_MULTIPLE,
-                this.images.length.toString()
+                exportedDocumentCount.toString()
             ]);
         }
     }
 
 
-    private async getRelatedDocumentsById(images: Array<ImageDocument>):
+    private async getRelatedDocumentsById(images: Array<FieldworkImageExportSourceDocument>):
             Promise<FieldworkImageExportRelatedDocumentIndex> {
 
         const targetIds = [...new Set(images.flatMap(image => {
@@ -168,6 +193,25 @@ export class ImageExportModalComponent implements OnInit {
     }
 
 
+    private async getExportableDirectFieldworkPhotoDocuments(project: string): Promise<Document[]> {
+
+        if (typeof this.imageStore.getFileInfos !== 'function') return [];
+
+        try {
+            const [findResult, originalFileInfos] = await Promise.all([
+                this.datastore.find({}),
+                this.imageStore.getFileInfos(project, [ImageVariant.ORIGINAL])
+            ]);
+
+            return (findResult.documents ?? [])
+                .filter(document => isDirectFieldworkPhotoDocument(document))
+                .filter(document => originalFileInfos[document.resource.id] !== undefined);
+        } catch {
+            return [];
+        }
+    }
+
+
     private async getProjectContext(): Promise<Record<string, any>> {
 
         try {
@@ -177,4 +221,31 @@ export class ImageExportModalComponent implements OnInit {
             return {};
         }
     }
+}
+
+
+function isDirectFieldworkPhotoDocument(document: Document): boolean {
+
+    return DIRECT_FIELDWORK_PHOTO_CATEGORIES.has(String(document.resource.category))
+        && DIRECT_FIELDWORK_PHOTO_URI_FIELDS.some(fieldName => hasTextValue(document.resource[fieldName]));
+}
+
+
+function getUniqueExportDocuments(documents: Array<FieldworkImageExportSourceDocument>):
+        Array<FieldworkImageExportSourceDocument> {
+
+    const seenIds = new Set<string>();
+
+    return documents.filter(document => {
+        if (seenIds.has(document.resource.id)) return false;
+
+        seenIds.add(document.resource.id);
+        return true;
+    });
+}
+
+
+function hasTextValue(value: unknown): boolean {
+
+    return typeof value === 'string' && value.trim().length > 0;
 }
