@@ -65,6 +65,90 @@ describe('korean-fieldwork-record-work-filters', () => {
     });
 
 
+    it('uses shared evidence chips for missing-evidence decisions', () => {
+
+        const operation = createDocument('operation-1', 'Operation');
+        const pit = createDocument('pit-1', 'FeatureSegment', {
+            relations: { liesWithin: ['operation-1'] }
+        });
+        const operationPhoto = createDocument('operation-photo-1', 'Photo', {
+            relations: { depicts: ['operation-1'] }
+        });
+        const operationSoilPhoto = createDocument('operation-soil-photo-1', 'SoilProfilePhoto', {
+            relations: { depicts: ['operation-1'] }
+        });
+        const operationDrawing = createDocument('operation-drawing-1', 'Drawing', {
+            relations: { depicts: ['operation-1'] }
+        });
+        const operationFind = createDocument('operation-find-1', 'Find', {
+            relations: { liesWithin: ['operation-1'] }
+        });
+        const operationSample = createDocument('operation-sample-1', 'Sample', {
+            relations: { liesWithin: ['operation-1'] }
+        });
+        const operationSketch = createDocument('operation-sketch-1', 'PenMemo', {
+            relations: { depicts: ['operation-1'] }
+        });
+
+        expect(matchesKoreanFieldworkRecordWorkFilter(
+            operation,
+            'missingEvidence',
+            [
+                operation,
+                pit,
+                operationPhoto,
+                operationSoilPhoto,
+                operationDrawing,
+                operationFind,
+                operationSample
+            ],
+            {}
+        )).toBe(true);
+        expect(matchesKoreanFieldworkRecordWorkFilter(
+            operation,
+            'missingEvidence',
+            [
+                operation,
+                pit,
+                operationPhoto,
+                operationSoilPhoto,
+                operationDrawing,
+                operationFind,
+                operationSample,
+                operationSketch
+            ],
+            {}
+        )).toBe(false);
+
+        const layer = createDocument('layer-1', 'Layer');
+        const layerDocuments = [
+            layer,
+            createDocument('layer-photo-1', 'Photo', {
+                relations: { depicts: ['layer-1'] }
+            }),
+            createDocument('layer-drawing-1', 'Drawing', {
+                relations: { depicts: ['layer-1'] }
+            }),
+            createDocument('layer-sketch-1', 'PenMemo', {
+                relations: { depicts: ['layer-1'] }
+            }),
+            createDocument('layer-find-1', 'Find', {
+                relations: { liesWithin: ['layer-1'] }
+            }),
+            createDocument('layer-sample-1', 'Sample', {
+                relations: { liesWithin: ['layer-1'] }
+            })
+        ];
+
+        expect(matchesKoreanFieldworkRecordWorkFilter(
+            layer,
+            'missingEvidence',
+            layerDocuments,
+            {}
+        )).toBe(false);
+    });
+
+
     it('matches records created or modified today', () => {
 
         const now = new Date('2026-06-24T10:00:00+09:00');

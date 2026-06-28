@@ -3258,6 +3258,12 @@ function validateRecordActionEvidencePriority() {
   const desktopRecordContextSpecText = readTextFile(desktopRecordContextSpec);
   const desktopRecordEvidenceText = readTextFile(desktopRecordEvidenceSource);
   const desktopRecordEvidenceSpecText = readTextFile(desktopRecordEvidenceSpec);
+  const desktopRecordWorkFilterText = readTextFile(
+    'desktop/src/app/util/korean-fieldwork-record-work-filters.ts'
+  );
+  const desktopRecordWorkFilterSpecText = readTextFile(
+    'desktop/test/unit/util/korean-fieldwork-record-work-filters.spec.ts'
+  );
   const desktopDocumentDraftText = readTextFile(desktopDocumentDraftSource);
   const desktopDocumentDraftSpecText = readTextFile(desktopDocumentDraftSpec);
   const mobileDraftContinuationText = readTextFile(mobileDraftContinuationSource);
@@ -3332,6 +3338,13 @@ function validateRecordActionEvidencePriority() {
   if (!desktopRecordContextText.includes('getKoreanFieldworkEvidenceChips')
       || !desktopRecordEvidenceText.includes('KoreanFieldworkEvidenceChip')) {
     findings.push('desktop record context panel must reuse shared record evidence chips');
+  }
+  if (!desktopRecordWorkFilterText.includes('getKoreanFieldworkEvidenceChips(document, allDocuments)')
+      || desktopRecordWorkFilterText.includes('buildEvidenceBundle')) {
+    findings.push('desktop record work missing-evidence filter must reuse shared tablet evidence chips');
+  }
+  if (!desktopRecordWorkFilterSpecText.includes('uses shared evidence chips for missing-evidence decisions')) {
+    findings.push('desktop record work filter tests must cover shared evidence-chip missing-evidence decisions');
   }
   if (!desktopRecordContextTemplateText.includes('자료 확인')) {
     findings.push('desktop record context panel must render evidence metric heading');

@@ -1,4 +1,5 @@
-import { buildEvidenceBundle, Document } from 'idai-field-core';
+import { Document } from 'idai-field-core';
+import { getKoreanFieldworkEvidenceChips } from './korean-fieldwork-record-evidence';
 
 
 export type KoreanFieldworkRecordWorkFilterId =
@@ -24,15 +25,6 @@ export const KOREAN_FIELDWORK_RECORD_WORK_FILTERS: readonly KoreanFieldworkRecor
 ];
 
 const RECORD_WORK_CATEGORIES = new Set<string>([
-    'Operation',
-    'Trench',
-    'FeatureGroup',
-    'Feature',
-    'FeatureSegment',
-    'Layer'
-]);
-
-const EVIDENCE_TARGET_CATEGORIES = new Set<string>([
     'Operation',
     'Trench',
     'FeatureGroup',
@@ -132,19 +124,8 @@ function hasReviewVerificationState(document: Document): boolean {
 
 function hasMissingEvidence(document: Document, allDocuments: Document[]): boolean {
 
-    if (!EVIDENCE_TARGET_CATEGORIES.has(document.resource.category)) return false;
-
-    const bundle = buildEvidenceBundle(document, allDocuments);
-
-    return bundle.photos.length === 0
-        || bundle.soilProfilePhotos.length === 0
-        || bundle.drawings.length === 0
-        || bundle.finds.length === 0
-        || bundle.samples.length === 0
-        || (
-            ['Operation', 'Trench', 'FeatureGroup', 'Feature'].includes(document.resource.category)
-            && bundle.featureSegments.length === 0
-        );
+    return getKoreanFieldworkEvidenceChips(document, allDocuments)
+        .some(chip => chip.count === 0);
 }
 
 
