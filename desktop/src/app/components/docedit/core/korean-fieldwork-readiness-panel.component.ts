@@ -17,6 +17,9 @@ import {
     makeKoreanFieldworkEvidenceReview,
     getPenMemoSketchPreview
 } from '../../../util/korean-fieldwork-evidence-review';
+import {
+    getKoreanFieldworkIssueResolutionAction
+} from '../../../util/korean-fieldwork-issue-resolution';
 import { DoceditComponent } from '../docedit.component';
 
 
@@ -251,6 +254,9 @@ export class KoreanFieldworkReadinessPanelComponent implements OnChanges {
 
     public getResolutionLabel(issue: KoreanFieldworkReadinessIssue): string {
 
+        const resolutionAction = this.getResolutionAction(issue, this.document);
+        if (resolutionAction) return resolutionAction.label;
+
         switch (issue.ruleId) {
             case 'feature-complete-photo':
                 return '완료사진 체크';
@@ -436,28 +442,10 @@ export class KoreanFieldworkReadinessPanelComponent implements OnChanges {
     private getResolutionUpdates(issue: KoreanFieldworkReadinessIssue,
                                  targetDocument: Document): { [fieldName: string]: unknown }|undefined {
 
-        switch (issue.ruleId) {
-            case 'feature-complete-photo':
-                return {
-                    featureInvestigationChecklist: this.mergeChecklistValues(
-                        targetDocument,
-                        ['completionPhotoTaken']
-                    )
-                };
-            case 'finds-recovered-pre-photo':
-                return {
-                    featureInvestigationChecklist: this.mergeChecklistValues(
-                        targetDocument,
-                        ['preRecoveryFindPhotoTaken']
-                    )
-                };
-            case 'field-only-timing':
-                return {
-                    recordCreationTiming: 'fieldOnlyObservation'
-                };
-            default:
-                return undefined;
-        }
+        const resolutionAction = this.getResolutionAction(issue, targetDocument);
+        return resolutionAction?.type === 'updateFields'
+            ? resolutionAction.updates
+            : undefined;
     }
 
 
@@ -519,13 +507,7 @@ export class KoreanFieldworkReadinessPanelComponent implements OnChanges {
 
         return issue.ruleId === 'soil-profile-photo-count'
             && issue.documentId === this.document?.resource?.id
-            && !!this.document?.resource?.id
-            && !!this.projectConfiguration.getCategory(SOIL_PROFILE_PHOTO_CATEGORY)
-            && this.projectConfiguration.isAllowedRelationDomainCategory(
-                SOIL_PROFILE_PHOTO_CATEGORY,
-                this.document.resource.category,
-                DEPICTS_RELATION
-            );
+            && this.getResolutionAction(issue, this.document)?.type === 'createDocument';
     }
 
 
@@ -595,18 +577,30 @@ export class KoreanFieldworkReadinessPanelComponent implements OnChanges {
     }
 
 
-    private mergeChecklistValues(targetDocument: Document, checklistValues: string[]): string[] {
+    private getResolutionAction(issue: KoreanFieldworkReadinessIssue, document: Document) {
 
-        const existingValue = targetDocument?.resource?.featureInvestigationChecklist;
-        const mergedValues = Array.isArray(existingValue)
-            ? existingValue.filter((value): value is string => typeof value === 'string')
-            : [];
+        return getKoreanFieldworkIssueResolutionAction(
+            issue,
+            document,
+            this.getAllowedIssueResolutionCategoryNames(document)
+        );
+    }
 
-        checklistValues.forEach(value => {
-            if (!mergedValues.includes(value)) mergedValues.push(value);
-        });
 
-        return mergedValues;
+    private getAllowedIssueResolutionCategoryNames(document: Document): string[] {
+
+        const documentId = document?.resource?.id;
+        const categoryName = document?.resource?.category;
+        if (!documentId || !categoryName) return [];
+
+        return [SOIL_PROFILE_PHOTO_CATEGORY].filter(addCategoryName =>
+            !!this.projectConfiguration.getCategory(addCategoryName)
+            && this.projectConfiguration.isAllowedRelationDomainCategory(
+                addCategoryName,
+                categoryName,
+                DEPICTS_RELATION
+            )
+        );
     }
 
 
