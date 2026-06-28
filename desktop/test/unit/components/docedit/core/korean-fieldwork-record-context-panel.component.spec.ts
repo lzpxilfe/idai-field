@@ -615,6 +615,89 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('shows tablet photo annotations when the opened desktop record is the photo itself', async () => {
+
+        const photo = createDocument('photo-1', 'Photo', 'P1', {}, {
+            fieldworkPhotoAnnotationStrokes: '{"version":1,"strokes":[{"points":[{"x":1000,"y":1000},{"x":5000,"y":5000}]}]}'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({
+                documents: [photo]
+            })
+        });
+        component.document = photo as any;
+        component.fieldDefinitions = [
+            field('fieldworkPhotoAnnotationStrokes')
+        ] as any;
+
+        await component.ngOnChanges();
+
+        expect(component.shouldShow()).toBe(true);
+        expect(component.getEvidenceMetrics()).toEqual(expect.arrayContaining([
+            { id: 'photoAnnotations', label: '사진 표시', count: 1, canCreate: false }
+        ]));
+        expect(component.getEvidenceInsights()).toEqual([
+            {
+                id: 'photoAnnotation:photo-1',
+                label: '사진 표시',
+                detail: 'P1 · 사진 표시 1획/2점',
+                sketchPreview: {
+                    label: '사진 표시 1획/2점',
+                    path: 'M 32 8 L 88 64',
+                    viewBox: '0 0 120 72'
+                },
+                tone: 'info'
+            }
+        ]);
+    });
+
+
+    it('shows tablet soil-photo annotations and Munsell candidates on the opened soil photo', async () => {
+
+        const soilPhoto = createDocument('soil-photo-1', 'SoilProfilePhoto', 'SP1', {}, {
+            soilColorAssistCandidates: '1: 10YR 4/3 (높음)',
+            soilColorAssistStatus: 'candidatesAvailable',
+            soilProfilePhotoAnnotationStrokes: '{"version":1,"strokes":[{"points":[{"x":2000,"y":3000}]}]}'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({
+                documents: [soilPhoto]
+            })
+        });
+        component.document = soilPhoto as any;
+        component.fieldDefinitions = [
+            field('soilColorAssistCandidates'),
+            field('soilProfilePhotoAnnotationStrokes')
+        ] as any;
+
+        await component.ngOnChanges();
+
+        expect(component.shouldShow()).toBe(true);
+        expect(component.getEvidenceMetrics()).toEqual(expect.arrayContaining([
+            { id: 'photoAnnotations', label: '사진 표시', count: 1, canCreate: false }
+        ]));
+        expect(component.getEvidenceInsights()).toEqual([
+            {
+                id: 'soilColor:soil-photo-1',
+                label: '토색 후보',
+                detail: 'SP1 · 먼셀 후보 10YR 4/3',
+                tone: 'info'
+            },
+            {
+                id: 'photoAnnotation:soil-photo-1',
+                label: '토층사진 표시',
+                detail: 'SP1 · 사진 표시 1획/1점',
+                sketchPreview: {
+                    label: '사진 표시 1획/1점',
+                    path: 'M 30 8 L 34 8 M 32 6 L 32 10',
+                    viewBox: '0 0 120 72'
+                },
+                tone: 'info'
+            }
+        ]);
+    });
+
+
     it('shows a stable empty state when the current record has no immediate actions', async () => {
 
         const photo = createDocument('photo-1', 'Photo', 'P1');

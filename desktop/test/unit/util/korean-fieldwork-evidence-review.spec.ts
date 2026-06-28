@@ -215,6 +215,59 @@ describe('korean-fieldwork-evidence-review', () => {
     });
 
 
+    it('keeps annotations visible when the opened desktop record is the tablet photo itself', () => {
+
+        const annotatedPhoto = createDocument('photo-annotated', 'Photo', {
+            fieldworkPhotoAnnotationStrokes: '{"version":1,"strokes":[{"points":[{"x":1000,"y":1000},{"x":5000,"y":5000}]}]}'
+        });
+        const annotatedSoilPhoto = createDocument('soil-photo-annotated', 'SoilProfilePhoto', {
+            soilProfilePhotoAnnotationStrokes: '{"version":1,"strokes":[{"points":[{"x":2000,"y":3000}]}]}',
+            soilColorAssistCandidates: '1: 10YR 4/3 (높음)'
+        });
+
+        expect(makeKoreanFieldworkEvidenceReview(
+            annotatedPhoto as any,
+            [annotatedPhoto] as any
+        ).photoAnnotationSummaries.map(summary => ({
+            id: summary.document.resource.id,
+            label: summary.label,
+            source: summary.source
+        }))).toEqual([
+            {
+                id: 'photo-annotated',
+                label: '사진 표시 1획/2점',
+                source: 'photo'
+            }
+        ]);
+
+        const soilPhotoReview = makeKoreanFieldworkEvidenceReview(
+            annotatedSoilPhoto as any,
+            [annotatedSoilPhoto] as any
+        );
+
+        expect(soilPhotoReview.photoAnnotationSummaries.map(summary => ({
+            id: summary.document.resource.id,
+            label: summary.label,
+            source: summary.source
+        }))).toEqual([
+            {
+                id: 'soil-photo-annotated',
+                label: '사진 표시 1획/1점',
+                source: 'soilProfilePhoto'
+            }
+        ]);
+        expect(soilPhotoReview.soilColorCandidateSummaries.map(summary => ({
+            id: summary.document.resource.id,
+            label: summary.label
+        }))).toEqual([
+            {
+                id: 'soil-photo-annotated',
+                label: '먼셀 후보 10YR 4/3'
+            }
+        ]);
+    });
+
+
     it('summarizes photo-derived soil color candidates for desktop review panels', () => {
 
         const summaries = getSoilColorCandidateSummaries([

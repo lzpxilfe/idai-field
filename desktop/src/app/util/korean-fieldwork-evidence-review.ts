@@ -69,11 +69,13 @@ export function makeKoreanFieldworkEvidenceReview(
 ): KoreanFieldworkEvidenceReview {
 
     const bundle = buildEvidenceBundle(rootDocument, documents);
+    const reviewPhotos = getKoreanFieldworkReviewPhotoDocuments(rootDocument, bundle);
+    const reviewSoilProfilePhotos = getKoreanFieldworkReviewSoilProfilePhotoDocuments(rootDocument, bundle);
     const pendingPenMemoTranscriptions = getPendingPenMemoTranscriptionDocuments(bundle.penMemos);
     const penMemoTranscriptionSummaries = getPenMemoTranscriptionSummaries(pendingPenMemoTranscriptions);
     const penMemoSketchSummaries = getPenMemoSketchSummaries(bundle.penMemos);
-    const soilColorCandidateSummaries = getSoilColorCandidateSummaries(bundle.soilProfilePhotos);
-    const photoAnnotationSummaries = getPhotoAnnotationSummaries(bundle.photos, bundle.soilProfilePhotos);
+    const soilColorCandidateSummaries = getSoilColorCandidateSummaries(reviewSoilProfilePhotos);
+    const photoAnnotationSummaries = getPhotoAnnotationSummaries(reviewPhotos, reviewSoilProfilePhotos);
     const missingEvidenceKinds = getMissingEvidenceKinds(bundle, pendingPenMemoTranscriptions);
     const issues = bundle.issues.concat(
         getPendingPenMemoTranscriptionIssues(pendingPenMemoTranscriptions)
@@ -91,6 +93,19 @@ export function makeKoreanFieldworkEvidenceReview(
         penMemoSketchSummaries,
         soilColorCandidateSummaries
     };
+}
+
+export function getKoreanFieldworkReviewPhotoDocuments(rootDocument: Document,
+                                                       bundle: EvidenceBundle): Document[] {
+
+    return prependRootDocumentByCategory(rootDocument, bundle.photos, 'Photo');
+}
+
+
+export function getKoreanFieldworkReviewSoilProfilePhotoDocuments(rootDocument: Document,
+                                                                  bundle: EvidenceBundle): Document[] {
+
+    return prependRootDocumentByCategory(rootDocument, bundle.soilProfilePhotos, 'SoilProfilePhoto');
 }
 
 export function getIssueSummary(issues: KoreanFieldworkReadinessIssue[]): string[] {
@@ -304,6 +319,25 @@ function getPhotoAnnotationSummary(
         preview,
         source
     }];
+}
+
+
+function prependRootDocumentByCategory(rootDocument: Document,
+                                       documents: Document[],
+                                       categoryName: string): Document[] {
+
+    const candidates = rootDocument.resource.category === categoryName
+        ? [rootDocument, ...documents]
+        : documents;
+    const seenIds = new Set<string>();
+
+    return candidates.filter(document => {
+        const id = document.resource.id;
+        if (seenIds.has(id)) return false;
+
+        seenIds.add(id);
+        return true;
+    });
 }
 
 

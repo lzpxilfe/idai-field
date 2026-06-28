@@ -39,6 +39,8 @@ import {
     getPenMemoSketchPreview,
     KoreanFieldworkPenMemoSketchPreview,
     getPenMemoSketchSummaryLabel,
+    getKoreanFieldworkReviewPhotoDocuments,
+    getKoreanFieldworkReviewSoilProfilePhotoDocuments,
     getPhotoAnnotationSummaries,
     getPenMemoTranscriptionSummaryLabel,
     getSoilColorCandidateSummaries
@@ -78,6 +80,7 @@ interface EvidenceInsight {
 
 const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'featureInvestigationChecklist',
+    'fieldworkPhotoAnnotationStrokes',
     'featureRecordingStatus',
     'fieldRecordQuality',
     'longAxisOrientation',
@@ -86,6 +89,9 @@ const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'referenceBasemapProvider',
     'recordCreationTiming',
     'soilColorAssistStatus',
+    'soilColorAssistCandidates',
+    'soilProfileAnnotationStrokes',
+    'soilProfilePhotoAnnotationStrokes',
     'surveyBoundaryAccuracy',
     'surveyBoundaryNote',
     'surveyBoundarySource',
@@ -670,7 +676,10 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
                 canCreate: false
             }
         ].filter(metric => metric.count > 0);
-        const photoAnnotationCount = getPhotoAnnotationSummaries(bundle.photos, bundle.soilProfilePhotos).length;
+        const photoAnnotationCount = getPhotoAnnotationSummaries(
+            getKoreanFieldworkReviewPhotoDocuments(this.document, bundle),
+            getKoreanFieldworkReviewSoilProfilePhotoDocuments(this.document, bundle)
+        ).length;
         const photoAnnotationMetrics: EvidenceMetric[] = photoAnnotationCount > 0
             ? [{
                 id: 'photoAnnotations',
@@ -686,7 +695,9 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
 
     private makeEvidenceInsights(bundle: EvidenceBundle): EvidenceInsight[] {
 
-        const soilColorInsights = getSoilColorCandidateSummaries(bundle.soilProfilePhotos)
+        const reviewPhotos = getKoreanFieldworkReviewPhotoDocuments(this.document, bundle);
+        const reviewSoilProfilePhotos = getKoreanFieldworkReviewSoilProfilePhotoDocuments(this.document, bundle);
+        const soilColorInsights = getSoilColorCandidateSummaries(reviewSoilProfilePhotos)
             .map(summary => ({
                 detail: `${this.getDocumentLabel(summary.document)} · ${summary.label}`,
                 id: `soilColor:${summary.document.resource.id}`,
@@ -705,7 +716,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
                 sketchPreview: getPenMemoSketchPreview(summary.document.resource.penMemoStrokes),
                 tone: summary.pendingTranscription ? 'warning' as const : 'info' as const
             }));
-        const photoAnnotationInsights = getPhotoAnnotationSummaries(bundle.photos, bundle.soilProfilePhotos)
+        const photoAnnotationInsights = getPhotoAnnotationSummaries(reviewPhotos, reviewSoilProfilePhotos)
             .map(summary => ({
                 detail: `${this.getDocumentLabel(summary.document)} · ${summary.label}`,
                 id: `photoAnnotation:${summary.document.resource.id}`,

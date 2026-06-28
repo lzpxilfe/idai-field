@@ -419,10 +419,15 @@ export class KoreanFieldworkReadinessPanelComponent implements OnChanges {
 
         return this.fieldDefinitions?.some(field => [
             'featureInvestigationChecklist',
+            'fieldworkPhotoAnnotationStrokes',
             'fieldRecordQuality',
             'longAxisOrientation',
             'projectInvestigationMode',
+            'recordCreationTiming',
+            'soilColorAssistCandidates',
             'soilColorAssistStatus',
+            'soilProfileAnnotationStrokes',
+            'soilProfilePhotoAnnotationStrokes',
             'soilProfileColorSwatches'
         ].includes(field.name)) ?? false;
     }
