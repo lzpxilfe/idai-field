@@ -70,6 +70,25 @@ describe('KoreanFieldworkWorkbenchPanel', () => {
     expect(handleEditDocument).not.toHaveBeenCalled();
   });
 
+  it('passes the investigation mode into tablet workbench progress', () => {
+    const trench = createDoc('trench-1', C.TRENCH, 'T1', {}, {
+      featureInvestigationChecklist: ['trenchSoilCleaned'],
+      fieldRecordQuality: ['immediateRecording'],
+      recordCreationTiming: 'duringFieldwork',
+      verificationState: 'observedInField',
+    });
+    const { getByText } = render(
+      <KoreanFieldworkWorkbenchPanel
+        documents={[trench] as any}
+        investigationModeId="trialTrench"
+        onEditDocument={jest.fn()}
+        summary={createSummary([])}
+      />
+    );
+
+    expect(getByText('과정 1/9')).toBeTruthy();
+  });
+
   it('does not render when every record is already settled', () => {
     const { queryByTestId } = render(
       <KoreanFieldworkWorkbenchPanel

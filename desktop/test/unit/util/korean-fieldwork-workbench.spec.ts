@@ -46,7 +46,7 @@ describe('korean-fieldwork-workbench', () => {
                 id: 'feature-1',
                 categoryLabel: '유구',
                 parentPath: '조사구역 1 > T1',
-                reasons: ['조사 전', '과정 1/8', '추가 확인', '기록 보완'],
+                reasons: ['조사 전', '과정 1/9', '추가 확인', '기록 보완'],
                 tone: 'info'
             },
             {
@@ -69,6 +69,55 @@ describe('korean-fieldwork-workbench', () => {
         });
 
         expect(makeKoreanFieldworkWorkbenchItems([operation] as any)).toEqual([]);
+    });
+
+
+    it('counts PenMemo review as a desktop workflow step', () => {
+
+        const feature = createDocument('feature-1', 'Feature', '유구 1', {}, {
+            featureRecordingStatus: 'confirmed',
+            featureInvestigationChecklist: [
+                'preInvestigationPhotoTaken',
+                'inProgressPhotoTaken',
+                'soilProfilePhotoLinked',
+                'measuredDrawingCompleted',
+                'preRecoveryFindPhotoTaken',
+                'findsRecovered',
+                'samplesCollected',
+                'penMemoReviewed'
+            ],
+            fieldRecordQuality: ['immediateRecording'],
+            recordCreationTiming: 'duringFieldwork',
+            verificationState: 'observedInField'
+        });
+
+        const [item] = makeKoreanFieldworkWorkbenchItems([feature] as any);
+
+        expect(item).toEqual(expect.objectContaining({ id: 'feature-1' }));
+        expect(item.reasons).toContain('과정 8/9');
+    });
+
+
+    it('uses the investigation mode to surface trial-trench workflow progress on desktop', () => {
+
+        const trench = createDocument('trench-1', 'Trench', 'T1', {}, {
+            featureInvestigationChecklist: [
+                'trenchSoilCleaned',
+                'trenchPitOpened'
+            ],
+            fieldRecordQuality: ['immediateRecording'],
+            recordCreationTiming: 'duringFieldwork',
+            verificationState: 'observedInField'
+        });
+
+        expect(makeKoreanFieldworkWorkbenchItems([trench] as any)).toEqual([]);
+        expect(makeKoreanFieldworkWorkbenchItems([trench] as any, 6, 'trialTrench')).toEqual([
+            expect.objectContaining({
+                id: 'trench-1',
+                reasons: ['과정 2/9'],
+                tone: 'info'
+            })
+        ]);
     });
 
 

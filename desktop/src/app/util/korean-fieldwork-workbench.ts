@@ -3,6 +3,11 @@ import {
     getKoreanFieldworkTodaySummary,
     KoreanFieldworkReadinessIssue
 } from 'idai-field-core';
+import {
+    countKoreanFieldworkChecklistDone,
+    getKoreanFieldworkChecklistSteps,
+    isKoreanFieldworkChecklistRecord
+} from './korean-fieldwork-checklist';
 import { getPenMemoSketchSummaryLabel } from './korean-fieldwork-evidence-review';
 import { getMunsellCandidateSummaryLabel } from './korean-fieldwork-soil-color-candidates';
 
@@ -56,17 +61,6 @@ const FEATURE_WORKFLOW_CATEGORIES = new Set<string>(['Feature', 'FeatureSegment'
 const PEN_MEMO_CATEGORY = 'PenMemo';
 const SOIL_PROFILE_PHOTO_CATEGORY = 'SoilProfilePhoto';
 
-const FEATURE_CHECKLIST_STEPS = [
-    'preInvestigationPhotoTaken',
-    'inProgressPhotoTaken',
-    'soilProfilePhotoLinked',
-    'measuredDrawingCompleted',
-    'preRecoveryFindPhotoTaken',
-    'findsRecovered',
-    'samplesCollected',
-    'completionPhotoTaken'
-];
-
 const REVIEW_VERIFICATION_STATES = new Set(['conflictingEvidence', 'needsRecheck']);
 const PARENT_RELATIONS = ['liesWithin', 'isRecordedInFeature', 'isRecordedIn', 'depicts'];
 
@@ -104,7 +98,8 @@ const CATEGORY_LABELS: Readonly<Record<string, string>> = {
 
 
 export function makeKoreanFieldworkWorkbenchItems(documents: Document[],
-                                                  limit: number = 6): KoreanFieldworkWorkbenchItem[] {
+                                                  limit: number = 6,
+                                                  investigationMode?: string): KoreanFieldworkWorkbenchItem[] {
 
     const summary = getKoreanFieldworkTodaySummary(documents);
     const documentsById = new Map(documents.map(document => [document.resource.id, document]));
@@ -115,7 +110,8 @@ export function makeKoreanFieldworkWorkbenchItems(documents: Document[],
         .map(document => makeWorkbenchItem(
             document,
             documentsById,
-            issuesByDocumentId.get(document.resource.id) ?? []
+            issuesByDocumentId.get(document.resource.id) ?? [],
+            investigationMode
         ))
         .filter((item): item is KoreanFieldworkWorkbenchItem => !!item)
         .sort(compareWorkbenchItems)
@@ -125,9 +121,10 @@ export function makeKoreanFieldworkWorkbenchItems(documents: Document[],
 
 function makeWorkbenchItem(document: Document,
                            documentsById: Map<string, Document>,
-                           issues: KoreanFieldworkReadinessIssue[]): KoreanFieldworkWorkbenchItem|undefined {
+                           issues: KoreanFieldworkReadinessIssue[],
+                           investigationMode?: string): KoreanFieldworkWorkbenchItem|undefined {
 
-    const reasons = getWorkbenchReasons(document, issues);
+    const reasons = getWorkbenchReasons(document, issues, investigationMode);
     if (reasons.length === 0) return undefined;
 
     return {
@@ -139,14 +136,15 @@ function makeWorkbenchItem(document: Document,
         parentPath: getParentPath(document, documentsById),
         reasons,
         issueCount: issues.length,
-        tone: getWorkbenchTone(document, issues, reasons),
+        tone: getWorkbenchTone(document, issues, reasons, investigationMode),
         actionLabel: getWorkbenchActionLabel(document, reasons)
     };
 }
 
 
 function getWorkbenchReasons(document: Document,
-                             issues: KoreanFieldworkReadinessIssue[]): string[] {
+                             issues: KoreanFieldworkReadinessIssue[],
+                             investigationMode?: string): string[] {
 
     const reasons: string[] = [];
 
@@ -156,12 +154,13 @@ function getWorkbenchReasons(document: Document,
         const featureRecordingStatus = document.resource.featureRecordingStatus;
         if (featureRecordingStatus === 'candidate') reasons.push('조사 전');
         if (featureRecordingStatus === 'investigating') reasons.push('조사 중');
+    }
 
-        const checkedStepCount = getStringArray(document.resource.featureInvestigationChecklist)
-            .filter(value => FEATURE_CHECKLIST_STEPS.includes(value))
-            .length;
-        if (checkedStepCount < FEATURE_CHECKLIST_STEPS.length) {
-            reasons.push(`과정 ${checkedStepCount}/${FEATURE_CHECKLIST_STEPS.length}`);
+    if (isKoreanFieldworkChecklistRecord(document.resource.category, investigationMode)) {
+        const checklistSteps = getKoreanFieldworkChecklistSteps(document.resource.category, investigationMode);
+        const checkedStepCount = countKoreanFieldworkChecklistDone(document, checklistSteps);
+        if (checkedStepCount < checklistSteps.length) {
+            reasons.push(`과정 ${checkedStepCount}/${checklistSteps.length}`);
         }
     }
 
@@ -241,7 +240,8 @@ function getPenMemoReasons(document: Document): string[] {
 
 function getWorkbenchTone(document: Document,
                           issues: KoreanFieldworkReadinessIssue[],
-                          reasons: string[]): KoreanFieldworkWorkbenchTone {
+                          reasons: string[],
+                          investigationMode?: string): KoreanFieldworkWorkbenchTone {
 
     if (issues.some(issue => issue.severity === 'critical')) return 'danger';
     if (issues.length > 0) return 'warning';
@@ -253,8 +253,7 @@ function getWorkbenchTone(document: Document,
         if (reasons.includes('토색 후보')) return 'info';
     }
     if (reasons.includes('조사 전') || reasons.includes('조사 중')) return 'info';
-    if (document.resource.category === 'Feature'
-            || document.resource.category === 'FeatureSegment') return 'info';
+    if (isKoreanFieldworkChecklistRecord(document.resource.category, investigationMode)) return 'info';
 
     return 'neutral';
 }

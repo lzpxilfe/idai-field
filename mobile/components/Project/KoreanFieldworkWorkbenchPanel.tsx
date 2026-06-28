@@ -44,8 +44,13 @@ const KoreanFieldworkWorkbenchPanel: React.FC<KoreanFieldworkWorkbenchPanelProps
   maxItems = 8,
 }) => {
   const items = useMemo(
-    () => getKoreanFieldworkWorkbenchItems(summary, documents, maxItems),
-    [documents, maxItems, summary]
+    () => getKoreanFieldworkWorkbenchItems(
+      summary,
+      documents,
+      maxItems,
+      investigationModeId
+    ),
+    [documents, investigationModeId, maxItems, summary]
   );
 
   if (items.length === 0) return null;

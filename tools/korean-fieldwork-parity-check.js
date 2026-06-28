@@ -3129,6 +3129,13 @@ function validateProgressModeAwareness() {
   const desktopOverviewText = readTextFile('desktop/src/app/util/korean-fieldwork-overview-chart.ts');
   const desktopUnitMatrixText = readTextFile('desktop/src/app/util/korean-fieldwork-unit-matrix.ts');
   const desktopProgressSpecText = readTextFile('desktop/test/unit/util/korean-fieldwork-progress-board.spec.ts');
+  const tabletWorkbenchText = readTextFile('mobile/components/Project/korean-fieldwork-workbench.ts');
+  const tabletWorkbenchPanelText = readTextFile('mobile/components/Project/KoreanFieldworkWorkbenchPanel.tsx');
+  const tabletWorkbenchSpecText = readTextFile('mobile/components/Project/korean-fieldwork-workbench.spec.ts');
+  const tabletWorkbenchPanelSpecText = readTextFile('mobile/components/Project/KoreanFieldworkWorkbenchPanel.spec.tsx');
+  const desktopWorkbenchText = readTextFile('desktop/src/app/util/korean-fieldwork-workbench.ts');
+  const desktopWorkbenchSpecText = readTextFile('desktop/test/unit/util/korean-fieldwork-workbench.spec.ts');
+  const desktopPriorityStripText = readTextFile('desktop/src/app/components/resources/korean-fieldwork-priority-strip.component.ts');
   const tabletTrialTrenchChecklistValues = [
     'trenchSoilCleaned',
     'trenchFeatureChecked',
@@ -3181,12 +3188,38 @@ function validateProgressModeAwareness() {
   if (!desktopUnitMatrixText.includes('getKoreanFieldworkChecklistSteps(document.resource.category, investigationMode)')) {
     findings.push('desktop unit matrix must use shared tablet checklist steps');
   }
+  if (!tabletWorkbenchText.includes('getKoreanFieldworkChecklistQuickOptions(investigationModeId)')
+      || !tabletWorkbenchText.includes('isKoreanFieldworkChecklistRecord(document.resource.category, investigationModeId)')) {
+    findings.push('tablet workbench must use investigation-mode checklist steps');
+  }
+  if (!tabletWorkbenchPanelText.includes('getKoreanFieldworkWorkbenchItems(')
+      || !tabletWorkbenchPanelText.includes('maxItems,\n      investigationModeId')) {
+    findings.push('tablet workbench panel must pass the investigation mode into workbench items');
+  }
+  if (!desktopWorkbenchText.includes('getKoreanFieldworkChecklistSteps(document.resource.category, investigationMode)')
+      || !desktopWorkbenchText.includes('countKoreanFieldworkChecklistDone(document, checklistSteps)')) {
+    findings.push('desktop workbench must use shared tablet checklist steps');
+  }
+  if (!desktopPriorityStripText.includes('makeKoreanFieldworkWorkbenchItems(documents, 6, investigationMode)')) {
+    findings.push('desktop priority strip must pass the investigation mode into workbench items');
+  }
   if (!desktopChecklistSpecText.includes('uses the tablet trial-trench checklist values on desktop')
       || !desktopChecklistSpecText.includes('includes pen memo review in feature checklist totals')) {
     findings.push('desktop checklist tests must cover tablet trial-trench values and PenMemo review totals');
   }
   if (!desktopProgressSpecText.includes('keeps confirmed tablet records in investigation until all workflow steps are checked')) {
     findings.push('desktop progress board tests must keep partial tablet workflow checks out of closeout');
+  }
+  if (!tabletWorkbenchSpecText.includes('counts pen memo review as a tablet workflow step')
+      || !tabletWorkbenchSpecText.includes('uses the investigation mode to surface trial-trench workflow progress')) {
+    findings.push('tablet workbench tests must cover PenMemo review and trial-trench progress');
+  }
+  if (!tabletWorkbenchPanelSpecText.includes('passes the investigation mode into tablet workbench progress')) {
+    findings.push('tablet workbench panel tests must prove investigation mode is passed through');
+  }
+  if (!desktopWorkbenchSpecText.includes('counts PenMemo review as a desktop workflow step')
+      || !desktopWorkbenchSpecText.includes('uses the investigation mode to surface trial-trench workflow progress on desktop')) {
+    findings.push('desktop workbench tests must cover PenMemo review and trial-trench progress');
   }
 
   return findings;

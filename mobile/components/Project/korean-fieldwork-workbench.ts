@@ -14,6 +14,11 @@ import {
   KoreanFieldworkStatusChip,
   KoreanFieldworkStatusTone,
 } from './korean-fieldwork-record-summary';
+import {
+  getKoreanFieldworkChecklistQuickOptions,
+  isKoreanFieldworkChecklistRecord,
+} from './korean-fieldwork-quick-record';
+import { KoreanFieldworkInvestigationModeId } from './korean-fieldwork-investigation-mode';
 
 export interface KoreanFieldworkWorkbenchItem {
   id: string;
@@ -62,17 +67,6 @@ const FEATURE_WORKFLOW_CATEGORIES = new Set<string>([
   C.FEATURE_SEGMENT,
 ]);
 
-const FEATURE_CHECKLIST_STEPS = [
-  'preInvestigationPhotoTaken',
-  'inProgressPhotoTaken',
-  'soilProfilePhotoLinked',
-  'measuredDrawingCompleted',
-  'preRecoveryFindPhotoTaken',
-  'findsRecovered',
-  'samplesCollected',
-  'completionPhotoTaken',
-];
-
 const REVIEW_VERIFICATION_STATES = new Set([
   'conflictingEvidence',
   'needsRecheck',
@@ -95,7 +89,8 @@ const CATEGORY_ORDER: readonly string[] = [
 export const getKoreanFieldworkWorkbenchItems = (
   summary: KoreanFieldworkTodaySummary,
   documents: Document[],
-  maxItems = 8
+  maxItems = 8,
+  investigationModeId?: KoreanFieldworkInvestigationModeId
 ): KoreanFieldworkWorkbenchItem[] => {
   const documentsById = new Map(documents.map((document) => [
     document.resource.id,
@@ -108,7 +103,8 @@ export const getKoreanFieldworkWorkbenchItems = (
     .map((document) => buildWorkbenchItem(
       document,
       documentsById,
-      issuesByDocumentId.get(document.resource.id) ?? []
+      issuesByDocumentId.get(document.resource.id) ?? [],
+      investigationModeId
     ))
     .filter((item): item is KoreanFieldworkWorkbenchItem => !!item)
     .sort(compareWorkbenchItems)
@@ -118,9 +114,10 @@ export const getKoreanFieldworkWorkbenchItems = (
 const buildWorkbenchItem = (
   document: Document,
   documentsById: Map<string, Document>,
-  issues: KoreanFieldworkReadinessIssue[]
+  issues: KoreanFieldworkReadinessIssue[],
+  investigationModeId?: KoreanFieldworkInvestigationModeId
 ): KoreanFieldworkWorkbenchItem | undefined => {
-  const reasons = getWorkbenchReasons(document, issues);
+  const reasons = getWorkbenchReasons(document, issues, investigationModeId);
   if (reasons.length === 0) return undefined;
 
   return {
@@ -132,14 +129,15 @@ const buildWorkbenchItem = (
     parentPath: formatKoreanFieldworkParentPath(document, documentsById),
     reasons,
     issueCount: issues.length,
-    tone: getWorkbenchTone(document, issues, reasons),
+    tone: getWorkbenchTone(document, issues, reasons, investigationModeId),
     statusChips: getKoreanFieldworkRecordStatusChips(document),
   };
 };
 
 const getWorkbenchReasons = (
   document: Document,
-  issues: KoreanFieldworkReadinessIssue[]
+  issues: KoreanFieldworkReadinessIssue[],
+  investigationModeId?: KoreanFieldworkInvestigationModeId
 ): string[] => {
   const resource = getResource(document);
   const reasons: string[] = [];
@@ -150,12 +148,16 @@ const getWorkbenchReasons = (
     const featureRecordingStatus = resource.featureRecordingStatus;
     if (featureRecordingStatus === 'candidate') reasons.push('조사 전');
     if (featureRecordingStatus === 'investigating') reasons.push('조사 중');
+  }
 
+  if (isKoreanFieldworkChecklistRecord(document.resource.category, investigationModeId)) {
+    const checklistSteps = getKoreanFieldworkChecklistQuickOptions(investigationModeId)
+      .map((option) => option.value);
     const checkedStepCount = getStringArray(resource.featureInvestigationChecklist)
-      .filter((value) => FEATURE_CHECKLIST_STEPS.includes(value))
+      .filter((value) => checklistSteps.includes(value))
       .length;
-    if (checkedStepCount < FEATURE_CHECKLIST_STEPS.length) {
-      reasons.push(`과정 ${checkedStepCount}/${FEATURE_CHECKLIST_STEPS.length}`);
+    if (checkedStepCount < checklistSteps.length) {
+      reasons.push(`과정 ${checkedStepCount}/${checklistSteps.length}`);
     }
   }
 
@@ -180,13 +182,15 @@ const getWorkbenchReasons = (
 const getWorkbenchTone = (
   document: Document,
   issues: KoreanFieldworkReadinessIssue[],
-  reasons: string[]
+  reasons: string[],
+  investigationModeId?: KoreanFieldworkInvestigationModeId
 ): KoreanFieldworkStatusTone => {
   if (issues.some((issue) => issue.severity === 'critical')) return 'danger';
   if (issues.length > 0) return 'warning';
   if (reasons.includes('조사 전') || reasons.includes('조사 중')) return 'info';
-  if (document.resource.category === C.FEATURE
-      || document.resource.category === C.FEATURE_SEGMENT) return 'info';
+  if (isKoreanFieldworkChecklistRecord(document.resource.category, investigationModeId)) {
+    return 'info';
+  }
 
   return 'neutral';
 };

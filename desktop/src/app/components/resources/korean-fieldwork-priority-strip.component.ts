@@ -1249,7 +1249,7 @@ export class KoreanFieldworkPriorityStripComponent implements OnInit, OnDestroy 
                 )
                 : [];
             const workbenchItems = stats
-                ? makeKoreanFieldworkWorkbenchItems(documents)
+                ? makeKoreanFieldworkWorkbenchItems(documents, 6, investigationMode)
                 : [];
             const recordWorkFilterCounts = stats
                 ? getKoreanFieldworkRecordWorkFilterCounts(

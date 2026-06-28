@@ -48,7 +48,7 @@ describe('Korean fieldwork workbench', () => {
         id: 'feature-1',
         categoryLabel: '유구',
         parentPath: '조사구역 1 > T1',
-        reasons: ['확인 1', '조사 전', '과정 1/8', '추가 확인'],
+        reasons: ['확인 1', '조사 전', '과정 1/9', '추가 확인'],
         tone: 'warning',
       },
       {
@@ -72,6 +72,66 @@ describe('Korean fieldwork workbench', () => {
       createSummary([]),
       [operation] as any
     )).toEqual([]);
+  });
+
+  it('counts pen memo review as a tablet workflow step', () => {
+    const feature = createDoc('feature-1', C.FEATURE, '유구 1', {}, {
+      featureRecordingStatus: 'confirmed',
+      featureInvestigationChecklist: [
+        'preInvestigationPhotoTaken',
+        'inProgressPhotoTaken',
+        'soilProfilePhotoLinked',
+        'measuredDrawingCompleted',
+        'preRecoveryFindPhotoTaken',
+        'findsRecovered',
+        'samplesCollected',
+        'penMemoReviewed',
+      ],
+      fieldRecordQuality: ['immediateRecording'],
+      recordCreationTiming: 'duringFieldwork',
+      verificationState: 'observedInField',
+    });
+
+    expect(getKoreanFieldworkWorkbenchItems(
+      createSummary([]),
+      [feature] as any
+    )).toEqual([
+      expect.objectContaining({
+        id: 'feature-1',
+        reasons: ['과정 8/9'],
+        tone: 'info',
+      }),
+    ]);
+  });
+
+  it('uses the investigation mode to surface trial-trench workflow progress', () => {
+    const trench = createDoc('trench-1', C.TRENCH, 'T1', {}, {
+      featureInvestigationChecklist: [
+        'trenchSoilCleaned',
+        'trenchPitOpened',
+      ],
+      fieldRecordQuality: ['immediateRecording'],
+      recordCreationTiming: 'duringFieldwork',
+      verificationState: 'observedInField',
+    });
+
+    expect(getKoreanFieldworkWorkbenchItems(
+      createSummary([]),
+      [trench] as any
+    )).toEqual([]);
+
+    expect(getKoreanFieldworkWorkbenchItems(
+      createSummary([]),
+      [trench] as any,
+      8,
+      'trialTrench'
+    )).toEqual([
+      expect.objectContaining({
+        id: 'trench-1',
+        reasons: ['과정 2/9'],
+        tone: 'info',
+      }),
+    ]);
   });
 });
 
