@@ -21,7 +21,6 @@ import { ConfigurationContext } from '@/contexts/configuration-context';
 import { PreferencesContext } from '@/contexts/preferences-context';
 import { UpdatedDocument } from '@/hooks/use-mapdata';
 import usePrevious from '@/hooks/use-previous';
-import { colors } from '@/utils/colors';
 import {
   Transformation,
   WORLD_CS_HEIGHT,
@@ -40,6 +39,8 @@ import {
 import MapSettingsModal from './MapSettingsModal';
 import useMapGestureHandler from './use-map-gesture-handler';
 import useMapPressHandler from './use-map-press-handler';
+
+export const FIELDWORK_MAP_WORKSPACE_BACKGROUND = '#ffffff';
 
 const cameraDefaultPos = {
   x: 0,
@@ -63,6 +64,7 @@ interface GLMapProps {
   selectParentId: (docId: string) => void;
   layerDocuments: Document[];
   focusMapOnDocumentId: (docId: string) => void;
+  showCurrentLocation?: boolean;
 }
 
 const GLMap: React.FC<GLMapProps> = ({
@@ -79,6 +81,7 @@ const GLMap: React.FC<GLMapProps> = ({
   selectParentId,
   layerDocuments,
   focusMapOnDocumentId,
+  showCurrentLocation = true,
 }) => {
   const previousSelectedDocIds = usePrevious(selectedDocumentIds);
   const config = useContext(ConfigurationContext);
@@ -251,7 +254,7 @@ const GLMap: React.FC<GLMapProps> = ({
       }
     });
     try {
-      if (location) {
+      if (showCurrentLocation && location) {
         addlocationPointToScene(documentToWorldMatrix, scene, [
           location.x,
           location.y,
@@ -270,6 +273,7 @@ const GLMap: React.FC<GLMapProps> = ({
     pointRadius,
     layerDocuments,
     location,
+    showCurrentLocation,
     getLayerImageUri,
     getLayerOpacity,
   ]);
@@ -393,7 +397,7 @@ const GLMap: React.FC<GLMapProps> = ({
         return;
       }
       renderer.current.setSize(width, height);
-      renderer.current.setClearColor(colors.containerBackground);
+      renderer.current.setClearColor(FIELDWORK_MAP_WORKSPACE_BACKGROUND);
 
       camera.position.set(
         cameraDefaultPos.x,
@@ -444,7 +448,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapSettingsContainer: {
-    backgroundColor: colors.containerBackground,
+    backgroundColor: FIELDWORK_MAP_WORKSPACE_BACKGROUND,
     flex: 1,
   },
   mapSettings: {

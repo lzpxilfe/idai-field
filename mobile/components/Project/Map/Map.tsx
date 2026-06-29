@@ -226,6 +226,9 @@ const Map: React.FC<MapProps> = (props) => {
   const canCreateTrench =
     !!primaryOperation && !!config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.TRENCH);
   const hasRenderableMapContent = geoDocuments.length > 0 || layerDocuments.length > 0;
+  const hasSurveyBoundaryGeometry = geoDocuments.some((document) =>
+    document.resource.category === KOREAN_FIELDWORK_CATEGORIES.SURVEY_BOUNDARY
+  );
   const shouldShowStartPanel = operationDocuments.length === 0 || !hasRenderableMapContent;
   const shouldShowQuickCreate = !!primaryOperation;
   const hasMeasuredMapScreen =
@@ -408,7 +411,8 @@ const Map: React.FC<MapProps> = (props) => {
       geometry?: SurveyBoundaryGeometry;
       referenceBasemapProvider?: string;
     },
-    boundarySummary: string | undefined = props.boundarySummary
+    boundarySummary: string | undefined = props.boundarySummary,
+    options: { openEditor?: boolean; focusOnMap?: boolean } = {}
   ) => {
     if (!config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.SURVEY_BOUNDARY)) return;
 
@@ -417,7 +421,13 @@ const Map: React.FC<MapProps> = (props) => {
     );
 
     setHighlightedDoc(createdDocument);
-    props.editDocument(createdDocument.resource.id, KOREAN_FIELDWORK_CATEGORIES.SURVEY_BOUNDARY);
+    if (options.focusOnMap) {
+      setTimeout(() => focusMapOnDocumentId(createdDocument.resource.id), 250);
+    }
+    if (options.openEditor !== false) {
+      props.editDocument(createdDocument.resource.id, KOREAN_FIELDWORK_CATEGORIES.SURVEY_BOUNDARY);
+    }
+    return createdDocument;
   };
 
   const createSurveyBoundaryFromImportedFile = async (
@@ -505,7 +515,9 @@ const Map: React.FC<MapProps> = (props) => {
       await createSurveyBoundaryForOperation(
         primaryOperation,
         centerLocation,
-        boundaryMetadata
+        boundaryMetadata,
+        props.boundarySummary,
+        { focusOnMap: true, openEditor: false }
       );
       return;
     }
@@ -515,7 +527,9 @@ const Map: React.FC<MapProps> = (props) => {
       await createSurveyBoundaryForOperation(
         createdOperation,
         centerLocation,
-        boundaryMetadata
+        boundaryMetadata,
+        props.boundarySummary,
+        { focusOnMap: true, openEditor: false }
       );
     }
   };
@@ -632,6 +646,7 @@ const Map: React.FC<MapProps> = (props) => {
           selectedDocumentIds={props.selectedDocumentIds}
           geoDocuments={geoDocuments}
           location={location}
+          showCurrentLocation={!hasSurveyBoundaryGeometry}
           updateDoc={updateDoc}
           selectParentId={onParentIdSelected}
           layerDocuments={layerDocuments}

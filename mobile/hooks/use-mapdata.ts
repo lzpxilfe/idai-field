@@ -100,6 +100,34 @@ const useMapData = (
   const focusMapOnDocumentId = (docId: string) =>
     focusMapOnDocumentIds([docId]);
 
+  const upsertGeoDocument = useCallback((document: Document) => {
+    if (!isUsableDocument(document) || !Document.hasGeometry(document)) return;
+
+    setGeoDocuments((currentDocuments) => {
+      const documentIndex = currentDocuments.findIndex(
+        (currentDocument) => currentDocument.resource.id === document.resource.id
+      );
+
+      if (documentIndex < 0) return [...currentDocuments, document];
+
+      return currentDocuments.map((currentDocument, index) =>
+        index === documentIndex ? document : currentDocument
+      );
+    });
+    setUpdateDoc({ document, status: 'updated' });
+  }, []);
+
+  const removeGeoDocument = useCallback((document: Document) => {
+    if (!isUsableDocument(document)) return;
+
+    setGeoDocuments((currentDocuments) =>
+      currentDocuments.filter(
+        (currentDocument) => currentDocument.resource.id !== document.resource.id
+      )
+    );
+    setUpdateDoc({ document, status: 'deleted' });
+  }, []);
+
   const getDocumentsGeometryBoundings = (
     docs: Document[]
   ): GeometryBoundings | null => {
@@ -164,16 +192,19 @@ const useMapData = (
       )
       .catch((err) => console.log('Document not found. Error:', err));
 
-    const changedSubscription = repository
-      .remoteChanged()
-      .subscribe((changeInfo) => {
-        const document = changeInfo.document;
-        if (!isUsableDocument(document) || !Document.hasGeometry(document)) return;
-        setUpdateDoc({ document, status: 'updated' });
-      });
+    const localChangedSubscription = repository
+      .changed()
+      .subscribe(upsertGeoDocument);
 
-    return () => changedSubscription.unsubscribe();
-  }, [repository]);
+    const remoteChangedSubscription = repository
+      .remoteChanged()
+      .subscribe((changeInfo) => upsertGeoDocument(changeInfo.document));
+
+    return () => {
+      localChangedSubscription.unsubscribe();
+      remoteChangedSubscription.unsubscribe();
+    };
+  }, [repository, upsertGeoDocument]);
 
   useEffect(
     () => {
@@ -190,13 +221,9 @@ const useMapData = (
   useEffect(() => {
     const deletedSubscription = repository
       .deleted()
-      .subscribe((document) => {
-        if (isUsableDocument(document)) {
-          setUpdateDoc({ document, status: 'deleted' });
-        }
-      });
+      .subscribe(removeGeoDocument);
     return () => deletedSubscription.unsubscribe();
-  }, [repository]);
+  }, [repository, removeGeoDocument]);
 
   useEffect(
     () =>
