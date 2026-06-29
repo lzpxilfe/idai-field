@@ -39,6 +39,7 @@ export const buildKakaoSatellitePickerHtml = ({
       background: rgba(21, 31, 38, 0.88);
       border-radius: 4px;
       color: white;
+      display: none;
       font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       left: 12px;
       max-width: calc(100% - 24px);
@@ -53,7 +54,7 @@ export const buildKakaoSatellitePickerHtml = ({
       border: 1px solid rgba(30, 41, 59, 0.16);
       border-radius: 6px;
       box-shadow: 0 4px 16px rgba(15, 23, 42, 0.16);
-      display: flex;
+      display: none;
       gap: 6px;
       left: 12px;
       padding: 6px;
@@ -70,6 +71,7 @@ export const buildKakaoSatellitePickerHtml = ({
       box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
       box-sizing: border-box;
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       left: 12px;
       max-width: calc(100% - 24px);
@@ -81,8 +83,14 @@ export const buildKakaoSatellitePickerHtml = ({
     .status {
       color: #1f2937;
       flex: 1;
-      font: 12px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      min-width: 150px;
+      font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-width: 210px;
+    }
+    .status strong {
+      color: #20313a;
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
     }
     button {
       appearance: none;
@@ -126,7 +134,7 @@ export const buildKakaoSatellitePickerHtml = ({
   </div>
   <div class="banner">지도에서 조사 경계 꼭짓점을 차례대로 누르세요. 3개 이상 찍으면 경계를 저장할 수 있습니다.</div>
   <div class="toolbar">
-    <div id="status" class="status">경계점 0개. 지도를 눌러 첫 점을 추가하세요.</div>
+    <div id="status" class="status"><strong>조사 경계 그리기</strong>지도를 눌러 첫 꼭짓점을 추가하세요.</div>
     <button id="undo" class="secondary" type="button" disabled>되돌리기</button>
     <button id="reset" class="secondary" type="button" disabled>초기화</button>
     <button id="save" class="primary" type="button" disabled>경계 저장</button>
@@ -290,9 +298,9 @@ export const buildKakaoSatellitePickerHtml = ({
           undoEl.disabled = points.length === 0;
           resetEl.disabled = points.length === 0;
           saveEl.disabled = points.length < 3;
-          statusEl.textContent = points.length < 3
-            ? '경계점 ' + points.length + '개. 최소 3개가 필요합니다.'
-            : '경계점 ' + points.length + '개. 필요하면 더 찍거나 경계를 저장하세요.';
+          statusEl.innerHTML = points.length < 3
+            ? '<strong>조사 경계 그리기</strong>경계점 ' + points.length + '개. 최소 3개가 필요합니다.'
+            : '<strong>조사 경계 그리기</strong>경계점 ' + points.length + '개. 더 찍거나 경계를 저장하세요.';
         }
 
         function saveBoundary() {

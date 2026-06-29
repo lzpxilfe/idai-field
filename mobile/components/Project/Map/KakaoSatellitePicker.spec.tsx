@@ -18,6 +18,30 @@ jest.mock('react-native-webview', () => {
 });
 
 describe('KakaoSatellitePicker', () => {
+  it('covers the map with a full loading overlay until the drawing map is ready', () => {
+    const { getByTestId, queryByTestId } = render(
+      <KakaoSatellitePicker
+        initialLocation={{ latitude: 36.45, longitude: 127.12 }}
+        javaScriptKey="js-key"
+        onClose={jest.fn()}
+        onPickBoundary={jest.fn()}
+        visible
+      />
+    );
+
+    expect(getByTestId('kakao-boundary-loading-overlay')).toBeTruthy();
+
+    act(() => {
+      fireEvent(getByTestId('kakao-satellite-picker-webview'), 'message', {
+        nativeEvent: {
+          data: JSON.stringify({ type: 'ready' }),
+        },
+      });
+    });
+
+    expect(queryByTestId('kakao-boundary-loading-overlay')).toBeNull();
+  });
+
   it('passes the selected Kakao map type with picked boundaries', () => {
     const onPickBoundary = jest.fn();
     const { getByTestId } = render(
@@ -87,7 +111,7 @@ describe('KakaoSatellitePicker', () => {
       .toEqual({ selected: true });
   });
 
-  it('opens a public Kakao map fallback when every SDK origin is rejected', () => {
+  it('keeps the boundary drawing tool open when every SDK origin is rejected', () => {
     const { getByTestId, getByText } = render(
       <KakaoSatellitePicker
         initialLocation={{ latitude: 36.45, longitude: 127.12 }}
@@ -115,16 +139,14 @@ describe('KakaoSatellitePicker', () => {
     }
 
     const webView = getByTestId('kakao-satellite-picker-webview');
-    expect(webView.props.source).toEqual({
-      uri: 'https://map.kakao.com/link/map/36.45,127.12',
-    });
-
-    act(() => {
-      fireEvent(webView, 'loadEnd');
-    });
+    expect(webView.props.source).toEqual(expect.objectContaining({
+      html: expect.stringContaining('조사 경계 그리기'),
+      baseUrl: 'http://127.0.0.1/',
+    }));
 
     expect(getByText(
-      '카카오 지도 SDK가 WebView 출처에서 거부되어 공개 카카오 지도를 열었습니다. Kakao Developers JavaScript SDK 도메인에 origin-7 등록 후 다시 시도하세요. 경계 저장은 SDK 지도가 열릴 때 사용할 수 있습니다.'
+      '카카오 지도 SDK가 WebView 출처에서 거부되었습니다. Kakao Developers JavaScript SDK 도메인에 origin-7 등록 후 다시 시도하세요. 공개 카카오맵으로 빠지면 경계를 저장할 수 없어서 여기서는 조사 경계 그리기 화면을 유지합니다.'
     )).toBeTruthy();
+    expect(getByTestId('kakao-boundary-retry')).toBeTruthy();
   });
 });
