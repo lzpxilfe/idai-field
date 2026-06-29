@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import {
+  buildOpenBoundaryPickerHtml,
   buildKakaoSatellitePickerHtml,
   KakaoMapTypeId,
 } from './kakao-satellite-picker-html';
@@ -46,11 +47,13 @@ const KAKAO_MAP_WEBVIEW_BASE_URLS = [
   'http://localhost/',
   'http://127.0.0.1/',
 ];
+const OPEN_BASEMAP_WEBVIEW_BASE_URL = 'https://idai-field.local/boundary-picker/';
 const KAKAO_MAP_TYPE_OPTIONS: Array<{ id: KakaoMapTypeId; label: string }> = [
   { id: 'ROADMAP', label: '일반' },
   { id: 'SKYVIEW', label: '위성' },
   { id: 'HYBRID', label: '혼합' },
 ];
+type BoundaryMapEngine = 'kakao' | 'open';
 
 const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
   initialLocation,
@@ -68,20 +71,29 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
   const [baseUrlIndex, setBaseUrlIndex] = useState(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [mapLoadError, setMapLoadError] = useState<string>();
+  const [mapEngine, setMapEngine] = useState<BoundaryMapEngine>('kakao');
   const [reloadNonce, setReloadNonce] = useState(0);
   const [selectedMapTypeId, setSelectedMapTypeId] = useState<KakaoMapTypeId>('HYBRID');
   const [initialMapTypeId, setInitialMapTypeId] = useState<KakaoMapTypeId>('HYBRID');
   const webViewBaseUrl =
-    KAKAO_MAP_WEBVIEW_BASE_URLS[baseUrlIndex] ?? KAKAO_MAP_WEBVIEW_BASE_URLS[0];
+    mapEngine === 'kakao'
+      ? KAKAO_MAP_WEBVIEW_BASE_URLS[baseUrlIndex] ?? KAKAO_MAP_WEBVIEW_BASE_URLS[0]
+      : OPEN_BASEMAP_WEBVIEW_BASE_URL;
   const mapHtml = useMemo(
-    () => buildKakaoSatellitePickerHtml({
-      javaScriptKey,
-      latitude,
-      longitude,
-      mapTypeId: initialMapTypeId,
-      webViewBaseUrl,
-    }),
-    [initialMapTypeId, javaScriptKey, latitude, longitude, webViewBaseUrl]
+    () => mapEngine === 'kakao'
+      ? buildKakaoSatellitePickerHtml({
+          javaScriptKey,
+          latitude,
+          longitude,
+          mapTypeId: initialMapTypeId,
+          webViewBaseUrl,
+        })
+      : buildOpenBoundaryPickerHtml({
+          latitude,
+          longitude,
+          mapTypeId: initialMapTypeId,
+        }),
+    [initialMapTypeId, javaScriptKey, latitude, longitude, mapEngine, webViewBaseUrl]
   );
 
   useEffect(() => {
@@ -89,6 +101,7 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
       setBaseUrlIndex(0);
       setIsMapReady(false);
       setMapLoadError(undefined);
+      setMapEngine('kakao');
       setInitialMapTypeId('HYBRID');
       setSelectedMapTypeId('HYBRID');
       setReloadNonce((value) => value + 1);
@@ -97,17 +110,39 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
   }, [javaScriptKey, visible]);
 
   const showMapLoadFailure = (diagnostic?: Record<string, unknown>) => {
-    setMapLoadError(getMapLoadFailureMessage(diagnostic, webViewBaseUrl));
+    setMapLoadError(getOpenBasemapFailureMessage(diagnostic));
     setIsMapReady(false);
   };
 
   const retryWithNextWebViewOrigin = (diagnostic?: Record<string, unknown>) => {
+    if (mapEngine !== 'kakao') return false;
     if (baseUrlIndex >= KAKAO_MAP_WEBVIEW_BASE_URLS.length - 1) return false;
 
     setMapLoadError(undefined);
     setIsMapReady(false);
     setBaseUrlIndex(baseUrlIndex + 1);
     return true;
+  };
+
+  const switchToOpenBasemap = () => {
+    setMapEngine('open');
+    setBaseUrlIndex(0);
+    setIsMapReady(false);
+    setMapLoadError(undefined);
+    setReloadNonce((value) => value + 1);
+    setMessage(
+      '카카오 지도가 WebView 출처 제한에 막혀 공개 배경지도로 전환했습니다. 경계 그리기와 저장은 그대로 가능합니다.'
+    );
+  };
+
+  const handleMapLoadProblem = (diagnostic?: Record<string, unknown>) => {
+    if (mapEngine === 'kakao') {
+      if (retryWithNextWebViewOrigin(diagnostic)) return;
+      switchToOpenBasemap();
+      return;
+    }
+
+    showMapLoadFailure(diagnostic);
   };
 
   const onPickLocation = (boundary: KakaoSatellitePickedBoundary) => {
@@ -152,15 +187,15 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
 
       if (data.type === 'error') {
         const diagnostic = getDiagnosticPayload(data.payload);
-        if (retryWithNextWebViewOrigin(diagnostic)) return;
-        showMapLoadFailure(diagnostic);
+        handleMapLoadProblem(diagnostic);
       }
     } catch {
-      setMessage('카카오 지도 메시지를 읽지 못했습니다.');
+      setMessage('지도 메시지를 읽지 못했습니다.');
     }
   };
 
   const retryLoadingMap = () => {
+    setMapEngine('kakao');
     setBaseUrlIndex(0);
     setIsMapReady(false);
     setMapLoadError(undefined);
@@ -177,7 +212,7 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.title}>카카오 지도에서 경계 그리기</Text>
+            <Text style={styles.title}>조사 경계 지도에서 그리기</Text>
             <Text style={styles.message}>{message}</Text>
             <View style={styles.mapTypeControls}>
               {KAKAO_MAP_TYPE_OPTIONS.map((option) => {
@@ -226,18 +261,17 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
               webViewBaseUrl,
             };
             if (retryWithNextWebViewOrigin(diagnostic)) return;
-            showMapLoadFailure(diagnostic);
+            handleMapLoadProblem(diagnostic);
           }}
           onHttpError={(event) => {
             const diagnostic = {
               statusCode: event.nativeEvent.statusCode,
               webViewBaseUrl,
             };
-            if (retryWithNextWebViewOrigin(diagnostic)) return;
-            showMapLoadFailure(diagnostic);
+            handleMapLoadProblem(diagnostic);
           }}
           onMessage={onMessage}
-          key={`${webViewBaseUrl}-${reloadNonce}`}
+          key={`${mapEngine}-${webViewBaseUrl}-${reloadNonce}`}
           setSupportMultipleWindows={false}
           source={{ html: mapHtml, baseUrl: webViewBaseUrl }}
           style={styles.webView}
@@ -273,7 +307,9 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
                   <ActivityIndicator color="#24495d" size="large" />
                   <Text style={styles.loadingTitle}>조사 경계 지도를 준비 중입니다</Text>
                   <Text style={styles.loadingText}>
-                    카카오 배경지도 위에 조사 지역 꼭짓점을 찍을 수 있게 준비하고 있습니다.
+                    {mapEngine === 'open'
+                      ? '공개 배경지도 위에 조사 지역 꼭짓점을 찍을 수 있게 준비하고 있습니다.'
+                      : '카카오 배경지도 위에 조사 지역 꼭짓점을 찍을 수 있게 준비하고 있습니다.'}
                   </Text>
                 </>
               )}
@@ -474,40 +510,20 @@ const getDiagnosticPayload = (value: unknown): Record<string, unknown> | undefin
     ? value as Record<string, unknown>
     : undefined;
 
-const getMapLoadFailureMessage = (
-  diagnostic: Record<string, unknown> | undefined,
-  attemptedBaseUrl: string
-): string => {
-  const attemptedOrigin = getDiagnosticOrigin(diagnostic) ?? attemptedBaseUrl;
-  return `카카오 지도 SDK가 WebView 출처에서 거부되었습니다. Kakao Developers JavaScript SDK 도메인에 ${attemptedOrigin} 등록 후 다시 시도하세요. 공개 카카오맵으로 빠지면 경계를 저장할 수 없어서 여기서는 조사 경계 그리기 화면을 유지합니다.`;
-};
-
-const getDiagnosticOrigin = (
+const getOpenBasemapFailureMessage = (
   diagnostic: Record<string, unknown> | undefined
-): string | undefined => {
-  const origin = getNonEmptyString(diagnostic?.origin);
-  if (origin && origin !== 'null') return origin;
-
-  const hrefOrigin = getOriginFromUrl(getNonEmptyString(diagnostic?.href));
-  if (hrefOrigin) return hrefOrigin;
-
-  const baseUrlOrigin = getOriginFromUrl(getNonEmptyString(diagnostic?.webViewBaseUrl));
-  if (baseUrlOrigin) return baseUrlOrigin;
-
-  return getNonEmptyString(diagnostic?.webViewBaseUrl);
-};
-
-const getOriginFromUrl = (value: string | undefined): string | undefined => {
-  if (!value) return undefined;
-
-  try {
-    return new URL(value).origin;
-  } catch {
-    return undefined;
-  }
+): string => {
+  const detail = getNonEmptyString(diagnostic?.message)
+    ?? getNonEmptyString(diagnostic?.detail)
+    ?? getNonEmptyString(diagnostic?.statusCode);
+  return detail
+    ? `공개 배경지도도 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도하세요. 마지막 오류: ${detail}`
+    : '공개 배경지도도 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도하세요.';
 };
 
 const getNonEmptyString = (value: unknown): string | undefined =>
   typeof value === 'string' && value.trim().length > 0
     ? value.trim()
-    : undefined;
+    : typeof value === 'number' && Number.isFinite(value)
+      ? String(value)
+      : undefined;

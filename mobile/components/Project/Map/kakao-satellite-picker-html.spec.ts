@@ -1,4 +1,7 @@
-import { buildKakaoSatellitePickerHtml } from './kakao-satellite-picker-html';
+import {
+  buildKakaoSatellitePickerHtml,
+  buildOpenBoundaryPickerHtml,
+} from './kakao-satellite-picker-html';
 
 describe('buildKakaoSatellitePickerHtml', () => {
   it('loads the Kakao map script with the JavaScript key and hybrid map type', () => {
@@ -61,5 +64,23 @@ describe('buildKakaoSatellitePickerHtml', () => {
     expect(html).toContain("failure: 'sdk-script-error'");
     expect(html).toContain('WebView 출처를 Kakao Developers JavaScript SDK 도메인에 등록');
     expect(html).toContain('카카오 지도 SDK가 로드됐지만 지도 객체를 찾지 못했습니다');
+  });
+
+  it('builds an open basemap boundary picker when Kakao domains reject WebView', () => {
+    const html = buildOpenBoundaryPickerHtml({
+      latitude: 36.12,
+      longitude: 127.45,
+      mapTypeId: 'SKYVIEW',
+    });
+
+    expect(html).toContain('leaflet@1.9.4');
+    expect(html).toContain('tile.openstreetmap.org');
+    expect(html).toContain('World_Imagery');
+    expect(html).toContain("var currentMapType = 'SKYVIEW'");
+    expect(html).toContain('post(\'boundary\'');
+    expect(html).toContain('latitude: point.lat');
+    expect(html).toContain('longitude: point.lng');
+    expect(html).toContain("data.type !== 'setMapType'");
+    expect(html).toContain('setMapType(data.payload && data.payload.mapTypeId)');
   });
 });

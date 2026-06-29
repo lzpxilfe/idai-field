@@ -111,8 +111,8 @@ describe('KakaoSatellitePicker', () => {
       .toEqual({ selected: true });
   });
 
-  it('keeps the boundary drawing tool open when every SDK origin is rejected', () => {
-    const { getByTestId, getByText } = render(
+  it('falls back to an open basemap drawing tool when every Kakao SDK origin is rejected', () => {
+    const { getByTestId, getByText, queryByTestId } = render(
       <KakaoSatellitePicker
         initialLocation={{ latitude: 36.45, longitude: 127.12 }}
         javaScriptKey="js-key"
@@ -141,12 +141,14 @@ describe('KakaoSatellitePicker', () => {
     const webView = getByTestId('kakao-satellite-picker-webview');
     expect(webView.props.source).toEqual(expect.objectContaining({
       html: expect.stringContaining('조사 경계 그리기'),
-      baseUrl: 'http://127.0.0.1/',
+      baseUrl: 'https://idai-field.local/boundary-picker/',
     }));
+    expect(webView.props.source.html).toContain('tile.openstreetmap.org');
+    expect(webView.props.source.html).toContain('World_Imagery');
 
     expect(getByText(
-      '카카오 지도 SDK가 WebView 출처에서 거부되었습니다. Kakao Developers JavaScript SDK 도메인에 origin-7 등록 후 다시 시도하세요. 공개 카카오맵으로 빠지면 경계를 저장할 수 없어서 여기서는 조사 경계 그리기 화면을 유지합니다.'
+      '카카오 지도가 WebView 출처 제한에 막혀 공개 배경지도로 전환했습니다. 경계 그리기와 저장은 그대로 가능합니다.'
     )).toBeTruthy();
-    expect(getByTestId('kakao-boundary-retry')).toBeTruthy();
+    expect(queryByTestId('kakao-boundary-retry')).toBeNull();
   });
 });

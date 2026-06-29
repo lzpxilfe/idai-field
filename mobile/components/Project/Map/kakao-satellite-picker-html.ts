@@ -6,6 +6,12 @@ interface KakaoSatellitePickerHtmlOptions {
   webViewBaseUrl?: string;
 }
 
+interface OpenBoundaryPickerHtmlOptions {
+  latitude: number;
+  longitude: number;
+  mapTypeId?: KakaoMapTypeId;
+}
+
 export type KakaoMapTypeId = 'ROADMAP' | 'SKYVIEW' | 'HYBRID';
 
 export const buildKakaoSatellitePickerHtml = ({
@@ -349,4 +355,276 @@ const getSafeMapTypeId = (mapTypeId: KakaoMapTypeId): KakaoMapTypeId => {
   return ['ROADMAP', 'SKYVIEW', 'HYBRID'].includes(mapTypeId)
     ? mapTypeId
     : 'HYBRID';
+};
+
+export const buildOpenBoundaryPickerHtml = ({
+  latitude,
+  longitude,
+  mapTypeId = 'HYBRID',
+}: OpenBoundaryPickerHtmlOptions): string => {
+  const safeLatitude = Number.isFinite(latitude) ? latitude : 37.5665;
+  const safeLongitude = Number.isFinite(longitude) ? longitude : 126.9780;
+  const safeMapTypeId = getSafeMapTypeId(mapTypeId);
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    }
+    body {
+      background: #eef2f4;
+      overflow: hidden;
+    }
+    .toolbar {
+      align-items: center;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(30, 41, 59, 0.16);
+      border-radius: 6px;
+      bottom: 12px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.18);
+      box-sizing: border-box;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      left: 12px;
+      max-width: calc(100% - 24px);
+      padding: 8px;
+      position: absolute;
+      right: 12px;
+      z-index: 900;
+    }
+    .status {
+      color: #1f2937;
+      flex: 1;
+      font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-width: 210px;
+    }
+    .status strong {
+      color: #20313a;
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 4px;
+      color: white;
+      font: 700 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 38px;
+      padding: 0 12px;
+    }
+    button.secondary {
+      background: #475467;
+    }
+    button.primary {
+      background: #175cd3;
+    }
+    button:disabled {
+      background: #98a2b3;
+      color: #eef2f4;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="toolbar">
+    <div id="status" class="status"><strong>조사 경계 그리기</strong>공개 배경지도를 눌러 첫 꼭짓점을 추가하세요.</div>
+    <button id="undo" class="secondary" type="button" disabled>되돌리기</button>
+    <button id="reset" class="secondary" type="button" disabled>초기화</button>
+    <button id="save" class="primary" type="button" disabled>경계 저장</button>
+  </div>
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+  <script>
+    function post(type, payload) {
+      window.ReactNativeWebView && window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: type,
+        payload: Object.assign({
+          href: window.location && window.location.href,
+          origin: window.location && window.location.origin,
+          provider: 'open-basemap'
+        }, payload || {})
+      }));
+    }
+
+    window.onerror = function(message, source, line, column) {
+      post('error', {
+        failure: 'open-basemap-runtime-error',
+        message: '공개 배경지도 실행 중 오류가 발생했습니다. 네트워크 연결을 확인한 뒤 다시 시도하세요.',
+        detail: String(message || '') + ' ' + String(source || '') + ':' + String(line || '') + ':' + String(column || '')
+      });
+      return false;
+    };
+
+    function startOpenBoundaryMap() {
+      if (!window.L) {
+        post('error', {
+          failure: 'open-basemap-script-error',
+          message: '공개 배경지도 라이브러리를 불러오지 못했습니다. 네트워크 연결을 확인한 뒤 다시 시도하세요.'
+        });
+        return;
+      }
+
+      var map = L.map('map', {
+        attributionControl: true,
+        zoomControl: true
+      }).setView([${safeLatitude}, ${safeLongitude}], 17);
+      var currentMapType = '${safeMapTypeId}';
+      var activeLayers = [];
+      var roadmapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 19
+      });
+      var imageryLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+      });
+      var labelLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Labels &copy; Esri',
+        maxZoom: 19
+      });
+      var points = [];
+      var markersLayer = L.layerGroup().addTo(map);
+      var outline = L.polyline([], {
+        color: '#175cd3',
+        opacity: 0.95,
+        weight: 4
+      }).addTo(map);
+      var polygon = L.polygon([], {
+        color: '#175cd3',
+        fillColor: '#60a5fa',
+        fillOpacity: 0.24,
+        opacity: 0.95,
+        weight: 2
+      }).addTo(map);
+      var statusEl = document.getElementById('status');
+      var undoEl = document.getElementById('undo');
+      var resetEl = document.getElementById('reset');
+      var saveEl = document.getElementById('save');
+
+      function setMapType(nextMapType) {
+        if (nextMapType !== 'ROADMAP' && nextMapType !== 'SKYVIEW' && nextMapType !== 'HYBRID') return;
+        activeLayers.forEach(function(layer) {
+          map.removeLayer(layer);
+        });
+        activeLayers = nextMapType === 'ROADMAP'
+          ? [roadmapLayer]
+          : nextMapType === 'SKYVIEW'
+            ? [imageryLayer]
+            : [imageryLayer, labelLayer];
+        activeLayers.forEach(function(layer) {
+          layer.addTo(map);
+        });
+        currentMapType = nextMapType;
+        post('mapType', { mapTypeId: currentMapType });
+      }
+
+      function handleNativeMessage(event) {
+        try {
+          var data = typeof event.data === 'string'
+            ? JSON.parse(event.data)
+            : event.data;
+          if (!data || data.type !== 'setMapType') return;
+          setMapType(data.payload && data.payload.mapTypeId);
+        } catch (error) {}
+      }
+
+      window.addEventListener('message', handleNativeMessage);
+      document.addEventListener('message', handleNativeMessage);
+
+      map.on('click', function(event) {
+        points.push(event.latlng);
+        redraw();
+      });
+      undoEl.addEventListener('click', function() {
+        if (points.length === 0) return;
+        points.pop();
+        redraw();
+      });
+      resetEl.addEventListener('click', function() {
+        points = [];
+        redraw();
+      });
+      saveEl.addEventListener('click', saveBoundary);
+
+      function redraw() {
+        markersLayer.clearLayers();
+        points.forEach(function(point, index) {
+          L.circleMarker([point.lat, point.lng], {
+            color: '#175cd3',
+            fillColor: '#ffffff',
+            fillOpacity: 1,
+            radius: 7,
+            weight: 3
+          }).bindTooltip(String(index + 1), {
+            permanent: true,
+            direction: 'center',
+            className: 'point-label'
+          }).addTo(markersLayer);
+        });
+        outline.setLatLngs(points);
+        polygon.setLatLngs(points.length >= 3 ? [points] : []);
+        undoEl.disabled = points.length === 0;
+        resetEl.disabled = points.length === 0;
+        saveEl.disabled = points.length < 3;
+        statusEl.innerHTML = points.length < 3
+          ? '<strong>조사 경계 그리기</strong>경계점 ' + points.length + '개. 최소 3개가 필요합니다.'
+          : '<strong>조사 경계 그리기</strong>경계점 ' + points.length + '개. 더 찍거나 경계를 저장하세요.';
+      }
+
+      function saveBoundary() {
+        if (points.length < 3) return;
+        var coordinates = points.map(function(point) {
+          return {
+            latitude: point.lat,
+            longitude: point.lng
+          };
+        });
+        post('boundary', {
+          coordinates: coordinates,
+          center: getCenter(coordinates),
+          mapTypeId: currentMapType
+        });
+      }
+
+      function getCenter(coordinates) {
+        var latitude = 0;
+        var longitude = 0;
+        coordinates.forEach(function(coordinate) {
+          latitude += coordinate.latitude;
+          longitude += coordinate.longitude;
+        });
+        return {
+          latitude: latitude / coordinates.length,
+          longitude: longitude / coordinates.length
+        };
+      }
+
+      setMapType(currentMapType);
+      redraw();
+      setTimeout(function() {
+        map.invalidateSize();
+        post('ready');
+      }, 80);
+    }
+
+    startOpenBoundaryMap();
+  </script>
+</body>
+</html>`;
 };
