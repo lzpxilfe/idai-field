@@ -78,6 +78,21 @@
         </button>
 
         <div *ngIf="canRecordPhotoSwatches()"
+             class="korean-fieldwork-soil-color-row-number-editor">
+            <span class="korean-fieldwork-soil-color-row-number-label">층 번호</span>
+            <input type="number"
+                   min="1"
+                   class="form-control korean-fieldwork-soil-color-row-number-input"
+                   [ngModel]="getActiveSoilColorRowNumberInput()"
+                   (ngModelChange)="setActiveSoilColorRowNumberInput($event)">
+            <button type="button"
+                    class="btn korean-fieldwork-soil-color-row-number-button"
+                    (click)="applyActiveSoilColorRowNumber()">
+                변경
+            </button>
+        </div>
+
+        <div *ngIf="canRecordPhotoSwatches()"
              class="korean-fieldwork-soil-color-layer-list">
             <div *ngFor="let row of getSoilColorRows()"
                  class="korean-fieldwork-soil-color-layer-row"

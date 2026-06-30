@@ -108,6 +108,46 @@ korean-fieldwork-soil-color-panel {
     margin-top: 7px;
   }
 
+  .korean-fieldwork-soil-color-row-number-editor {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .korean-fieldwork-soil-color-row-number-label {
+    color: #475467;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .korean-fieldwork-soil-color-row-number-input {
+    color: #101828;
+    flex: 0 0 82px;
+    font-size: 13px;
+    font-weight: 800;
+    min-width: 82px;
+    text-align: center;
+  }
+
+  .korean-fieldwork-soil-color-row-number-button {
+    background: #fff;
+    border: 1px solid #b8cff6;
+    border-radius: 6px;
+    color: #175cd3;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.1;
+    padding: 7px 10px;
+
+    &:hover {
+      background: #eff6ff;
+      border-color: #84adff;
+      color: #1849a9;
+    }
+  }
+
   .korean-fieldwork-soil-color-builder-label {
     color: #667085;
     font-size: 12px;

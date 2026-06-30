@@ -1099,6 +1099,11 @@ function validateGuidedFeatureDraftDefaults() {
       || !tabletAddModalText.includes('조사 경계 위 배치')
       || !tabletAddModalText.includes('featureSketchModeRail')
       || !tabletAddModalText.includes('featureSketchToolRail')
+      || !tabletAddModalText.includes('height: 1280')
+      || !tabletAddModalText.includes('minimumHeight = isFeatureWideLayout ? 760 : 600')
+      || !tabletAddModalText.includes('featureLocationPanelWide')
+      || !tabletAddModalText.includes('flexBasis: 286')
+      || !tabletAddModalSpecText.includes('StyleSheet.flatten')
       || tabletAddModalText.includes('지도처럼 위에서 보기')
       || tabletAddModalText.includes('평면 배치 지도')
       || !tabletAddModalSpecText.includes('featureSketchFlatMapSurface')) {
@@ -3328,6 +3333,7 @@ function validateSoilColorReviewWorkflow() {
   }
 
   const tabletSoilColorPanelText = readTextFile('mobile/components/Project/KoreanFieldworkSoilColorPanel.tsx');
+  const tabletSoilColorPanelSpecText = readTextFile('mobile/components/Project/KoreanFieldworkSoilColorPanel.spec.tsx');
   if (!tabletSoilColorPanelText.includes('MUNSELL_HUE_OPTIONS')
       || !tabletSoilColorPanelText.includes('MUNSELL_VALUE_OPTIONS')
       || !tabletSoilColorPanelText.includes('MUNSELL_CHROMA_OPTIONS')) {
@@ -3335,6 +3341,11 @@ function validateSoilColorReviewWorkflow() {
   }
   if (!tabletSoilColorPanelText.includes('soilColorLayerInput_')) {
     findings.push('tablet soil color panel must render one editable input per soil layer');
+  }
+  if (!tabletSoilColorPanelText.includes('renameSoilColorRowNumber')
+      || !tabletSoilColorPanelText.includes('soilColorLayerNumberEdit_')
+      || !tabletSoilColorPanelSpecText.includes('edits a soil layer number through a numeric modal')) {
+    findings.push('tablet soil color panel must let fieldworkers rename layer numbers');
   }
   if (tabletSoilColorPanelText.includes('soilColorCaptureCondition')
       || tabletSoilColorPanelText.includes('CAPTURE_CONDITION_OPTIONS')) {
@@ -3355,6 +3366,13 @@ function validateSoilColorReviewWorkflow() {
       || desktopSoilColorPanelTemplateText.includes('fields.captureCondition')
       || !desktopSoilColorPanelSpecText.includes("not.toContain('촬영 조건')")) {
     findings.push('desktop soil color panel must keep photo capture-condition fields out of the fast soil color UI');
+  }
+  if (!desktopSoilColorPanelText.includes('renameSoilColorRowNumber')
+      || !desktopSoilColorPanelText.includes('applyActiveSoilColorRowNumber')
+      || !desktopSoilColorPanelTemplateText.includes('korean-fieldwork-soil-color-row-number-editor')
+      || !desktopSoilColorPanelSpecText.includes('renames the selected numbered Munsell swatch row')
+      || !desktopSoilColorPanelSpecText.includes('duplicate layer number is entered')) {
+    findings.push('desktop soil color panel must let fieldworkers rename numbered layer color rows');
   }
 
   for (const source of panelTests) {

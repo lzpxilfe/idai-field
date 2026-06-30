@@ -79,6 +79,7 @@ export class KoreanFieldworkSoilColorPanelComponent {
     ];
 
     public activeSoilColorRowNumber = 1;
+    public soilColorRowNumberInput = '';
     public builderHueNumber = '10';
     public builderHueFamily = 'YR';
     public builderValue = '4';
@@ -177,6 +178,7 @@ export class KoreanFieldworkSoilColorPanelComponent {
     public selectSoilColorRow(rowNumber: number) {
 
         this.activeSoilColorRowNumber = rowNumber;
+        this.soilColorRowNumberInput = String(rowNumber);
         if (this.hasField(SOIL_COLOR_FIELDS.activeLayerNumber)) {
             this.document.resource[SOIL_COLOR_FIELDS.activeLayerNumber] = rowNumber;
         }
@@ -191,6 +193,48 @@ export class KoreanFieldworkSoilColorPanelComponent {
         }
 
         return rows[0]?.number ?? 1;
+    }
+
+
+    public getActiveSoilColorRowNumberInput(): string {
+
+        return this.soilColorRowNumberInput || String(this.getActiveSoilColorRowNumber());
+    }
+
+
+    public setActiveSoilColorRowNumberInput(value: string) {
+
+        this.soilColorRowNumberInput = value;
+    }
+
+
+    public applyActiveSoilColorRowNumber() {
+
+        if (!this.canRecordPhotoSwatches()) return;
+
+        const currentRowNumber = this.getActiveSoilColorRowNumber();
+        const nextRowNumber = Number.parseInt(this.soilColorRowNumberInput.trim(), 10);
+        if (!Number.isFinite(nextRowNumber) || nextRowNumber < 1) {
+            this.soilColorRowNumberInput = String(currentRowNumber);
+            return;
+        }
+
+        if (nextRowNumber === currentRowNumber) return;
+
+        const currentValue = this.getValue(SOIL_COLOR_FIELDS.profileColorSwatches);
+        const nextValue = this.renameSoilColorRowNumber(currentValue, currentRowNumber, nextRowNumber);
+        if (nextValue === currentValue) {
+            this.soilColorRowNumberInput = String(currentRowNumber);
+            return;
+        }
+
+        this.setTextResourceValue(SOIL_COLOR_FIELDS.profileColorSwatches, nextValue);
+        this.activeSoilColorRowNumber = nextRowNumber;
+        this.soilColorRowNumberInput = String(nextRowNumber);
+        if (this.hasField(SOIL_COLOR_FIELDS.activeLayerNumber)) {
+            this.document.resource[SOIL_COLOR_FIELDS.activeLayerNumber] = nextRowNumber;
+        }
+        this.onChanged.emit();
     }
 
 
@@ -307,6 +351,23 @@ export class KoreanFieldworkSoilColorPanelComponent {
         const nextNumber = Math.max(0, ...rows.map(row => row.number)) + 1;
 
         return this.serializeSoilColorRows([...rows, { number: nextNumber, value: '' }]);
+    }
+
+
+    private renameSoilColorRowNumber(currentValue: string,
+                                     currentRowNumber: number,
+                                     nextRowNumber: number): string {
+
+        const rows = this.parseSoilColorRows(currentValue);
+        if (rows.some(row => row.number === nextRowNumber && row.number !== currentRowNumber)) {
+            return currentValue;
+        }
+
+        return this.serializeSoilColorRows(rows.map(row =>
+            row.number === currentRowNumber
+                ? { ...row, number: nextRowNumber }
+                : row
+        ));
     }
 
 

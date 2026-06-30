@@ -45,8 +45,8 @@ import type {
 
 const ICON_SIZE = 34;
 const FEATURE_SKETCH_CANVAS_DEFAULT_SIZE = {
-  height: 920,
-  width: 1440,
+  height: 1280,
+  width: 1920,
 };
 const FEATURE_SKETCH_TABLET_WIDTH = 600;
 const FEATURE_SKETCH_SCALE_STEP = 10;
@@ -107,17 +107,17 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     windowDimensions.width >= FEATURE_SKETCH_TABLET_WIDTH;
   const featureSketchCanvasHeight = useMemo(
     () => {
-      const reservedHeight = isFeatureWideLayout ? 34 : 92;
+      const reservedHeight = isFeatureWideLayout ? 10 : 76;
+      const minimumHeight = isFeatureWideLayout ? 760 : 600;
+      const maximumHeight = isFeatureWideLayout ? 1360 : 980;
       const targetHeight = Math.max(
-        520,
+        minimumHeight,
         Math.round(windowDimensions.height - reservedHeight)
       );
-      const minimumHeight = isFeatureWideLayout ? 700 : 520;
-      const maximumHeight = isFeatureWideLayout ? 1180 : 860;
 
       return clamp(
         targetHeight,
-        Math.min(minimumHeight, targetHeight),
+        minimumHeight,
         maximumHeight
       );
     },
@@ -515,7 +515,13 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   );
 
   const renderFeatureLocationSketchPanel = () => (
-    <View style={styles.featureLocationPanel} testID="featureLocationSketchPanel">
+    <View
+      style={[
+        styles.featureLocationPanel,
+        isFeatureWideLayout && styles.featureLocationPanelWide,
+      ]}
+      testID="featureLocationSketchPanel"
+    >
       <View
         onLayout={handleFeatureSketchLayout}
         onMoveShouldSetResponder={() => true}
@@ -1274,15 +1280,17 @@ const styles = StyleSheet.create({
     marginVertical: 0,
   },
   featureCreationContent: {
+    flexGrow: 1,
     paddingBottom: 0,
     paddingHorizontal: 0,
-    flexGrow: 1,
   },
   featureCreationLayout: {
+    flex: 1,
     flexDirection: 'column',
   },
   featureCreationLayoutWide: {
     alignItems: 'stretch',
+    flex: 1,
     flexDirection: 'row',
   },
   featureCreationMapPane: {
@@ -1290,15 +1298,18 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   featureCreationMapPaneWide: {
-    flex: 6.6,
-    marginRight: 8,
+    flex: 1,
+    marginRight: 6,
+    minWidth: 0,
   },
   featureCreationFormPane: {
     minWidth: 0,
   },
   featureCreationFormPaneWide: {
-    flex: 0.74,
-    maxWidth: 270,
+    flexBasis: 286,
+    flexGrow: 0,
+    flexShrink: 0,
+    maxWidth: 286,
   },
   parentPanel: {
     backgroundColor: '#f8fafc',
@@ -1343,12 +1354,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   featureLocationPanel: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8faf7',
     borderColor: '#b8c4d0',
-    borderRadius: 5,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 0,
+    flex: 1,
     marginBottom: 0,
     overflow: 'hidden',
+  },
+  featureLocationPanelWide: {
+    minHeight: 760,
   },
   featureLocationHeader: {
     alignItems: 'flex-start',
@@ -1430,9 +1445,9 @@ const styles = StyleSheet.create({
     color: '#c2410c',
   },
   featureSketchCanvas: {
-    backgroundColor: '#f5f8f2',
+    backgroundColor: '#f8faf7',
     borderColor: '#8294a9',
-    borderRadius: 4,
+    borderRadius: 0,
     borderWidth: 0,
     height: 520,
     overflow: 'hidden',
@@ -1441,7 +1456,7 @@ const styles = StyleSheet.create({
   },
   featureSketchMapSurface: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f5f8f2',
+    backgroundColor: '#f8faf7',
   },
   featureSketchSatelliteField: {
     borderColor: 'rgba(52, 64, 84, 0.11)',

@@ -154,6 +154,62 @@ describe('KoreanFieldworkSoilColorPanelComponent', () => {
     });
 
 
+    it('renames the selected numbered Munsell swatch row for soil profile photos', () => {
+
+        const emittedStates: Array<Record<string, unknown>> = [];
+        component.document = {
+            resource: {
+                category: 'SoilProfilePhoto',
+                soilProfileColorSwatches: '1: 10YR 4/3\n2: 7.5YR 4/4'
+            }
+        } as any;
+        component.fieldDefinitions = [
+            { name: 'soilProfileActiveLayerNumber', editable: true },
+            { name: 'soilProfileColorSwatches', editable: true }
+        ] as any;
+        component.onChanged.subscribe(() => emittedStates.push({ ...component.document.resource }));
+
+        component.selectSoilColorRow(2);
+        component.setActiveSoilColorRowNumberInput('4');
+        component.applyActiveSoilColorRowNumber();
+
+        expect(component.document.resource.soilProfileColorSwatches).toBe('1: 10YR 4/3\n4: 7.5YR 4/4');
+        expect(component.document.resource.soilProfileActiveLayerNumber).toBe(4);
+        expect(component.getActiveSoilColorRowNumber()).toBe(4);
+        expect(emittedStates).toEqual([
+            {
+                category: 'SoilProfilePhoto',
+                soilProfileActiveLayerNumber: 4,
+                soilProfileColorSwatches: '1: 10YR 4/3\n4: 7.5YR 4/4'
+            }
+        ]);
+    });
+
+
+    it('keeps numbered Munsell swatch rows unchanged when a duplicate layer number is entered', () => {
+
+        component.document = {
+            resource: {
+                category: 'SoilProfilePhoto',
+                soilProfileActiveLayerNumber: 2,
+                soilProfileColorSwatches: '1: 10YR 4/3\n2: 7.5YR 4/4'
+            }
+        } as any;
+        component.fieldDefinitions = [
+            { name: 'soilProfileActiveLayerNumber', editable: true },
+            { name: 'soilProfileColorSwatches', editable: true }
+        ] as any;
+
+        component.selectSoilColorRow(2);
+        component.setActiveSoilColorRowNumberInput('1');
+        component.applyActiveSoilColorRowNumber();
+
+        expect(component.document.resource.soilProfileColorSwatches).toBe('1: 10YR 4/3\n2: 7.5YR 4/4');
+        expect(component.document.resource.soilProfileActiveLayerNumber).toBe(2);
+        expect(component.getActiveSoilColorRowNumberInput()).toBe('2');
+    });
+
+
     it('builds desktop Munsell values from hue, value, and chroma controls', () => {
 
         component.document = {

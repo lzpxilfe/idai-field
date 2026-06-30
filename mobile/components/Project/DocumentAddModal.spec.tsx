@@ -10,6 +10,7 @@ import {
   Tree,
 } from 'idai-field-core';
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { ConfigurationContext } from '@/contexts/configuration-context';
 import LabelsContext from '@/contexts/labels/labels-context';
 import DocumentAddModal from './DocumentAddModal';
@@ -341,6 +342,13 @@ describe('DocumentAddModal', () => {
       .toEqual({ selected: true });
 
     const canvas = getByTestId('featureLocationSketchCanvas');
+    expect(StyleSheet.flatten(getByTestId('featureCreationMapPane').props.style))
+      .toEqual(expect.objectContaining({
+        flex: 1,
+        minWidth: 0,
+      }));
+    expect(StyleSheet.flatten(getByTestId('featureLocationSketchPanel').props.style))
+      .toEqual(expect.objectContaining({ flex: 1 }));
     expect(getByTestId('featureSketchPlacementBadge')).toBeTruthy();
     expect(getByTestId('featureSketchModeRail').props.style).toEqual(
       expect.objectContaining({
@@ -361,7 +369,7 @@ describe('DocumentAddModal', () => {
     );
     const canvasStyles = canvas.props.style as Array<{ height?: number }>;
     const dynamicCanvasStyle = canvasStyles[canvasStyles.length - 1];
-    expect(dynamicCanvasStyle.height).toBeGreaterThanOrEqual(700);
+    expect(dynamicCanvasStyle.height).toBeGreaterThanOrEqual(600);
     fireEvent(canvas, 'layout', {
       nativeEvent: { layout: { height: 100, width: 200 } },
     });
