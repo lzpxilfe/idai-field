@@ -3507,6 +3507,11 @@ function validateRecordActionEvidencePriority() {
       || !desktopRecordActionSpecText.includes('opens existing tablet evidence records before neutral follow-up drafts')) {
     findings.push('desktop record actions must expose existing tablet evidence records as openable actions');
   }
+  if (!desktopRecordActionText.includes('FEATURE_LOCATION_SKETCH_FIELD')
+      || !desktopRecordActionText.includes('current-feature-location-sketch')
+      || !desktopRecordActionSpecText.includes('flat-map feature sketch after tablet placement exists')) {
+    findings.push('desktop record actions must surface missing tablet flat-map feature placement');
+  }
   if (!desktopRecordActionSpecText.includes('tablet handwriting PenMemo transcription')
       || !desktopRecordActionSpecText.includes('스케치 메모 1획/1점')
       || !desktopRecordActionSpecText.includes('pen-memo-handwriting-transcription')) {

@@ -48,6 +48,7 @@ const LINK_RELATIONS = [
     'isRecordedInFeature',
     'isMapLayerOf'
 ];
+const FEATURE_LOCATION_SKETCH_FIELD = 'featureLocationSketch';
 
 const CATEGORY_LABELS: Readonly<Record<string, string>> = {
     DailyLog: '작업일지',
@@ -96,6 +97,9 @@ export function makeKoreanFieldworkRecordActions(
     continuationActions
         .filter(action => !isExistingStructureAction(document, linkedDocuments, action))
         .forEach(action => actions.push(toCreateAction(action, document, 'neutral')));
+
+    const featureSketchAction = getMissingFeatureSketchAction(document);
+    if (featureSketchAction) actions.push(featureSketchAction);
 
     return dedupeActions(actions).slice(0, maxActions);
 }
@@ -178,6 +182,34 @@ function getOpenEvidenceAction(linkedDocuments: Document[]): KoreanFieldworkReco
         tone: 'success',
         documentId: document.resource.id
     };
+}
+
+
+function getMissingFeatureSketchAction(document: Document): KoreanFieldworkRecordActionItem|undefined {
+
+    if (document.resource.category !== 'Feature') return undefined;
+    if (hasFeatureLocationSketch(document.resource[FEATURE_LOCATION_SKETCH_FIELD])) return undefined;
+
+    return {
+        id: 'current-feature-location-sketch',
+        type: 'openDocument',
+        label: '위치 스케치 확인',
+        detail: '태블릿 평면지도 위치 스케치가 비어 있습니다. 전체 경계 안 위치와 유구 형태를 먼저 남기세요.',
+        icon: 'mdi-map-marker-path',
+        tone: 'warning',
+        documentId: document.resource.id
+    };
+}
+
+
+function hasFeatureLocationSketch(value: unknown): boolean {
+
+    if (typeof value !== 'string') return !!value;
+
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0
+        && normalizedValue !== '{}'
+        && normalizedValue !== '[]';
 }
 
 

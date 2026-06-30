@@ -102,8 +102,34 @@ describe('korean-fieldwork-record-actions', () => {
                 id: 'create-PenMemo',
                 label: '야장 메모 추가',
                 tone: 'neutral'
+            }),
+            expect.objectContaining({
+                id: 'current-feature-location-sketch',
+                label: '위치 스케치 확인',
+                tone: 'warning',
+                documentId: 'feature-1'
             })
         ]);
+    });
+
+
+    it('does not ask for a flat-map feature sketch after tablet placement exists', () => {
+
+        const feature = createDoc('feature-1', 'Feature', {}, {
+            featureLocationSketch: JSON.stringify({
+                version: 1,
+                shape: 'polygon',
+                center: { x: 50, y: 50 },
+                points: [{ x: 40, y: 40 }, { x: 60, y: 42 }, { x: 58, y: 60 }]
+            })
+        });
+        const actions = makeKoreanFieldworkRecordActions(
+            feature,
+            [feature],
+            createConfig({})
+        );
+
+        expect(actions.map(action => action.id)).not.toContain('current-feature-location-sketch');
     });
 
 
