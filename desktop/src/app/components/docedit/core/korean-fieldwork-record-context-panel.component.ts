@@ -121,6 +121,7 @@ interface FeatureSketchSvgEllipse {
 interface FeatureSketchSvgPreview {
     boundaryPath?: string;
     ellipse?: FeatureSketchSvgEllipse;
+    emptyLabel?: string;
     path?: string;
     points: FeatureSketchSvgPoint[];
     rect?: FeatureSketchSvgRect;
@@ -366,7 +367,13 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         if (this.document?.resource?.category !== FEATURE_CATEGORY_NAME) return undefined;
 
         const sketch = this.parseFeatureLocationSketch((this.document.resource as any).featureLocationSketch);
-        if (!sketch) return undefined;
+        if (!sketch) {
+            return {
+                location: this.makeEmptyFeatureLocationSketchSvg('위치 스케치 필요', true),
+                shape: this.makeEmptyFeatureLocationSketchSvg('형태 스케치 필요', false),
+                summary: '스케치 필요'
+            };
+        }
 
         return {
             location: this.makeFeatureLocationSketchSvg(sketch, true),
@@ -1180,6 +1187,21 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
             y: this.roundSvg(point.y)
         }));
         return preview;
+    }
+
+
+    private makeEmptyFeatureLocationSketchSvg(emptyLabel: string,
+                                              locationPreview: boolean): FeatureSketchSvgPreview {
+
+        return {
+            boundaryPath: locationPreview
+                ? `M ${FEATURE_SKETCH_PADDING} ${FEATURE_SKETCH_PADDING} H ${FEATURE_SKETCH_WIDTH - FEATURE_SKETCH_PADDING} `
+                    + `V ${FEATURE_SKETCH_HEIGHT - FEATURE_SKETCH_PADDING} H ${FEATURE_SKETCH_PADDING} Z`
+                : undefined,
+            emptyLabel,
+            points: [],
+            viewBox: FEATURE_SKETCH_VIEWBOX
+        };
     }
 
 

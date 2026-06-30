@@ -191,6 +191,31 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('keeps the desktop feature sketch reference visible before a sketch is drawn', () => {
+
+        const feature = createDocument('feature-1', 'Feature', 'F1', {}, {
+            featureRecordingStatus: 'candidate'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [feature] })
+        });
+        component.document = feature as any;
+        component.fieldDefinitions = [
+            field('featureRecordingStatus')
+        ] as any;
+
+        expect(component.hasFeatureLocationSketchPreview()).toBe(true);
+
+        const preview = component.getFeatureLocationSketchPreview()!;
+
+        expect(preview.summary).toBe('스케치 필요');
+        expect(preview.location.boundaryPath).toBe('M 8 8 H 112 V 72 H 8 Z');
+        expect(preview.location.emptyLabel).toBe('위치 스케치 필요');
+        expect(preview.shape.emptyLabel).toBe('형태 스케치 필요');
+        expect(preview.shape.points).toEqual([]);
+    });
+
+
     it('keeps rotated tablet oval sketches visible on desktop feature records', () => {
 
         const feature = createDocument('feature-1', 'Feature', 'F1', {}, {

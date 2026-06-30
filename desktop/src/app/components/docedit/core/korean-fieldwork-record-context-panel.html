@@ -78,6 +78,11 @@
                               [attr.x]="point.x"
                               [attr.y]="point.y + 1.5">{{point.label}}</text>
                     </g>
+                    <text *ngIf="sketchPreview.location.emptyLabel"
+                          class="empty-label"
+                          x="60"
+                          y="41"
+                          text-anchor="middle">{{sketchPreview.location.emptyLabel}}</text>
                 </svg>
             </div>
             <div class="korean-fieldwork-record-context-feature-sketch-card">
@@ -115,6 +120,11 @@
                               [attr.x]="point.x"
                               [attr.y]="point.y + 1.5">{{point.label}}</text>
                     </g>
+                    <text *ngIf="sketchPreview.shape.emptyLabel"
+                          class="empty-label"
+                          x="60"
+                          y="41"
+                          text-anchor="middle">{{sketchPreview.shape.emptyLabel}}</text>
                 </svg>
             </div>
         </div>
