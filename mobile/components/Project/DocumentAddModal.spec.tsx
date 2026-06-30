@@ -59,6 +59,7 @@ describe('DocumentAddModal', () => {
     )).toBeTruthy();
     expect(getByText('유구로 바로 만들기')).toBeTruthy();
     expect(queryByText('조사 참고')).toBeNull();
+    fireEvent.changeText(getByTestId('featureIdentifierInput'), '  1호 수혈  ');
 
     fireEvent.press(getByTestId('featureTypeHelp_pit'));
 
@@ -70,7 +71,42 @@ describe('DocumentAddModal', () => {
 
     expect(onAddCategory).toHaveBeenCalledWith(C.FEATURE, parentDoc, {
       featureType: 'pit',
+      identifier: '1호 수혈',
     });
+  });
+
+  it('does not create a feature before the feature name is entered', () => {
+    const onAddCategory = jest.fn();
+    const parentDoc = {
+      resource: {
+        id: 'trench-1',
+        identifier: 'T1',
+        category: C.TRENCH,
+        relations: {},
+      },
+    } as any;
+
+    const { getByTestId, getByText } = render(
+      <LabelsContext.Provider value={{ labels: new Labels(() => ['ko']) }}>
+        <ConfigurationContext.Provider value={createConfig([
+          createCategory(C.TRENCH),
+          createCategory(C.FEATURE),
+        ])}
+        >
+          <DocumentAddModal
+            onAddCategory={onAddCategory}
+            onClose={jest.fn()}
+            parentDoc={parentDoc}
+          />
+        </ConfigurationContext.Provider>
+      </LabelsContext.Provider>
+    );
+
+    fireEvent.press(getByTestId(`addCategory_${C.FEATURE}`));
+    fireEvent.press(getByTestId('featureType_startUnknown'));
+
+    expect(getByText('유구명을 먼저 입력하세요.')).toBeTruthy();
+    expect(onAddCategory).not.toHaveBeenCalled();
   });
 
   it('can create a feature without choosing a detailed type first', () => {
@@ -101,10 +137,12 @@ describe('DocumentAddModal', () => {
     );
 
     fireEvent.press(getByTestId(`addCategory_${C.FEATURE}`));
+    fireEvent.changeText(getByTestId('featureIdentifierInput'), '1호 유구');
     fireEvent.press(getByTestId('featureType_startUnknown'));
 
     expect(onAddCategory).toHaveBeenCalledWith(C.FEATURE, parentDoc, {
       featureType: 'unknown',
+      identifier: '1호 유구',
     });
   });
 

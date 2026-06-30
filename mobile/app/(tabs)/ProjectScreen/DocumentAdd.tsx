@@ -61,6 +61,7 @@ const DocumentAdd: React.FC = () => {
   const parentDocId = getParam(params.parentDocId);
   const categoryName = getParam(params.categoryName);
   const featureType = getParam(params.featureType);
+  const identifier = getParam(params.identifier);
   const returnTarget = getKoreanFieldworkReturnTarget(params.returnTo);
   const parentDoc = useDocument(repository, parentDocId);
 
@@ -82,10 +83,11 @@ const DocumentAdd: React.FC = () => {
       setNewResource(
         createKoreanFieldworkDraftResource(parentDoc, categoryName, config, {
           featureType,
+          identifier,
         })
       );
     },
-    [parentDoc, categoryName, config, featureType]
+    [parentDoc, categoryName, config, featureType, identifier]
   );
 
   useEffect(() => setResourceToDefault(), [setResourceToDefault, category]);

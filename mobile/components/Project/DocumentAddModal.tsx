@@ -15,6 +15,7 @@ import Button from '@/components/common/Button';
 import Card from '@/components/common/Card';
 import CategoryIcon from '@/components/common/CategoryIcon';
 import Heading from '@/components/common/Heading';
+import Input from '@/components/common/Input';
 import TitleBar from '@/components/common/TitleBar';
 import LabelsContext from '@/contexts/labels/labels-context';
 import {
@@ -53,6 +54,9 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   const config = useContext(ConfigurationContext);
   const { labels } = useContext(LabelsContext);
   const [expandedFeatureGuideType, setExpandedFeatureGuideType] = useState<string>();
+  const [featureIdentifier, setFeatureIdentifier] = useState('');
+  const [featureIdentifierWasRequested, setFeatureIdentifierWasRequested] =
+    useState(false);
   const [isChoosingFeatureType, setIsChoosingFeatureType] = useState(false);
 
   const isAllowedCategory = useCallback(
@@ -92,6 +96,8 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   const openAddOption = (option: KoreanFieldworkAddOption) => {
     if (option.categoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE) {
       setExpandedFeatureGuideType(undefined);
+      setFeatureIdentifier('');
+      setFeatureIdentifierWasRequested(false);
       setIsChoosingFeatureType(true);
       return;
     }
@@ -131,6 +137,29 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       setExpandedFeatureGuideType((currentType) =>
         currentType === featureType ? undefined : featureType);
     };
+    const normalizedFeatureIdentifier = featureIdentifier.trim();
+    const canCreateFeature = normalizedFeatureIdentifier.length > 0;
+
+    const updateFeatureIdentifier = (value: string) => {
+      setFeatureIdentifier(value);
+      if (value.trim().length > 0) setFeatureIdentifierWasRequested(false);
+    };
+
+    const createFeature = (featureType: string) => {
+      if (!canCreateFeature) {
+        setFeatureIdentifierWasRequested(true);
+        return;
+      }
+
+      onAddCategory(
+        KOREAN_FIELDWORK_CATEGORIES.FEATURE,
+        parentDoc,
+        {
+          featureType,
+          identifier: normalizedFeatureIdentifier,
+        }
+      );
+    };
 
     const renderFeatureInvestigationGuide = (featureType: string) => (
       <View style={styles.featureGuide}>
@@ -159,16 +188,31 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
             {KOREAN_FIELDWORK_HIERARCHY_HELP}
           </Text>
         </View>
+        <View style={styles.featureNamePanel}>
+          <Input
+            autoFocus
+            isValid={!featureIdentifierWasRequested || canCreateFeature}
+            invalidText="유구명을 먼저 입력하세요."
+            label="유구명"
+            onChangeText={updateFeatureIdentifier}
+            placeholder="예: 1호 수혈"
+            returnKeyType="done"
+            testID="featureIdentifierInput"
+            value={featureIdentifier}
+          />
+          <Text style={styles.featureNameHint}>
+            현장에서 부르는 이름을 먼저 적고, 아래에서 유구 성격을 고르세요.
+          </Text>
+        </View>
         <View style={styles.startUnknownFeature}>
           <View style={styles.featureTypeHeader}>
             <TouchableOpacity
               activeOpacity={0.86}
-              onPress={() => onAddCategory(
-                KOREAN_FIELDWORK_CATEGORIES.FEATURE,
-                parentDoc,
-                { featureType: 'unknown' }
-              )}
-              style={styles.featureTypeCreateArea}
+              onPress={() => createFeature('unknown')}
+              style={[
+                styles.featureTypeCreateArea,
+                !canCreateFeature && styles.featureTypeCreateAreaWaiting,
+              ]}
               testID="featureType_startUnknown"
             >
               <Ionicons name="add-circle-outline" size={22} color="#027a48" />
@@ -209,12 +253,11 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
               <View style={styles.featureTypeHeader}>
                 <TouchableOpacity
                   activeOpacity={0.86}
-                  onPress={() => onAddCategory(
-                    KOREAN_FIELDWORK_CATEGORIES.FEATURE,
-                    parentDoc,
-                    { featureType: option.value }
-                  )}
-                  style={styles.featureTypeCreateArea}
+                  onPress={() => createFeature(option.value)}
+                  style={[
+                    styles.featureTypeCreateArea,
+                    !canCreateFeature && styles.featureTypeCreateAreaWaiting,
+                  ]}
                   testID={`featureType_${option.value}`}
                 >
                   <CategoryIcon category={featureCategory} size={24} />
@@ -289,6 +332,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
                 onPress={isChoosingFeatureType
                   ? () => {
                     setExpandedFeatureGuideType(undefined);
+                    setFeatureIdentifierWasRequested(false);
                     setIsChoosingFeatureType(false);
                   }
                   : onClose}
@@ -408,6 +452,22 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginTop: 6,
   },
+  featureNamePanel: {
+    backgroundColor: 'white',
+    borderColor: '#b9c7d5',
+    borderRadius: 6,
+    borderWidth: 1,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  featureNameHint: {
+    color: '#526272',
+    fontSize: 12,
+    lineHeight: 16,
+    marginHorizontal: 5,
+    marginTop: 2,
+  },
   optionSection: {
     marginBottom: 12,
   },
@@ -483,6 +543,9 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     minHeight: 52,
+  },
+  featureTypeCreateAreaWaiting: {
+    opacity: 0.58,
   },
   featureTypeText: {
     flex: 1,

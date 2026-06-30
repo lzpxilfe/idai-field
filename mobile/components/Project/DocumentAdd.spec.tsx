@@ -43,6 +43,11 @@ const getMapSettings = jest.fn();
 const setMapProviderSettings = jest.fn();
 
 jest.mock('@/repositories/document-repository');
+jest.mock('@/hooks/use-pouchdb-datastore', () => ({
+  __esModule: true,
+  default: jest.fn(),
+  destroyPouchDbDatastore: jest.fn(),
+}));
 jest.mock('@/contexts/project-context', () => {
   const React = require('react');
   return { ProjectContext: React.createContext(null) };

@@ -49,6 +49,7 @@ const DRAFT_IDENTIFIER_PREFIXES: Readonly<Record<string, string>> = {
 
 export interface KoreanFieldworkDraftResourceOptions {
   featureType?: string;
+  identifier?: string;
 }
 
 export const createKoreanFieldworkDraftResource = (
@@ -61,7 +62,11 @@ export const createKoreanFieldworkDraftResource = (
     ? getKoreanFieldworkFeatureTypeOption(options.featureType)
     : undefined;
   const resource: NewResource = {
-    identifier: createDraftIdentifier(categoryName, featureTypeOption?.value),
+    identifier: createDraftIdentifier(
+      categoryName,
+      featureTypeOption?.value,
+      options.identifier
+    ),
     relations: createKoreanFieldworkDraftRelations(parentDoc, categoryName, config),
     category: categoryName,
   };
@@ -196,8 +201,12 @@ export const createKoreanFieldworkDraftRelations = (
 
 export const createDraftIdentifier = (
   categoryName: string,
-  featureType?: string
+  featureType?: string,
+  preferredIdentifier?: string
 ): string => {
+  const normalizedPreferredIdentifier = preferredIdentifier?.trim();
+  if (normalizedPreferredIdentifier) return normalizedPreferredIdentifier;
+
   const featureTypeOption = categoryName === C.FEATURE
     ? getKoreanFieldworkFeatureTypeOption(featureType)
     : undefined;

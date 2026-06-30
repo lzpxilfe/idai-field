@@ -112,6 +112,31 @@ describe('Korean fieldwork document drafts', () => {
     });
   });
 
+  it('uses the entered field feature name as the Feature draft identifier', () => {
+    const trenchDoc = createDoc('trench-1', C.TRENCH, {
+      isRecordedIn: ['operation-1'],
+    });
+    const config = allowRelations({
+      [`${C.FEATURE}:${C.TRENCH}`]: ['liesWithin'],
+    });
+
+    const draft = createKoreanFieldworkDraftResource(
+      trenchDoc,
+      C.FEATURE,
+      config,
+      {
+        featureType: 'pit',
+        identifier: '  1호 수혈  ',
+      }
+    );
+
+    expect(draft).toMatchObject({
+      identifier: '1호 수혈',
+      category: C.FEATURE,
+      featureType: 'pit',
+    });
+  });
+
   it('starts kiln Feature drafts with kiln interpretation metadata', () => {
     const trenchDoc = createDoc('trench-1', C.TRENCH, {
       isRecordedIn: ['operation-1'],
