@@ -21,7 +21,6 @@ import SoilProfileCameraButton, {
 } from '@/components/Project/SoilProfileCameraButton';
 import KoreanFieldworkDraftContinuationPanel from '@/components/Project/KoreanFieldworkDraftContinuationPanel';
 import KoreanFieldworkDraftContextPanel from '@/components/Project/KoreanFieldworkDraftContextPanel';
-import KoreanFieldworkDraftPresetPanel from '@/components/Project/KoreanFieldworkDraftPresetPanel';
 import FieldworkPhotoAnnotationPanel, {
   FIELDWORK_PHOTO_ANNOTATION_FIELDS,
   FieldworkPhotoSamplePoint,
@@ -265,11 +264,6 @@ const DocumentAdd: React.FC = () => {
           <KoreanFieldworkDraftContextPanel
             parentDocument={parentDoc}
             resource={newResource}
-          />
-          <KoreanFieldworkDraftPresetPanel
-            category={category}
-            resource={newResource}
-            onApplyPreset={applyResourceUpdates}
           />
           <KoreanFieldworkQuickRecordPanel
             category={category}

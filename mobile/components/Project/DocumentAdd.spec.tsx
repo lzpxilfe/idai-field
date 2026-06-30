@@ -163,6 +163,13 @@ describe('DocumentAdd', () => {
       .toBeTruthy();
   });
 
+  it('does not show the record template panel above detailed form fields', async () => {
+    await waitFor(() => renderAPI.getByTestId('documentForm'));
+
+    expect(renderAPI.queryByTestId('koreanFieldworkDraftPresetPanel')).toBeNull();
+    expect(renderAPI.queryByText('기록 템플릿')).toBeNull();
+  });
+
   it('keeps compatibility fields out of a fresh fieldwork draft', async () => {
     await waitFor(() => renderAPI.getByTestId('documentForm'));
 
