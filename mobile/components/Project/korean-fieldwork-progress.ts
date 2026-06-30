@@ -195,6 +195,8 @@ const getProgressStage = (
   const resource = getResource(document);
   const issueCount = issues.length;
   const hasCriticalIssue = issues.some((issue) => issue.severity === 'critical');
+  const usesFeatureFirstWorkflow = investigationModeId === 'excavation'
+    || !shouldUseKoreanFieldworkTrenchWorkflow(investigationModeId);
 
   if (issueCount > 0) {
     return toStage(
@@ -207,7 +209,7 @@ const getProgressStage = (
 
   if (
     document.resource.category === C.OPERATION
-    && !shouldUseKoreanFieldworkTrenchWorkflow(investigationModeId)
+    && usesFeatureFirstWorkflow
     && !descendants.some((descendant) => descendant.resource.category === C.FEATURE)
   ) {
     return toStage(
@@ -331,13 +333,16 @@ const getProgressAction = (
   }
 
   if (stageId === 'investigation') {
+    const usesFeatureFirstWorkflow = investigationModeId === 'excavation'
+      || !shouldUseKoreanFieldworkTrenchWorkflow(investigationModeId);
+
     if (actionLabel === '조사 과정 열기') {
       return { type: 'openDocument', documentId: document.resource.id };
     }
 
     if (
       document.resource.category === C.OPERATION
-      && !shouldUseKoreanFieldworkTrenchWorkflow(investigationModeId)
+      && usesFeatureFirstWorkflow
     ) {
       return {
         type: 'createDocument',

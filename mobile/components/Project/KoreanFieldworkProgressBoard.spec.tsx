@@ -59,6 +59,8 @@ describe('KoreanFieldworkProgressBoard', () => {
     );
 
     expect(getByText('유구 기록')).toBeTruthy();
+    expect(getByText('제토 뒤 확인한 유구를 조사 경계 안에 먼저 기록하세요.'))
+      .toBeTruthy();
 
     fireEvent.press(getByTestId('progressAction_operation-1'));
 
