@@ -13,6 +13,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  Alert,
   GestureResponderEvent,
   ScrollView,
   StyleSheet,
@@ -22,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import CategoryIcon from '@/components/common/CategoryIcon';
+import SwipeableActionRow from '@/components/common/SwipeableActionRow';
 import DocumentAddModal from '@/components/Project/DocumentAddModal';
 import KoreanFieldworkDailyJournalCalendar from '@/components/Project/KoreanFieldworkDailyJournalCalendar';
 import KoreanFieldworkDailyNotebookDigest from '@/components/Project/KoreanFieldworkDailyNotebookDigest';
@@ -225,6 +227,7 @@ const DocumentsList: React.FC = () => {
     hierarchyPath,
     onDocumentSelected,
     pushToHierarchy,
+    relationsManager,
     repository,
   } = useContext(ProjectContext);
   const config = useContext(ConfigurationContext);
@@ -456,6 +459,52 @@ const DocumentsList: React.FC = () => {
   const editDocument = (document: Document) => {
     editDocumentById(document.resource.id, document.resource.category);
   };
+  const confirmRemoveDocument = useCallback((document: Document) => {
+    if (!relationsManager) {
+      showToast(
+        ToastType.Error,
+        '관계 색인을 준비하는 중입니다. 잠시 후 다시 삭제해 주세요.'
+      );
+      return;
+    }
+
+    const identifier = getKoreanFieldworkDisplayIdentifier(
+      document.resource.identifier
+    ) || document.resource.id;
+
+    Alert.alert(
+      '기록 삭제',
+      `${identifier} 기록을 삭제할까요? 하위 기록도 함께 삭제됩니다.`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: () => {
+            relationsManager
+              .remove(document, { descendants: true })
+              .then(() => {
+                if (selectedWorkbenchDocumentId === document.resource.id) {
+                  setSelectedWorkbenchDocumentId(undefined);
+                  setIsSelectedWorkbenchExpanded(false);
+                }
+                showToast(ToastType.Info, `${identifier} 기록을 삭제했습니다.`);
+              })
+              .catch((err) => {
+                showToast(
+                  ToastType.Error,
+                  `${identifier} 기록을 삭제하지 못했습니다: ${err}`
+                );
+              });
+          },
+        },
+      ]
+    );
+  }, [
+    relationsManager,
+    selectedWorkbenchDocumentId,
+    showToast,
+  ]);
   const getAllowedAddCategoryNames = useCallback(
     (document: Document) => getKoreanFieldworkAllowedChildCategoryNames(
       document,
@@ -1112,6 +1161,7 @@ const DocumentsList: React.FC = () => {
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
               onEditDocument={editDocument}
+              onDeleteDocument={confirmRemoveDocument}
             />
           ))}
 
@@ -1133,6 +1183,7 @@ const DocumentsList: React.FC = () => {
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
               onEditDocument={editDocument}
+              onDeleteDocument={confirmRemoveDocument}
             />
           )}
         </View>
@@ -1318,6 +1369,7 @@ const RecordSection: React.FC<{
   onAddChild: (document: Document) => void;
   onAddDocumentOfCategory: (parentDoc: Document, categoryName: string) => void;
   onEditDocument: (document: Document) => void;
+  onDeleteDocument: (document: Document) => void;
 }> = ({
   title,
   subtitle,
@@ -1332,6 +1384,7 @@ const RecordSection: React.FC<{
   onAddChild,
   onAddDocumentOfCategory,
   onEditDocument,
+  onDeleteDocument,
 }) => {
   const allDocuments = Array.from(documentsById.values());
 
@@ -1362,6 +1415,7 @@ const RecordSection: React.FC<{
           onOpenEvidence={onOpenDocument}
           onAddEvidence={onAddDocumentOfCategory}
           onEdit={() => onEditDocument(document)}
+          onDelete={() => onDeleteDocument(document)}
         />
       ))}
     </View>
@@ -1382,6 +1436,7 @@ const RecordRow: React.FC<{
   onOpenEvidence: (document: Document) => void;
   onAddEvidence: (parentDoc: Document, categoryName: string) => void;
   onEdit: () => void;
+  onDelete: () => void;
 }> = ({
   document,
   documents,
@@ -1396,6 +1451,7 @@ const RecordRow: React.FC<{
   onOpenEvidence,
   onAddEvidence,
   onEdit,
+  onDelete,
 }) => {
   const config = useContext(ConfigurationContext);
   const category = config.getCategory(document.resource.category);
@@ -1424,12 +1480,33 @@ const RecordRow: React.FC<{
   const visibleActions = actionSummary.actions.slice(0, 2);
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.88}
-      style={[styles.recordRow, selected && styles.recordRowSelected]}
-      onPress={onOpen}
-      testID={`recordRow_${document.resource.id}`}
+    <SwipeableActionRow
+      actions={[
+        {
+          icon: 'edit',
+          id: 'edit',
+          label: '수정',
+          onPress: onEdit,
+          testID: `recordSwipeEdit_${document.resource.id}`,
+          tone: 'primary',
+        },
+        {
+          icon: 'delete-outline',
+          id: 'delete',
+          label: '삭제',
+          onPress: onDelete,
+          testID: `recordSwipeDelete_${document.resource.id}`,
+          tone: 'danger',
+        },
+      ]}
+      testID={`recordSwipe_${document.resource.id}`}
     >
+      <TouchableOpacity
+        activeOpacity={0.88}
+        style={[styles.recordRow, selected && styles.recordRowSelected]}
+        onPress={onOpen}
+        testID={`recordRow_${document.resource.id}`}
+      >
       <View style={styles.recordIcon}>
         {category
           ? <CategoryIcon category={category} size={24} />
@@ -1532,7 +1609,8 @@ const RecordRow: React.FC<{
           <MaterialIcons name="edit" size={20} color="#475467" />
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </SwipeableActionRow>
   );
 };
 
