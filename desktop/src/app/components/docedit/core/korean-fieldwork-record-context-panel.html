@@ -30,6 +30,96 @@
         </span>
     </div>
 
+    <div *ngIf="getFeatureLocationSketchPreview() as sketchPreview"
+         class="korean-fieldwork-record-context-feature-sketch">
+        <div class="korean-fieldwork-record-context-feature-sketch-title">
+            <span class="mdi mdi-map-marker-path"></span>
+            <span>유구 위치와 형태</span>
+            <span class="korean-fieldwork-record-context-feature-sketch-summary">
+                {{sketchPreview.summary}}
+            </span>
+        </div>
+        <div class="korean-fieldwork-record-context-feature-sketch-grid">
+            <div class="korean-fieldwork-record-context-feature-sketch-card">
+                <div class="korean-fieldwork-record-context-feature-sketch-card-title">
+                    전체 경계 안 위치
+                </div>
+                <svg class="korean-fieldwork-record-context-feature-sketch-svg"
+                     [attr.viewBox]="sketchPreview.location.viewBox"
+                     role="img"
+                     aria-label="전체 경계 안 유구 위치">
+                    <path *ngIf="sketchPreview.location.boundaryPath"
+                          class="boundary"
+                          [attr.d]="sketchPreview.location.boundaryPath"></path>
+                    <path *ngIf="sketchPreview.location.path"
+                          class="feature-line"
+                          [attr.d]="sketchPreview.location.path"></path>
+                    <rect *ngIf="sketchPreview.location.rect as rect"
+                          class="feature-shape"
+                          [attr.x]="rect.x"
+                          [attr.y]="rect.y"
+                          [attr.width]="rect.width"
+                          [attr.height]="rect.height"
+                          [attr.rx]="rect.rx"
+                          [attr.transform]="rect.transform"></rect>
+                    <ellipse *ngIf="sketchPreview.location.ellipse as ellipse"
+                             class="feature-shape"
+                             [attr.cx]="ellipse.cx"
+                             [attr.cy]="ellipse.cy"
+                             [attr.rx]="ellipse.rx"
+                             [attr.ry]="ellipse.ry"
+                             [attr.transform]="ellipse.transform"></ellipse>
+                    <g *ngFor="let point of sketchPreview.location.points">
+                        <circle class="feature-point"
+                                [attr.cx]="point.x"
+                                [attr.cy]="point.y"
+                                r="3"></circle>
+                        <text *ngIf="point.label"
+                              [attr.x]="point.x"
+                              [attr.y]="point.y + 1.5">{{point.label}}</text>
+                    </g>
+                </svg>
+            </div>
+            <div class="korean-fieldwork-record-context-feature-sketch-card">
+                <div class="korean-fieldwork-record-context-feature-sketch-card-title">
+                    유구 형태 스케치
+                </div>
+                <svg class="korean-fieldwork-record-context-feature-sketch-svg"
+                     [attr.viewBox]="sketchPreview.shape.viewBox"
+                     role="img"
+                     aria-label="유구 형태 스케치">
+                    <path *ngIf="sketchPreview.shape.path"
+                          class="feature-line"
+                          [attr.d]="sketchPreview.shape.path"></path>
+                    <rect *ngIf="sketchPreview.shape.rect as rect"
+                          class="feature-shape"
+                          [attr.x]="rect.x"
+                          [attr.y]="rect.y"
+                          [attr.width]="rect.width"
+                          [attr.height]="rect.height"
+                          [attr.rx]="rect.rx"
+                          [attr.transform]="rect.transform"></rect>
+                    <ellipse *ngIf="sketchPreview.shape.ellipse as ellipse"
+                             class="feature-shape"
+                             [attr.cx]="ellipse.cx"
+                             [attr.cy]="ellipse.cy"
+                             [attr.rx]="ellipse.rx"
+                             [attr.ry]="ellipse.ry"
+                             [attr.transform]="ellipse.transform"></ellipse>
+                    <g *ngFor="let point of sketchPreview.shape.points">
+                        <circle class="feature-point"
+                                [attr.cx]="point.x"
+                                [attr.cy]="point.y"
+                                r="3"></circle>
+                        <text *ngIf="point.label"
+                              [attr.x]="point.x"
+                              [attr.y]="point.y + 1.5">{{point.label}}</text>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
     <div *ngIf="hasEvidenceMetrics()" class="korean-fieldwork-record-context-evidence">
         <div class="korean-fieldwork-record-context-evidence-title">
             <span class="mdi mdi-file-document-check-outline"></span>

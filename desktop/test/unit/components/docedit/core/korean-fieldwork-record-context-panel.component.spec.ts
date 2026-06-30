@@ -151,6 +151,83 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('shows tablet feature location sketches as desktop reference previews', () => {
+
+        const feature = createDocument('feature-1', 'Feature', 'F1', {}, {
+            featureLocationSketch: JSON.stringify({
+                version: 1,
+                shape: 'polygon',
+                center: { x: 68, y: 52 },
+                points: [
+                    { x: 60, y: 42 },
+                    { x: 80, y: 45 },
+                    { x: 76, y: 62 },
+                    { x: 58, y: 59 }
+                ],
+                rotation: 0,
+                scale: 100
+            }),
+            featureRecordingStatus: 'investigating'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [feature] })
+        });
+        component.document = feature as any;
+        component.fieldDefinitions = [
+            field('featureRecordingStatus')
+        ] as any;
+
+        expect(component.hasFeatureLocationSketchPreview()).toBe(true);
+
+        const preview = component.getFeatureLocationSketchPreview()!;
+
+        expect(preview.summary).toBe('점 연결 4점');
+        expect(preview.location.boundaryPath).toBe('M 8 8 H 112 V 72 H 8 Z');
+        expect(preview.location.path).toContain('Z');
+        expect(preview.location.points.map(point => point.label)).toEqual(['1', '2', '3', '4']);
+        expect(preview.shape.boundaryPath).toBeUndefined();
+        expect(preview.shape.path).toMatch(/^M /);
+        expect(preview.shape.path).toContain('Z');
+    });
+
+
+    it('keeps rotated tablet oval sketches visible on desktop feature records', () => {
+
+        const feature = createDocument('feature-1', 'Feature', 'F1', {}, {
+            featureLocationSketch: JSON.stringify({
+                version: 1,
+                shape: 'oval',
+                center: { x: 75, y: 50 },
+                points: [{ x: 75, y: 50 }],
+                rotation: 15,
+                scale: 110
+            }),
+            featureRecordingStatus: 'investigating'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [feature] })
+        });
+        component.document = feature as any;
+        component.fieldDefinitions = [
+            field('featureRecordingStatus')
+        ] as any;
+
+        const preview = component.getFeatureLocationSketchPreview()!;
+
+        expect(preview.summary).toBe('타원 · 중심 75%, 50%');
+        expect(preview.location.ellipse).toEqual(expect.objectContaining({
+            cx: 86,
+            cy: 40,
+            transform: 'rotate(15 86 40)'
+        }));
+        expect(preview.shape.ellipse).toEqual(expect.objectContaining({
+            cx: 60,
+            cy: 40,
+            transform: 'rotate(15 60 40)'
+        }));
+    });
+
+
     it('shows direct tablet photos on desktop find records', async () => {
 
         const find = createDocument('find-1', 'Find', 'FIND1', {}, {

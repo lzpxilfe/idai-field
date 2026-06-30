@@ -79,6 +79,59 @@ interface EvidenceInsight {
     tone: 'info'|'warning';
 }
 
+type FeatureSketchShape = 'point'|'polygon'|'rectangle'|'oval';
+
+interface FeatureSketchPoint {
+    x: number;
+    y: number;
+}
+
+interface FeatureLocationSketch {
+    center: FeatureSketchPoint;
+    points: FeatureSketchPoint[];
+    rotation: number;
+    scale: number;
+    shape: FeatureSketchShape;
+}
+
+interface FeatureSketchSvgPoint {
+    label?: string;
+    x: number;
+    y: number;
+}
+
+interface FeatureSketchSvgRect {
+    height: number;
+    rx: number;
+    transform?: string;
+    width: number;
+    x: number;
+    y: number;
+}
+
+interface FeatureSketchSvgEllipse {
+    cx: number;
+    cy: number;
+    rx: number;
+    ry: number;
+    transform?: string;
+}
+
+interface FeatureSketchSvgPreview {
+    boundaryPath?: string;
+    ellipse?: FeatureSketchSvgEllipse;
+    path?: string;
+    points: FeatureSketchSvgPoint[];
+    rect?: FeatureSketchSvgRect;
+    viewBox: string;
+}
+
+interface FeatureLocationSketchPreview {
+    location: FeatureSketchSvgPreview;
+    shape: FeatureSketchSvgPreview;
+    summary: string;
+}
+
 const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'featureInvestigationChecklist',
     'fieldworkPhotoAnnotationStrokes',
@@ -134,6 +187,11 @@ const CHILD_RELATIONS = ['liesWithin', 'isRecordedIn', 'isRecordedInFeature'];
 const LINKED_EVIDENCE_RELATIONS = ['depicts', 'isDepictedIn', 'isMapLayerOf', 'isSubjectOf', 'isResultOf'];
 const NOTEBOOK_APPEND_TARGET_FIELDS = ['description', 'featureChecklistNote', 'interpretation', 'shortDescription'];
 const FEATURE_CATEGORY_NAME = 'Feature';
+const FEATURE_SKETCH_SHAPES = new Set<FeatureSketchShape>(['point', 'polygon', 'rectangle', 'oval']);
+const FEATURE_SKETCH_VIEWBOX = '0 0 120 80';
+const FEATURE_SKETCH_WIDTH = 120;
+const FEATURE_SKETCH_HEIGHT = 80;
+const FEATURE_SKETCH_PADDING = 8;
 
 const FEATURE_RECORDING_STATUS_LABELS: Readonly<Record<string, ContextChip>> = {
     candidate: { label: '조사 전', tone: 'warning' },
@@ -285,6 +343,25 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
 
 
     public getEvidenceInsights = () => this.evidenceInsights;
+
+
+    public hasFeatureLocationSketchPreview = () =>
+        this.getFeatureLocationSketchPreview() !== undefined;
+
+
+    public getFeatureLocationSketchPreview(): FeatureLocationSketchPreview|undefined {
+
+        if (this.document?.resource?.category !== FEATURE_CATEGORY_NAME) return undefined;
+
+        const sketch = this.parseFeatureLocationSketch((this.document.resource as any).featureLocationSketch);
+        if (!sketch) return undefined;
+
+        return {
+            location: this.makeFeatureLocationSketchSvg(sketch, true),
+            shape: this.makeFeatureLocationSketchSvg(sketch, false),
+            summary: this.getFeatureLocationSketchSummary(sketch)
+        };
+    }
 
 
     public getContinuationActionLabel(action: KoreanFieldworkContinuationAction): string {
@@ -937,6 +1014,210 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         const value = this.document?.resource?.[fieldName];
 
         return typeof value === 'string' ? value : '';
+    }
+
+
+    private parseFeatureLocationSketch(value: unknown): FeatureLocationSketch|undefined {
+
+        const rawValue = typeof value === 'string' ? this.parseJsonObject(value) : value;
+        if (!this.isRecord(rawValue)) return undefined;
+
+        const shapeValue = rawValue.shape;
+        const shape = typeof shapeValue === 'string' && FEATURE_SKETCH_SHAPES.has(shapeValue as FeatureSketchShape)
+            ? shapeValue as FeatureSketchShape
+            : undefined;
+        if (!shape) return undefined;
+
+        const points = Array.isArray(rawValue.points)
+            ? rawValue.points.map(point => this.normalizeSketchPoint(point))
+                .filter((point): point is FeatureSketchPoint => point !== undefined)
+            : [];
+        const center = this.normalizeSketchPoint(rawValue.center)
+            ?? points[0]
+            ?? { x: 50, y: 50 };
+
+        return {
+            center,
+            points: shape === 'polygon' ? points : (points.length > 0 ? points : [center]),
+            rotation: this.normalizeNumber(rawValue.rotation, 0),
+            scale: this.clamp(this.normalizeNumber(rawValue.scale, 100), 40, 220),
+            shape
+        };
+    }
+
+
+    private makeFeatureLocationSketchSvg(sketch: FeatureLocationSketch,
+                                         locationPreview: boolean): FeatureSketchSvgPreview {
+
+        const points = this.getVisibleFeatureSketchPoints(sketch);
+        const projectedPoints = locationPreview
+            ? points.map(point => this.projectFeatureSketchPoint(point))
+            : this.fitFeatureSketchPoints(points);
+        const preview: FeatureSketchSvgPreview = {
+            boundaryPath: locationPreview
+                ? `M ${FEATURE_SKETCH_PADDING} ${FEATURE_SKETCH_PADDING} H ${FEATURE_SKETCH_WIDTH - FEATURE_SKETCH_PADDING} `
+                    + `V ${FEATURE_SKETCH_HEIGHT - FEATURE_SKETCH_PADDING} H ${FEATURE_SKETCH_PADDING} Z`
+                : undefined,
+            points: [],
+            viewBox: FEATURE_SKETCH_VIEWBOX
+        };
+
+        if (sketch.shape === 'rectangle' || sketch.shape === 'oval') {
+            const center = locationPreview
+                ? this.projectFeatureSketchPoint(sketch.center)
+                : { x: FEATURE_SKETCH_WIDTH / 2, y: FEATURE_SKETCH_HEIGHT / 2 };
+            const scale = sketch.scale / 100;
+            const width = this.clamp((locationPreview ? 30 : 58) * scale, locationPreview ? 18 : 32, locationPreview ? 52 : 92);
+            const height = this.clamp((locationPreview ? 22 : 38) * scale, locationPreview ? 14 : 24, locationPreview ? 42 : 62);
+            const transform = sketch.rotation
+                ? `rotate(${sketch.rotation} ${this.roundSvg(center.x)} ${this.roundSvg(center.y)})`
+                : undefined;
+
+            if (sketch.shape === 'oval') {
+                preview.ellipse = {
+                    cx: this.roundSvg(center.x),
+                    cy: this.roundSvg(center.y),
+                    rx: this.roundSvg(width / 2),
+                    ry: this.roundSvg(height / 2),
+                    transform
+                };
+            } else {
+                preview.rect = {
+                    height: this.roundSvg(height),
+                    rx: 3,
+                    transform,
+                    width: this.roundSvg(width),
+                    x: this.roundSvg(center.x - width / 2),
+                    y: this.roundSvg(center.y - height / 2)
+                };
+            }
+
+            preview.points = [{ x: this.roundSvg(center.x), y: this.roundSvg(center.y) }];
+            return preview;
+        }
+
+        if (sketch.shape === 'polygon' && projectedPoints.length > 1) {
+            const pathPrefix = projectedPoints.map((point, index) =>
+                `${index === 0 ? 'M' : 'L'} ${this.roundSvg(point.x)} ${this.roundSvg(point.y)}`
+            ).join(' ');
+            preview.path = projectedPoints.length > 2 ? `${pathPrefix} Z` : pathPrefix;
+        }
+
+        preview.points = projectedPoints.map((point, index) => ({
+            label: sketch.shape === 'polygon' ? `${index + 1}` : undefined,
+            x: this.roundSvg(point.x),
+            y: this.roundSvg(point.y)
+        }));
+        return preview;
+    }
+
+
+    private getVisibleFeatureSketchPoints(sketch: FeatureLocationSketch): FeatureSketchPoint[] {
+
+        if (sketch.shape === 'polygon') return sketch.points.length > 0 ? sketch.points : [sketch.center];
+        return sketch.points.length > 0 ? sketch.points : [sketch.center];
+    }
+
+
+    private projectFeatureSketchPoint(point: FeatureSketchPoint): FeatureSketchPoint {
+
+        return {
+            x: FEATURE_SKETCH_PADDING + (point.x / 100) * (FEATURE_SKETCH_WIDTH - (FEATURE_SKETCH_PADDING * 2)),
+            y: FEATURE_SKETCH_PADDING + (point.y / 100) * (FEATURE_SKETCH_HEIGHT - (FEATURE_SKETCH_PADDING * 2))
+        };
+    }
+
+
+    private fitFeatureSketchPoints(points: FeatureSketchPoint[]): FeatureSketchPoint[] {
+
+        if (points.length === 0) return [];
+        if (points.length === 1) return [{ x: FEATURE_SKETCH_WIDTH / 2, y: FEATURE_SKETCH_HEIGHT / 2 }];
+
+        const xs = points.map(point => point.x);
+        const ys = points.map(point => point.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+        const width = Math.max(1, maxX - minX);
+        const height = Math.max(1, maxY - minY);
+        const availableWidth = FEATURE_SKETCH_WIDTH - (FEATURE_SKETCH_PADDING * 2);
+        const availableHeight = FEATURE_SKETCH_HEIGHT - (FEATURE_SKETCH_PADDING * 2);
+        const scale = Math.min(availableWidth / width, availableHeight / height);
+        const fittedWidth = width * scale;
+        const fittedHeight = height * scale;
+        const offsetX = (FEATURE_SKETCH_WIDTH - fittedWidth) / 2;
+        const offsetY = (FEATURE_SKETCH_HEIGHT - fittedHeight) / 2;
+
+        return points.map(point => ({
+            x: offsetX + ((point.x - minX) * scale),
+            y: offsetY + ((point.y - minY) * scale)
+        }));
+    }
+
+
+    private getFeatureLocationSketchSummary(sketch: FeatureLocationSketch): string {
+
+        if (sketch.shape === 'polygon') return `점 연결 ${sketch.points.length}점`;
+        if (sketch.shape === 'rectangle') return `사각형 · 중심 ${this.formatSketchPoint(sketch.center)}`;
+        if (sketch.shape === 'oval') return `타원 · 중심 ${this.formatSketchPoint(sketch.center)}`;
+        return `점 · ${this.formatSketchPoint(sketch.center)}`;
+    }
+
+
+    private formatSketchPoint(point: FeatureSketchPoint): string {
+
+        return `${Math.round(point.x)}%, ${Math.round(point.y)}%`;
+    }
+
+
+    private normalizeSketchPoint(value: unknown): FeatureSketchPoint|undefined {
+
+        if (!this.isRecord(value)) return undefined;
+
+        const x = this.normalizeNumber(value.x, NaN);
+        const y = this.normalizeNumber(value.y, NaN);
+        if (!Number.isFinite(x) || !Number.isFinite(y)) return undefined;
+
+        return {
+            x: this.clamp(x, 0, 100),
+            y: this.clamp(y, 0, 100)
+        };
+    }
+
+
+    private parseJsonObject(value: string): unknown {
+
+        try {
+            return JSON.parse(value);
+        } catch (_) {
+            return undefined;
+        }
+    }
+
+
+    private isRecord(value: unknown): value is Record<string, any> {
+
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
+    }
+
+
+    private normalizeNumber(value: unknown, fallback: number): number {
+
+        const numberValue = typeof value === 'number' ? value : Number(value);
+        return Number.isFinite(numberValue) ? numberValue : fallback;
+    }
+
+
+    private clamp(value: number, min: number, max: number): number {
+
+        return Math.min(max, Math.max(min, value));
+    }
+
+
+    private roundSvg(value: number): number {
+
+        return Math.round(value * 10) / 10;
     }
 
 
