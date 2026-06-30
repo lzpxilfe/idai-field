@@ -3,5 +3,6 @@
  */
 .geometry-coordinates-textarea {
   margin-top: 5px !important;
-  height: 250px !important;
+  height: clamp(360px, 48vh, 620px) !important;
+  min-height: 360px !important;
 }

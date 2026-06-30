@@ -133,6 +133,29 @@ describe('korean-fieldwork-record-actions', () => {
     });
 
 
+    it('does not ask for a flat-map feature sketch after desktop geometry exists', () => {
+
+        const feature = createDoc('feature-1', 'Feature', {}, {
+            geometry: {
+                type: 'Polygon',
+                coordinates: [[
+                    [0, 0],
+                    [2, 0],
+                    [1, 1],
+                    [0, 0]
+                ]]
+            }
+        });
+        const actions = makeKoreanFieldworkRecordActions(
+            feature,
+            [feature],
+            createConfig({})
+        );
+
+        expect(actions.map(action => action.id)).not.toContain('current-feature-location-sketch');
+    });
+
+
     it('describes missing feature placement as map-first boundary placement', () => {
 
         const feature = createDoc('feature-1', 'Feature');

@@ -188,7 +188,7 @@ function getOpenEvidenceAction(linkedDocuments: Document[]): KoreanFieldworkReco
 function getMissingFeatureSketchAction(document: Document): KoreanFieldworkRecordActionItem|undefined {
 
     if (document.resource.category !== 'Feature') return undefined;
-    if (hasFeatureLocationSketch(document.resource[FEATURE_LOCATION_SKETCH_FIELD])) return undefined;
+    if (hasFeaturePlacement(document)) return undefined;
 
     return {
         id: 'current-feature-location-sketch',
@@ -202,6 +202,13 @@ function getMissingFeatureSketchAction(document: Document): KoreanFieldworkRecor
 }
 
 
+function hasFeaturePlacement(document: Document): boolean {
+
+    return hasFeatureLocationSketch(document.resource[FEATURE_LOCATION_SKETCH_FIELD])
+        || hasGeometryCoordinates((document.resource as any).geometry);
+}
+
+
 function hasFeatureLocationSketch(value: unknown): boolean {
 
     if (typeof value !== 'string') return !!value;
@@ -210,6 +217,29 @@ function hasFeatureLocationSketch(value: unknown): boolean {
     return normalizedValue.length > 0
         && normalizedValue !== '{}'
         && normalizedValue !== '[]';
+}
+
+
+function hasGeometryCoordinates(geometry: unknown): boolean {
+
+    if (!geometry || typeof geometry !== 'object') return false;
+
+    return hasNumericCoordinatePair((geometry as any).coordinates);
+}
+
+
+function hasNumericCoordinatePair(value: unknown): boolean {
+
+    if (!Array.isArray(value)) return false;
+    if (value.length >= 2
+            && typeof value[0] === 'number'
+            && Number.isFinite(value[0])
+            && typeof value[1] === 'number'
+            && Number.isFinite(value[1])) {
+        return true;
+    }
+
+    return value.some(hasNumericCoordinatePair);
 }
 
 

@@ -240,6 +240,38 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('uses desktop polygon geometry as a feature placement preview when tablet sketch JSON is missing', () => {
+
+        const feature = createDocument('feature-1', 'Feature', 'F1', {}, {
+            geometry: {
+                type: 'Polygon',
+                coordinates: [[
+                    [0, 0],
+                    [20, 0],
+                    [10, 10],
+                    [0, 5],
+                    [0, 0]
+                ]]
+            },
+            featureRecordingStatus: 'investigating'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [feature] })
+        });
+        component.document = feature as any;
+        component.fieldDefinitions = [
+            field('featureRecordingStatus')
+        ] as any;
+
+        const preview = component.getFeatureLocationSketchPreview()!;
+
+        expect(preview.location.emptyLabel).toBeUndefined();
+        expect(preview.location.path).toBe('M 22.6 63 L 97.4 63 L 60 17 L 22.6 40 Z');
+        expect(preview.shape.path).toBe('M 28 72 L 92 72 L 60 8 L 28 40 Z');
+        expect(preview.location.points.map(point => point.label)).toEqual(['1', '2', '3', '4']);
+    });
+
+
     it('keeps the desktop feature location preview framed as a flat placement map', () => {
 
         const template = fs.readFileSync(
@@ -271,7 +303,8 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         expect(styles).toContain('.satellite-road');
         expect(styles).toContain('.flat-map-grid path');
         expect(styles).toContain('.flat-map-badge text');
-        expect(styles).toContain('height: 108px;');
+        expect(styles).toContain('height: 148px;');
+        expect(styles).toContain('grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));');
     });
 
 

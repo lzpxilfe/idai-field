@@ -810,7 +810,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
 
         if (this.document?.resource?.category !== FEATURE_CATEGORY_NAME) return undefined;
 
-        const sketch = this.parseFeatureLocationSketch((this.document.resource as any).featureLocationSketch);
+        const sketch = this.getFeatureLocationSketch();
         if (!sketch) {
             return {
                 location: this.makeEmptyFeatureLocationSketchSvg('위치 스케치 필요', true),
@@ -1612,6 +1612,42 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
     }
 
 
+    private getFeatureLocationSketch(): FeatureLocationSketch|undefined {
+
+        return this.parseFeatureLocationSketch((this.document.resource as any).featureLocationSketch)
+            ?? this.makeFeatureLocationSketchFromGeometry((this.document.resource as any).geometry);
+    }
+
+
+    private makeFeatureLocationSketchFromGeometry(geometry: unknown): FeatureLocationSketch|undefined {
+
+        const coordinatePairs = this.getFeatureGeometryCoordinatePairs(geometry);
+        if (coordinatePairs.length === 0) return undefined;
+
+        if (coordinatePairs.length === 1) {
+            const center = { x: 50, y: 50 };
+            return {
+                center,
+                points: [center],
+                rotation: 0,
+                scale: 100,
+                shape: 'point'
+            };
+        }
+
+        const points = this.normalizeBoundaryCoordinatePairs(coordinatePairs, 2);
+        if (points.length < 2) return undefined;
+
+        return {
+            center: this.getFeatureSketchPointsCenter(points),
+            points,
+            rotation: 0,
+            scale: 100,
+            shape: 'polygon'
+        };
+    }
+
+
     private makeFeatureLocationSketchSvg(sketch: FeatureLocationSketch,
                                          locationPreview: boolean): FeatureSketchSvgPreview {
 
@@ -1734,6 +1770,50 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
     }
 
 
+    private getFeatureGeometryCoordinatePairs(geometry: unknown): number[][] {
+
+        if (!this.isRecord(geometry)) return [];
+
+        if (geometry.type === 'Point') {
+            return this.getPointCoordinatePair(geometry.coordinates);
+        }
+
+        if (geometry.type === 'MultiPoint') {
+            return this.getNumericCoordinatePairs(geometry.coordinates);
+        }
+
+        if (geometry.type === 'LineString') {
+            return this.getNumericCoordinatePairs(geometry.coordinates);
+        }
+
+        if (geometry.type === 'MultiLineString' && Array.isArray(geometry.coordinates)) {
+            return geometry.coordinates.flatMap(line => this.getNumericCoordinatePairs(line));
+        }
+
+        if (geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+            return this.getNumericCoordinatePairs(geometry.coordinates[0]);
+        }
+
+        if (geometry.type === 'MultiPolygon' && Array.isArray(geometry.coordinates)) {
+            return geometry.coordinates.flatMap(polygon =>
+                Array.isArray(polygon) ? this.getNumericCoordinatePairs(polygon[0]) : []
+            );
+        }
+
+        return [];
+    }
+
+
+    private getPointCoordinatePair(value: unknown): number[][] {
+
+        if (!Array.isArray(value) || value.length < 2) return [];
+        if (typeof value[0] !== 'number' || !Number.isFinite(value[0])) return [];
+        if (typeof value[1] !== 'number' || !Number.isFinite(value[1])) return [];
+
+        return [[value[0], value[1]]];
+    }
+
+
     private getNumericCoordinatePairs(value: unknown): number[][] {
 
         if (!Array.isArray(value)) return [];
@@ -1750,10 +1830,11 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
     }
 
 
-    private normalizeBoundaryCoordinatePairs(coordinatePairs: number[][]): FeatureSketchPoint[] {
+    private normalizeBoundaryCoordinatePairs(coordinatePairs: number[][],
+                                             minimumPointCount: number = 3): FeatureSketchPoint[] {
 
         const openPairs = this.getOpenCoordinatePairs(coordinatePairs);
-        if (openPairs.length < 3) return [];
+        if (openPairs.length < minimumPointCount) return [];
 
         const xs = openPairs.map(coordinate => coordinate[0]);
         const ys = openPairs.map(coordinate => coordinate[1]);
@@ -1783,6 +1864,17 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         return first[0] === last[0] && first[1] === last[1]
             ? coordinatePairs.slice(0, -1)
             : coordinatePairs;
+    }
+
+
+    private getFeatureSketchPointsCenter(points: FeatureSketchPoint[]): FeatureSketchPoint {
+
+        if (points.length === 0) return { x: 50, y: 50 };
+
+        return {
+            x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+            y: points.reduce((sum, point) => sum + point.y, 0) / points.length
+        };
     }
 
 

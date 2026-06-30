@@ -99,6 +99,7 @@ const featureRows = [
       'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.component.ts',
       'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.html',
       'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.scss',
+      'desktop/src/app/components/docedit/core/forms/geometry.scss',
       'desktop/src/app/components/docedit/core/korean-fieldwork-quick-record-panel.component.ts',
       'desktop/src/app/components/docedit/core/korean-fieldwork-feature-guidance-panel.component.ts',
       'desktop/src/app/util/korean-fieldwork-feature-guidance.ts'
@@ -1044,6 +1045,9 @@ function validateGuidedFeatureDraftDefaults() {
   const desktopRecordContextStyleText = readTextFile(
     'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.scss'
   );
+  const desktopGeometryFormStyleText = readTextFile(
+    'desktop/src/app/components/docedit/core/forms/geometry.scss'
+  );
   const desktopRecordContextSpecText = readTextFile(
     'desktop/test/unit/components/docedit/core/korean-fieldwork-record-context-panel.component.spec.ts'
   );
@@ -1092,15 +1096,23 @@ function validateGuidedFeatureDraftDefaults() {
       || !desktopRecordContextTemplateText.includes('satellite-field')
       || !desktopRecordContextStyleText.includes('.flat-map-surface')
       || !desktopRecordContextStyleText.includes('.satellite-road')
+      || !desktopRecordContextStyleText.includes('height: 148px;')
+      || !desktopRecordContextStyleText.includes('repeat(auto-fit, minmax(210px, 1fr))')
       || !desktopRecordContextSpecText.includes('flat placement map')) {
     findings.push('desktop record context must preview tablet feature placement as a flat placement map surface');
   }
   if (!desktopRecordContextText.includes('SURVEY_BOUNDARY_CATEGORY_NAME')
       || !desktopRecordContextText.includes('getSurveyBoundarySketchPoints')
       || !desktopRecordContextText.includes('getBoundaryCoordinatePairs')
+      || !desktopRecordContextText.includes('makeFeatureLocationSketchFromGeometry')
       || !desktopRecordContextSpecText.includes('actual survey boundary on desktop')
+      || !desktopRecordContextSpecText.includes('desktop polygon geometry as a feature placement preview')
       || !desktopRecordContextSpecText.includes('M 22.6 63 L 97.4 63 L 60 17 L 22.6 40 Z')) {
     findings.push('desktop record context must project tablet feature placement against actual survey boundary geometry');
+  }
+  if (!desktopGeometryFormStyleText.includes('clamp(360px, 48vh, 620px)')
+      || !desktopGeometryFormStyleText.includes('min-height: 360px')) {
+    findings.push('desktop geometry coordinate editor must be tall enough for map-first feature placement review');
   }
   if (!desktopDraftDefaultsText.includes('위성지도나 평면도처럼 조사 경계 위에 유구 위치와 형태를 바로 얹으며 시작')
       || desktopDraftDefaultsText.includes('조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작')) {
@@ -3736,9 +3748,11 @@ function validateRecordActionEvidencePriority() {
   }
   if (!desktopRecordActionText.includes('FEATURE_LOCATION_SKETCH_FIELD')
       || !desktopRecordActionText.includes('current-feature-location-sketch')
+      || !desktopRecordActionText.includes('hasGeometryCoordinates')
       || !desktopRecordActionText.includes('위성지도나 평면도처럼 조사 경계 위에 얹은 유구 위치와 형태')
       || desktopRecordActionText.includes('태블릿 평면지도 위치 스케치')
       || !desktopRecordActionSpecText.includes('flat-map feature sketch after tablet placement exists')
+      || !desktopRecordActionSpecText.includes('flat-map feature sketch after desktop geometry exists')
       || !desktopRecordActionSpecText.includes('map-first boundary placement')) {
     findings.push('desktop record actions must surface missing tablet flat-map feature placement');
   }
