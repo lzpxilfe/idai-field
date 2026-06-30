@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { ConfigurationContext } from '@/contexts/configuration-context';
@@ -47,6 +48,7 @@ const FEATURE_SKETCH_CANVAS_DEFAULT_SIZE = {
   height: 300,
   width: 260,
 };
+const FEATURE_SKETCH_TABLET_WIDTH = 760;
 const FEATURE_SKETCH_SCALE_STEP = 10;
 const FEATURE_SKETCH_ROTATION_STEP = 15;
 const FEATURE_LOCATION_SKETCH_SHAPES = [
@@ -99,8 +101,19 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     initialCategoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE;
   const [isChoosingFeatureType, setIsChoosingFeatureType] =
     useState(isFeatureOnlyFlow);
+  const windowDimensions = useWindowDimensions();
+  const isFeatureWideLayout =
+    windowDimensions.width >= FEATURE_SKETCH_TABLET_WIDTH;
+  const featureSketchCanvasHeight = useMemo(
+    () => clamp(
+      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.58 : 0.46)),
+      isFeatureWideLayout ? 430 : 360,
+      isFeatureWideLayout ? 580 : 480
+    ),
+    [isFeatureWideLayout, windowDimensions.height]
+  );
   const [featureLocationShape, setFeatureLocationShape] =
-    useState<FeatureLocationSketchShape>('point');
+    useState<FeatureLocationSketchShape>('polygon');
   const [featureSketchPoints, setFeatureSketchPoints] = useState<FeatureSketchPoint[]>([]);
   const [activeFeatureSketchPoint, setActiveFeatureSketchPoint] =
     useState<FeatureSketchPoint>();
@@ -186,7 +199,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   };
 
   const resetFeatureLocationSketch = () => {
-    setFeatureLocationShape('point');
+    setFeatureLocationShape('polygon');
     setActiveFeatureSketchPoint(undefined);
     setFeatureSketchPoints([]);
     setFeatureSketchCenter({ x: 50, y: 50 });
@@ -393,9 +406,9 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     <View style={styles.featureLocationPanel}>
       <View style={styles.featureLocationHeader}>
         <View>
-          <Text style={styles.featureLocationTitle}>유구 위치 스케치</Text>
+          <Text style={styles.featureLocationTitle}>유구 위치 그리기</Text>
           <Text style={styles.featureLocationDetail}>
-            대략 위치와 형태를 먼저 남기고, 지도 보정은 나중에 이어서 합니다.
+            조사 경계를 위에서 본 평면으로 두고 유구 경계를 표시합니다.
           </Text>
         </View>
         {featureSketchWasEdited && (
@@ -449,7 +462,10 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         onResponderRelease={commitFeatureSketchPoint}
         onResponderTerminate={cancelFeatureSketchPoint}
         onStartShouldSetResponder={() => true}
-        style={styles.featureSketchCanvas}
+        style={[
+          styles.featureSketchCanvas,
+          { height: featureSketchCanvasHeight },
+        ]}
         testID="featureLocationSketchCanvas"
       >
         {renderFeatureSketchBoundary()}
@@ -465,42 +481,46 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
           <Ionicons name="arrow-undo-outline" size={16} color="#344054" />
           <Text style={styles.featureSketchToolText}>취소</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.84}
-          onPress={() => adjustFeatureSketchRotation(-FEATURE_SKETCH_ROTATION_STEP)}
-          style={styles.featureSketchToolButton}
-          testID="featureSketchRotateLeft"
-        >
-          <Ionicons name="return-up-back-outline" size={16} color="#344054" />
-          <Text style={styles.featureSketchToolText}>회전</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.84}
-          onPress={() => adjustFeatureSketchRotation(FEATURE_SKETCH_ROTATION_STEP)}
-          style={styles.featureSketchToolButton}
-          testID="featureSketchRotateRight"
-        >
-          <Ionicons name="return-up-forward-outline" size={16} color="#344054" />
-          <Text style={styles.featureSketchToolText}>회전</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.84}
-          onPress={() => adjustFeatureSketchScale(-FEATURE_SKETCH_SCALE_STEP)}
-          style={styles.featureSketchToolButton}
-          testID="featureSketchScaleDown"
-        >
-          <Ionicons name="remove-outline" size={16} color="#344054" />
-          <Text style={styles.featureSketchToolText}>크기</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.84}
-          onPress={() => adjustFeatureSketchScale(FEATURE_SKETCH_SCALE_STEP)}
-          style={styles.featureSketchToolButton}
-          testID="featureSketchScaleUp"
-        >
-          <Ionicons name="add-outline" size={16} color="#344054" />
-          <Text style={styles.featureSketchToolText}>크기</Text>
-        </TouchableOpacity>
+        {isFeatureShapeTransformVisible(featureLocationShape) && (
+          <>
+            <TouchableOpacity
+              activeOpacity={0.84}
+              onPress={() => adjustFeatureSketchRotation(-FEATURE_SKETCH_ROTATION_STEP)}
+              style={styles.featureSketchToolButton}
+              testID="featureSketchRotateLeft"
+            >
+              <Ionicons name="return-up-back-outline" size={16} color="#344054" />
+              <Text style={styles.featureSketchToolText}>회전</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.84}
+              onPress={() => adjustFeatureSketchRotation(FEATURE_SKETCH_ROTATION_STEP)}
+              style={styles.featureSketchToolButton}
+              testID="featureSketchRotateRight"
+            >
+              <Ionicons name="return-up-forward-outline" size={16} color="#344054" />
+              <Text style={styles.featureSketchToolText}>회전</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.84}
+              onPress={() => adjustFeatureSketchScale(-FEATURE_SKETCH_SCALE_STEP)}
+              style={styles.featureSketchToolButton}
+              testID="featureSketchScaleDown"
+            >
+              <Ionicons name="remove-outline" size={16} color="#344054" />
+              <Text style={styles.featureSketchToolText}>크기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.84}
+              onPress={() => adjustFeatureSketchScale(FEATURE_SKETCH_SCALE_STEP)}
+              style={styles.featureSketchToolButton}
+              testID="featureSketchScaleUp"
+            >
+              <Ionicons name="add-outline" size={16} color="#344054" />
+              <Text style={styles.featureSketchToolText}>크기</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
@@ -557,115 +577,127 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     );
 
     return (
-      <View>
-        <View style={styles.parentPanel}>
-          <Text style={styles.parentLabel} numberOfLines={1}>
-            포함 위치: {parentDoc.resource.identifier}
-          </Text>
-          <Text style={styles.parentMeta}>
-            성격이 보이면 고르고, 애매하면 유구로 먼저 시작합니다.
-          </Text>
-          <Text style={styles.hierarchyHelp}>
-            {KOREAN_FIELDWORK_HIERARCHY_HELP}
-          </Text>
+      <View
+        style={[
+          styles.featureCreationLayout,
+          isFeatureWideLayout && styles.featureCreationLayoutWide,
+        ]}
+      >
+        <View style={styles.featureCreationMapPane}>
+          {renderFeatureLocationSketchPanel()}
         </View>
-        <View style={styles.featureNamePanel}>
-          <Input
-            autoFocus
-            isValid={true}
-            invalidText="유구명을 먼저 입력하세요."
-            label="유구명"
-            onChangeText={updateFeatureIdentifier}
-            placeholder="예: 1호 수혈"
-            returnKeyType="done"
-            testID="featureIdentifierInput"
-            value={featureIdentifier}
-          />
-          <Text style={styles.featureNameHint}>
-            유구명만 먼저 적어도 됩니다. 성격과 세부 정보는 조사하면서 계속 채우고 고칠 수 있습니다.
-          </Text>
-        </View>
-        {renderFeatureLocationSketchPanel()}
-        <View style={styles.startUnknownFeature}>
-          <View style={styles.featureTypeHeader}>
-            <TouchableOpacity
-              activeOpacity={0.86}
-              onPress={() => createFeature('unknown')}
-              style={styles.featureTypeCreateArea}
-              testID="featureType_startUnknown"
-            >
-              <Ionicons name="add-circle-outline" size={22} color="#027a48" />
-              <View style={styles.featureTypeText}>
-                <Text style={styles.featureTypeLabel} numberOfLines={1}>
-                  유구로 바로 만들기
-                </Text>
-                <Text style={styles.featureTypeDescription} numberOfLines={2}>
-                  시기와 성격은 조사하면서 다시 고칠 수 있습니다.
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              accessibilityLabel="유구 조사 참고 보기"
-              onPress={() => toggleFeatureGuide('startUnknown')}
-              style={styles.featureHelpButton}
-              testID="featureTypeHelp_startUnknown"
-            >
-              <Ionicons
-                name={expandedFeatureGuideType === 'startUnknown'
-                  ? 'close-circle-outline'
-                  : 'help-circle-outline'}
-                size={22}
-                color="#2f6f4e"
-              />
-            </TouchableOpacity>
+        <View style={[
+          styles.featureCreationFormPane,
+          isFeatureWideLayout && styles.featureCreationFormPaneWide,
+        ]}>
+          <View style={styles.parentPanel}>
+            <Text style={styles.parentLabel} numberOfLines={1}>
+              포함 위치: {parentDoc.resource.identifier}
+            </Text>
+            <Text style={styles.parentMeta}>
+              성격이 보이면 고르고, 애매하면 유구로 먼저 시작합니다.
+            </Text>
+            <Text style={styles.hierarchyHelp}>
+              {KOREAN_FIELDWORK_HIERARCHY_HELP}
+            </Text>
           </View>
-          {expandedFeatureGuideType === 'startUnknown'
-            && renderFeatureInvestigationGuide('unknown')}
-        </View>
-        <View style={styles.featureTypeGrid}>
-          {KOREAN_FIELDWORK_FEATURE_TYPE_OPTIONS.map((option) => (
-            <View
-              key={option.value}
-              style={styles.featureTypeOption}
-            >
-              <View style={styles.featureTypeHeader}>
-                <TouchableOpacity
-                  activeOpacity={0.86}
-                  onPress={() => createFeature(option.value)}
-                  style={styles.featureTypeCreateArea}
-                  testID={`featureType_${option.value}`}
-                >
-                  <CategoryIcon category={featureCategory} size={24} />
-                  <View style={styles.featureTypeText}>
-                    <Text style={styles.featureTypeLabel} numberOfLines={1}>
-                      {option.label}
-                    </Text>
-                    <Text style={styles.featureTypeDescription} numberOfLines={2}>
-                      {option.description}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  accessibilityLabel={`${option.label} 조사 참고 보기`}
-                  onPress={() => toggleFeatureGuide(option.value)}
-                  style={styles.featureHelpButton}
-                  testID={`featureTypeHelp_${option.value}`}
-                >
-                  <Ionicons
-                    name={expandedFeatureGuideType === option.value
-                      ? 'close-circle-outline'
-                      : 'help-circle-outline'}
-                    size={22}
-                    color="#475467"
-                  />
-                </TouchableOpacity>
-              </View>
-              {expandedFeatureGuideType === option.value
-                && renderFeatureInvestigationGuide(option.value)}
+          <View style={styles.featureNamePanel}>
+            <Input
+              autoFocus
+              isValid={true}
+              invalidText="유구명을 먼저 입력하세요."
+              label="유구명"
+              onChangeText={updateFeatureIdentifier}
+              placeholder="예: 1호 수혈"
+              returnKeyType="done"
+              testID="featureIdentifierInput"
+              value={featureIdentifier}
+            />
+            <Text style={styles.featureNameHint}>
+              유구명만 먼저 적어도 됩니다. 성격과 세부 정보는 조사하면서 계속 채우고 고칠 수 있습니다.
+            </Text>
+          </View>
+          <View style={styles.startUnknownFeature}>
+            <View style={styles.featureTypeHeader}>
+              <TouchableOpacity
+                activeOpacity={0.86}
+                onPress={() => createFeature('unknown')}
+                style={styles.featureTypeCreateArea}
+                testID="featureType_startUnknown"
+              >
+                <Ionicons name="add-circle-outline" size={22} color="#027a48" />
+                <View style={styles.featureTypeText}>
+                  <Text style={styles.featureTypeLabel} numberOfLines={1}>
+                    유구로 바로 만들기
+                  </Text>
+                  <Text style={styles.featureTypeDescription} numberOfLines={2}>
+                    시기와 성격은 조사하면서 다시 고칠 수 있습니다.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                accessibilityLabel="유구 조사 참고 보기"
+                onPress={() => toggleFeatureGuide('startUnknown')}
+                style={styles.featureHelpButton}
+                testID="featureTypeHelp_startUnknown"
+              >
+                <Ionicons
+                  name={expandedFeatureGuideType === 'startUnknown'
+                    ? 'close-circle-outline'
+                    : 'help-circle-outline'}
+                  size={22}
+                  color="#2f6f4e"
+                />
+              </TouchableOpacity>
             </View>
-          ))}
+            {expandedFeatureGuideType === 'startUnknown'
+              && renderFeatureInvestigationGuide('unknown')}
+          </View>
+          <View style={styles.featureTypeGrid}>
+            {KOREAN_FIELDWORK_FEATURE_TYPE_OPTIONS.map((option) => (
+              <View
+                key={option.value}
+                style={styles.featureTypeOption}
+              >
+                <View style={styles.featureTypeHeader}>
+                  <TouchableOpacity
+                    activeOpacity={0.86}
+                    onPress={() => createFeature(option.value)}
+                    style={styles.featureTypeCreateArea}
+                    testID={`featureType_${option.value}`}
+                  >
+                    <CategoryIcon category={featureCategory} size={24} />
+                    <View style={styles.featureTypeText}>
+                      <Text style={styles.featureTypeLabel} numberOfLines={1}>
+                        {option.label}
+                      </Text>
+                      <Text style={styles.featureTypeDescription} numberOfLines={2}>
+                        {option.description}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    accessibilityLabel={`${option.label} 조사 참고 보기`}
+                    onPress={() => toggleFeatureGuide(option.value)}
+                    style={styles.featureHelpButton}
+                    testID={`featureTypeHelp_${option.value}`}
+                  >
+                    <Ionicons
+                      name={expandedFeatureGuideType === option.value
+                        ? 'close-circle-outline'
+                        : 'help-circle-outline'}
+                      size={22}
+                      color="#475467"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {expandedFeatureGuideType === option.value
+                  && renderFeatureInvestigationGuide(option.value)}
+              </View>
+            ))}
+          </View>
         </View>
       </View>
     );
@@ -1100,6 +1132,10 @@ const getFeatureSketchShapeStyle = (
   ],
 });
 
+const isFeatureShapeTransformVisible = (
+  shape: FeatureLocationSketchShape
+): boolean => shape === 'rectangle' || shape === 'oval';
+
 const roundSketchPoint = (point: FeatureSketchPoint): FeatureSketchPoint => ({
   x: Math.round(point.x),
   y: Math.round(point.y),
@@ -1128,8 +1164,8 @@ const styles = StyleSheet.create({
     width: '72%',
   },
   featureCreationCard: {
-    maxHeight: '94%',
-    width: '94%',
+    maxHeight: '98%',
+    width: '98%',
   },
   cardShell: {
     alignItems: 'center',
@@ -1142,7 +1178,28 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   featureCreationContent: {
+    paddingHorizontal: 2,
     paddingBottom: 18,
+  },
+  featureCreationLayout: {
+    flexDirection: 'column',
+  },
+  featureCreationLayoutWide: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+  },
+  featureCreationMapPane: {
+    flex: 1,
+    minWidth: 0,
+  },
+  featureCreationFormPane: {
+    minWidth: 0,
+  },
+  featureCreationFormPaneWide: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginLeft: 12,
+    width: 360,
   },
   parentPanel: {
     backgroundColor: '#f8fafc',
@@ -1187,7 +1244,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   featureLocationPanel: {
-    backgroundColor: '#f7fbff',
+    backgroundColor: '#ffffff',
     borderColor: '#b9c7d5',
     borderRadius: 6,
     borderWidth: 1,

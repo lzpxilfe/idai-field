@@ -263,7 +263,7 @@ describe('DocumentAddModal', () => {
 
     fireEvent.press(getByTestId(`addCategory_${C.FEATURE}`));
 
-    expect(getByText('유구 위치 스케치')).toBeTruthy();
+    expect(getByText('유구 위치 그리기')).toBeTruthy();
 
     const canvas = getByTestId('featureLocationSketchCanvas');
     fireEvent(canvas, 'layout', {
@@ -328,11 +328,18 @@ describe('DocumentAddModal', () => {
     );
 
     expect(getByTestId('featureSketchBoundaryPoint_0')).toBeTruthy();
+    expect(getByTestId('featureSketchMode_polygon').props.accessibilityState)
+      .toEqual({ selected: true });
 
     const canvas = getByTestId('featureLocationSketchCanvas');
     expect(canvas.props.style).toEqual(
-      expect.objectContaining({ height: 300 })
+      expect.arrayContaining([
+        expect.objectContaining({ height: expect.any(Number) }),
+      ])
     );
+    const canvasStyles = canvas.props.style as Array<{ height?: number }>;
+    const dynamicCanvasStyle = canvasStyles[canvasStyles.length - 1];
+    expect(dynamicCanvasStyle.height).toBeGreaterThanOrEqual(360);
     fireEvent(canvas, 'layout', {
       nativeEvent: { layout: { height: 100, width: 200 } },
     });
