@@ -37,6 +37,7 @@ export interface KoreanFieldworkDailyJournalSummary {
     equipmentLabel: string;
     safetyLabel: string;
     boundaryMemoLabel: string;
+    boundaryMemoImportedAtLabel: string;
     boundaryMemoPreview?: KoreanFieldworkPenMemoSketchPreview;
     detail: string;
     hasPersonnel: boolean;
@@ -80,7 +81,9 @@ const DAILY_LOG_CATEGORY = 'DailyLog';
 const RECORD_FIELD_NOTE_SOURCE_LABEL = '기록 메모';
 const KOREAN_FIELDWORK_TIME_ZONE_OFFSET_MINUTES = 9 * 60;
 const DAILY_JOURNAL_FIELD = {
+    boundaryMemoImportedAt: 'dailyLogBoundaryMemoImportedAt',
     boundaryMemoStrokes: 'dailyLogBoundaryMemoStrokes',
+    boundaryMemoUpdatedAt: 'dailyLogBoundaryMemoUpdatedAt',
     equipmentCount: 'dailyLogEquipmentCount',
     equipmentSize: 'dailyLogEquipmentSize',
     investigatorCount: 'dailyLogInvestigatorCount',
@@ -540,6 +543,11 @@ export function createDailyJournalSummary(dailyLogDocument: Document): KoreanFie
     const boundaryMemoLabel = hasBoundaryMemo
         ? `경계 메모 ${boundaryMemoStats.strokeCount}획/${boundaryMemoStats.pointCount}점`
         : '경계 메모 없음';
+    const boundaryMemoImportedAtLabel = getDailyJournalDateFieldLabel(
+        dailyLogDocument,
+        DAILY_JOURNAL_FIELD.boundaryMemoImportedAt,
+        '경계 가져옴'
+    );
 
     return {
         document: dailyLogDocument,
@@ -548,12 +556,14 @@ export function createDailyJournalSummary(dailyLogDocument: Document): KoreanFie
         equipmentLabel,
         safetyLabel,
         boundaryMemoLabel,
+        boundaryMemoImportedAtLabel,
         boundaryMemoPreview,
         detail: [
             personnelLabel,
             equipmentLabel,
             safetyLabel,
-            boundaryMemoLabel
+            boundaryMemoLabel,
+            boundaryMemoImportedAtLabel
         ].filter(value => value.length > 0).join(' · '),
         hasPersonnel,
         hasSafetyComplete: safetyPhotoDone && safetyStretchingDone,
@@ -795,6 +805,14 @@ function getDailyJournalSafetyLabel(safetyPhotoDone: boolean, safetyStretchingDo
         safetyPhotoDone ? '사진' : '사진 미확인',
         safetyStretchingDone ? '체조' : '체조 미확인'
     ].join(' · ');
+}
+
+
+function getDailyJournalDateFieldLabel(document: Document, fieldName: string, prefix: string): string {
+
+    const date = normalizeDateValue(document.resource[fieldName]);
+
+    return date ? `${prefix} ${formatDate(date)}` : '';
 }
 
 

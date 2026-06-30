@@ -1072,9 +1072,9 @@ function validateGuidedFeatureDraftDefaults() {
     findings.push('tablet add flow does not expose feature type options before creating Feature records');
   }
   if (!tabletAddModalText.includes('featureSketchFlatMapSurface')
-      || !tabletAddModalText.includes('2D 지도')
+      || !tabletAddModalText.includes('위성지도식 평면')
       || !tabletAddModalSpecText.includes('featureSketchFlatMapSurface')) {
-    findings.push('tablet add flow must place new features on a top-down 2D map surface');
+    findings.push('tablet add flow must place new features on a top-down satellite-style map surface');
   }
   if (!desktopRecordContextTemplateText.includes('flat-map-surface')
       || !desktopRecordContextTemplateText.includes('2D 지도')
@@ -2671,11 +2671,14 @@ function validateRecordPanelOrder() {
     findings.push('desktop notebook digest test must cover continuation seed creation');
   }
   if (!desktopNotebookDigestText.includes('boundaryMemoPreview')
+      || !desktopNotebookDigestText.includes('boundaryMemoImportedAtLabel')
       || !desktopPriorityStripTemplateText.includes('korean-fieldwork-notebook-journal-boundary-preview')
+      || !desktopPriorityStripTemplateText.includes('summary.boundaryMemoImportedAtLabel')
       || !desktopPriorityStripStyleText.includes('korean-fieldwork-notebook-journal-boundary-preview')
       || !desktopNotebookDigestSpecText.includes('boundaryMemoPreview')
+      || !desktopNotebookDigestSpecText.includes('경계 가져옴')
       || !desktopPriorityStripSpecText.includes('boundaryMemoPreview')) {
-    findings.push('desktop notebook panel must preview tablet daily-journal boundary handwriting, not only count it');
+    findings.push('desktop notebook panel must preview tablet daily-journal boundary handwriting and imported boundary date, not only count it');
   }
   if (!desktopNotebookDigestText.includes('export function createDailyJournalSummary')
       || !desktopRecordContextPanelText.includes('getDailyJournalSummary')
@@ -2686,11 +2689,13 @@ function validateRecordPanelOrder() {
     findings.push('desktop record context must summarize tablet daily-journal personnel, equipment, and safety on opened DailyLog records');
   }
   if (!desktopRecordContextPanelText.includes('getDailyJournalBoundaryMemoPreview')
+      || !desktopRecordContextPanelText.includes('dailyLogBoundaryMemoImportedAt')
       || !desktopRecordContextPanelText.includes('dailyLogBoundaryMemoStrokes')
       || !desktopRecordContextPanelTemplateText.includes('korean-fieldwork-record-context-daily-boundary')
+      || !desktopRecordContextPanelTemplateText.includes('boundaryMemoPreview.importedAt')
       || !desktopRecordContextPanelStyleText.includes('korean-fieldwork-record-context-daily-boundary-svg')
       || !desktopRecordContextPanelSpecText.includes('opened DailyLog records')) {
-    findings.push('desktop record context must preview tablet daily-journal boundary handwriting on opened DailyLog records');
+    findings.push('desktop record context must preview tablet daily-journal boundary handwriting and imported boundary date on opened DailyLog records');
   }
   if (!tabletHierarchyBoardText.includes('이어진 기록')
       || !tabletHierarchyBoardText.includes('포함 위치')) {

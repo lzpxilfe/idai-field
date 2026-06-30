@@ -100,6 +100,7 @@ describe('korean-fieldwork-notebook-digest', () => {
             dailyLogEquipmentSize: '0.6㎥',
             dailyLogSafetyEducationPhoto: true,
             dailyLogSafetyEducationStretching: false,
+            dailyLogBoundaryMemoImportedAt: '2026-06-24T08:30:00.000Z',
             dailyLogBoundaryMemoStrokes: JSON.stringify({
                 version: 1,
                 strokes: [
@@ -118,6 +119,7 @@ describe('korean-fieldwork-notebook-digest', () => {
                 equipmentLabel: '장비 1대/0.6㎥',
                 safetyLabel: '안전교육 · 사진 · 체조 미확인',
                 boundaryMemoLabel: '경계 메모 1획/2점',
+                boundaryMemoImportedAtLabel: '경계 가져옴 2026-06-24',
                 boundaryMemoPreview: expect.objectContaining({
                     path: expect.stringContaining('M '),
                     viewBox: '0 0 120 72'

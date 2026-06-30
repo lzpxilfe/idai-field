@@ -199,6 +199,10 @@
                   [class.empty]="!dailyJournalSummary.hasBoundaryMemo">
                 {{dailyJournalSummary.boundaryMemoLabel}}
             </span>
+            <span *ngIf="dailyJournalSummary.boundaryMemoImportedAtLabel"
+                  class="korean-fieldwork-record-context-daily-summary-chip">
+                {{dailyJournalSummary.boundaryMemoImportedAtLabel}}
+            </span>
         </div>
     </div>
 
@@ -210,9 +214,13 @@
             <span class="korean-fieldwork-record-context-daily-boundary-summary">
                 {{boundaryMemoPreview.summary}}
             </span>
+            <span *ngIf="boundaryMemoPreview.importedAt"
+                  class="korean-fieldwork-record-context-daily-boundary-updated">
+                경계 가져옴 {{boundaryMemoPreview.importedAt}}
+            </span>
             <span *ngIf="boundaryMemoPreview.updatedAt"
                   class="korean-fieldwork-record-context-daily-boundary-updated">
-                {{boundaryMemoPreview.updatedAt}}
+                메모 수정 {{boundaryMemoPreview.updatedAt}}
             </span>
         </div>
         <svg class="korean-fieldwork-record-context-daily-boundary-svg"

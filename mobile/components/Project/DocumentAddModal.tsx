@@ -48,7 +48,7 @@ const FEATURE_SKETCH_CANVAS_DEFAULT_SIZE = {
   height: 720,
   width: 1100,
 };
-const FEATURE_SKETCH_TABLET_WIDTH = 720;
+const FEATURE_SKETCH_TABLET_WIDTH = 640;
 const FEATURE_SKETCH_SCALE_STEP = 10;
 const FEATURE_SKETCH_ROTATION_STEP = 15;
 const FEATURE_SKETCH_GRID_PERCENTS = [25, 50, 75];
@@ -107,9 +107,9 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     windowDimensions.width >= FEATURE_SKETCH_TABLET_WIDTH;
   const featureSketchCanvasHeight = useMemo(
     () => clamp(
-      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.84 : 0.74)),
-      isFeatureWideLayout ? 680 : 540,
-      isFeatureWideLayout ? 960 : 720
+      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.78 : 0.56)),
+      isFeatureWideLayout ? 620 : 420,
+      isFeatureWideLayout ? 860 : 600
     ),
     [isFeatureWideLayout, windowDimensions.height]
   );
@@ -436,11 +436,13 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       style={styles.featureSketchMapSurface}
       testID="featureSketchFlatMapSurface"
     >
-      <View style={[styles.featureSketchMapPatch, styles.featureSketchMapPatchNorth]} />
-      <View style={[styles.featureSketchMapPatch, styles.featureSketchMapPatchSouth]} />
-      <View style={[styles.featureSketchMapTrack, styles.featureSketchMapTrackA]} />
-      <View style={[styles.featureSketchMapTrack, styles.featureSketchMapTrackB]} />
-      <View style={[styles.featureSketchMapWater, styles.featureSketchMapWaterA]} />
+      <View style={[styles.featureSketchSatelliteField, styles.featureSketchSatelliteFieldA]} />
+      <View style={[styles.featureSketchSatelliteField, styles.featureSketchSatelliteFieldB]} />
+      <View style={[styles.featureSketchSatelliteField, styles.featureSketchSatelliteFieldC]} />
+      <View style={[styles.featureSketchSatelliteRoad, styles.featureSketchSatelliteRoadA]} />
+      <View style={[styles.featureSketchSatelliteRoad, styles.featureSketchSatelliteRoadB]} />
+      <View style={[styles.featureSketchSatelliteTreeLine, styles.featureSketchSatelliteTreeLineA]} />
+      <View style={[styles.featureSketchSatelliteWater, styles.featureSketchSatelliteWaterA]} />
     </View>
   );
 
@@ -536,7 +538,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         {renderFeatureSketchGrid()}
         <View pointerEvents="none" style={styles.featureSketchPlaneBadge}>
           <Ionicons name="map-outline" size={13} color="#175cd3" />
-          <Text style={styles.featureSketchPlaneBadgeText}>2D 지도</Text>
+          <Text style={styles.featureSketchPlaneBadgeText}>위성지도식 평면</Text>
         </View>
         <View pointerEvents="box-none" style={styles.featureSketchModeRow}>
           {FEATURE_LOCATION_SKETCH_SHAPES.map((shape) => {
@@ -1226,10 +1228,10 @@ const styles = StyleSheet.create({
     width: '72%',
   },
   featureCreationCard: {
-    height: '98%',
-    maxHeight: '99%',
-    padding: 6,
-    width: '99%',
+    height: '100%',
+    maxHeight: '100%',
+    padding: 4,
+    width: '100%',
   },
   cardShell: {
     alignItems: 'center',
@@ -1244,18 +1246,18 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   featureCreationCategories: {
-    marginHorizontal: 6,
-    marginVertical: 4,
+    marginHorizontal: 4,
+    marginVertical: 2,
   },
   featureCreationContent: {
     paddingHorizontal: 2,
-    paddingBottom: 18,
+    paddingBottom: 10,
   },
   featureCreationLayout: {
     flexDirection: 'column',
   },
   featureCreationLayoutWide: {
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     flexDirection: 'row',
   },
   featureCreationMapPane: {
@@ -1263,15 +1265,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   featureCreationMapPaneWide: {
-    flex: 2.35,
-    marginRight: 12,
+    flex: 3.2,
+    marginRight: 10,
   },
   featureCreationFormPane: {
     minWidth: 0,
   },
   featureCreationFormPaneWide: {
-    flex: 0.85,
-    maxWidth: 390,
+    flex: 0.8,
+    maxWidth: 340,
   },
   parentPanel: {
     backgroundColor: '#f8fafc',
@@ -1316,8 +1318,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   featureLocationPanel: {
-    backgroundColor: '#f6f8f5',
-    borderColor: '#9ab28c',
+    backgroundColor: '#f8fafc',
+    borderColor: '#cbd5e1',
     borderRadius: 6,
     borderWidth: 1,
     marginBottom: 8,
@@ -1389,8 +1391,8 @@ const styles = StyleSheet.create({
     color: '#c2410c',
   },
   featureSketchCanvas: {
-    backgroundColor: '#eef5ed',
-    borderColor: '#7a9d70',
+    backgroundColor: '#4f624f',
+    borderColor: '#475467',
     borderRadius: 6,
     borderWidth: 1,
     height: 300,
@@ -1400,62 +1402,76 @@ const styles = StyleSheet.create({
   },
   featureSketchMapSurface: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#eef5ed',
+    backgroundColor: '#536653',
   },
-  featureSketchMapPatch: {
-    borderColor: 'rgba(47, 111, 78, 0.14)',
-    borderRadius: 999,
+  featureSketchSatelliteField: {
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     borderWidth: 1,
     position: 'absolute',
   },
-  featureSketchMapPatchNorth: {
-    backgroundColor: 'rgba(185, 216, 172, 0.34)',
-    height: '36%',
-    left: '-8%',
-    top: '-10%',
-    transform: [{ rotateZ: '-8deg' }],
-    width: '62%',
+  featureSketchSatelliteFieldA: {
+    backgroundColor: '#65775a',
+    bottom: '50%',
+    left: 0,
+    right: '46%',
+    top: 0,
   },
-  featureSketchMapPatchSouth: {
-    backgroundColor: 'rgba(220, 205, 165, 0.28)',
-    bottom: '-13%',
-    height: '44%',
-    right: '-7%',
-    transform: [{ rotateZ: '9deg' }],
-    width: '58%',
+  featureSketchSatelliteFieldB: {
+    backgroundColor: '#766f55',
+    bottom: 0,
+    left: 0,
+    right: '56%',
+    top: '50%',
   },
-  featureSketchMapTrack: {
-    backgroundColor: 'rgba(255, 255, 255, 0.66)',
-    borderColor: 'rgba(102, 112, 133, 0.18)',
+  featureSketchSatelliteFieldC: {
+    backgroundColor: '#405a5f',
+    bottom: 0,
+    left: '44%',
+    right: 0,
+    top: '34%',
+  },
+  featureSketchSatelliteRoad: {
+    backgroundColor: 'rgba(222, 226, 216, 0.76)',
+    borderColor: 'rgba(52, 64, 84, 0.28)',
     borderWidth: 1,
-    height: 12,
-    position: 'absolute',
-    width: '122%',
-  },
-  featureSketchMapTrackA: {
-    left: '-12%',
-    top: '30%',
-    transform: [{ rotateZ: '-11deg' }],
-  },
-  featureSketchMapTrackB: {
-    left: '-9%',
-    top: '68%',
-    transform: [{ rotateZ: '7deg' }],
-  },
-  featureSketchMapWater: {
-    backgroundColor: 'rgba(178, 221, 255, 0.36)',
-    borderRadius: 999,
     position: 'absolute',
   },
-  featureSketchMapWaterA: {
-    height: '18%',
-    right: '9%',
-    top: '12%',
-    transform: [{ rotateZ: '-18deg' }],
-    width: '24%',
+  featureSketchSatelliteRoadA: {
+    bottom: '48%',
+    height: 14,
+    left: 0,
+    right: 0,
+  },
+  featureSketchSatelliteRoadB: {
+    bottom: 0,
+    left: '42%',
+    top: 0,
+    width: 14,
+  },
+  featureSketchSatelliteTreeLine: {
+    backgroundColor: 'rgba(39, 78, 57, 0.62)',
+    position: 'absolute',
+  },
+  featureSketchSatelliteTreeLineA: {
+    bottom: '48%',
+    height: 18,
+    left: 0,
+    right: 0,
+  },
+  featureSketchSatelliteWater: {
+    backgroundColor: 'rgba(112, 169, 190, 0.72)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+    borderWidth: 1,
+    position: 'absolute',
+  },
+  featureSketchSatelliteWaterA: {
+    bottom: '18%',
+    height: '16%',
+    right: 0,
+    width: '22%',
   },
   featureSketchGridLine: {
-    backgroundColor: 'rgba(52, 64, 84, 0.13)',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
     position: 'absolute',
   },
   featureSketchGridLineVertical: {
@@ -1490,7 +1506,7 @@ const styles = StyleSheet.create({
   },
   featureSketchBoundaryFallback: {
     alignItems: 'center',
-    borderColor: '#7a9d70',
+    borderColor: 'rgba(255, 255, 255, 0.82)',
     borderRadius: 6,
     borderStyle: 'dashed',
     borderWidth: 2,
@@ -1502,7 +1518,7 @@ const styles = StyleSheet.create({
     top: 18,
   },
   featureSketchBoundaryFallbackText: {
-    color: '#526272',
+    color: '#f8fafc',
     fontSize: 11,
     fontWeight: '800',
   },

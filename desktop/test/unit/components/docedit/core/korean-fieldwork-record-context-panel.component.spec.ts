@@ -359,7 +359,8 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
             dailyLogEquipmentCount: 1,
             dailyLogEquipmentSize: '0.6㎥',
             dailyLogSafetyEducationPhoto: true,
-            dailyLogSafetyEducationStretching: false
+            dailyLogSafetyEducationStretching: false,
+            dailyLogBoundaryMemoImportedAt: '2026-06-30T08:30:00.000Z'
         });
         const component = createComponent({
             find: jest.fn().mockResolvedValue({ documents: [dailyLog] })
@@ -378,6 +379,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         expect(summary.equipmentLabel).toBe('장비 1대/0.6㎥');
         expect(summary.safetyLabel).toBe('안전교육 · 사진 · 체조 미확인');
         expect(summary.boundaryMemoLabel).toBe('경계 메모 없음');
+        expect(summary.boundaryMemoImportedAtLabel).toBe('경계 가져옴 2026-06-30');
         expect(summary.hasSafetyComplete).toBe(false);
         expect(summary.hasBoundaryMemo).toBe(false);
     });
@@ -397,6 +399,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         expect(template).toContain('작업일지 요약');
         expect(template).toContain('dailyJournalSummary.personnelLabel');
         expect(template).toContain('dailyJournalSummary.safetyLabel');
+        expect(template).toContain('dailyJournalSummary.boundaryMemoImportedAtLabel');
     });
 
 
@@ -409,6 +412,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
                     { points: [{ x: 1200, y: 2200 }, { x: 3200, y: 4200 }] }
                 ]
             }),
+            dailyLogBoundaryMemoImportedAt: '2026-06-30T08:30:00.000Z',
             dailyLogBoundaryMemoUpdatedAt: '2026-06-30T09:15:00.000Z'
         });
         const component = createComponent({
@@ -425,6 +429,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         const preview = component.getDailyJournalBoundaryMemoPreview()!;
 
         expect(preview.summary).toBe('경계 메모 1획/2점.');
+        expect(preview.importedAt).toBe('2026-06-30');
         expect(preview.updatedAt).toBe('2026-06-30');
         expect(preview.viewBox).toBe('0 0 120 72');
         expect(preview.path).toContain('M ');
@@ -445,6 +450,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         expect(template).toContain('getDailyJournalBoundaryMemoPreview() as boundaryMemoPreview');
         expect(template).toContain('작업일지 경계 메모');
         expect(template).toContain('태블릿 작업일지 경계 메모');
+        expect(template).toContain('boundaryMemoPreview.importedAt');
     });
 
 

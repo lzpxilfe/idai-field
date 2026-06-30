@@ -145,6 +145,7 @@ interface FeatureFreeDrawingPreview {
 }
 
 interface DailyJournalBoundaryMemoPreview {
+    importedAt?: string;
     path: string;
     summary: string;
     updatedAt?: string;
@@ -152,6 +153,7 @@ interface DailyJournalBoundaryMemoPreview {
 }
 
 const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
+    'dailyLogBoundaryMemoImportedAt',
     'dailyLogBoundaryMemoStrokes',
     'dailyLogBoundaryMemoUpdatedAt',
     'dailyLogEquipmentCount',
@@ -225,6 +227,7 @@ const FEATURE_SKETCH_PADDING = 8;
 const FEATURE_FREE_DRAWING_STROKES_FIELD = 'featureFreeDrawingStrokes';
 const FEATURE_FREE_DRAWING_UPDATED_AT_FIELD = 'featureFreeDrawingUpdatedAt';
 const DAILY_LOG_CATEGORY_NAME = 'DailyLog';
+const DAILY_LOG_BOUNDARY_MEMO_IMPORTED_AT_FIELD = 'dailyLogBoundaryMemoImportedAt';
 const DAILY_LOG_BOUNDARY_MEMO_STROKES_FIELD = 'dailyLogBoundaryMemoStrokes';
 const DAILY_LOG_BOUNDARY_MEMO_UPDATED_AT_FIELD = 'dailyLogBoundaryMemoUpdatedAt';
 
@@ -460,6 +463,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         if (!preview) return undefined;
 
         return {
+            importedAt: this.getDateFieldLabel(DAILY_LOG_BOUNDARY_MEMO_IMPORTED_AT_FIELD),
             path: preview.path,
             summary: preview.label.replace(/^스케치 메모/, '경계 메모'),
             updatedAt: this.getDateFieldLabel(DAILY_LOG_BOUNDARY_MEMO_UPDATED_AT_FIELD),

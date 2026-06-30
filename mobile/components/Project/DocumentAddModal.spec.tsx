@@ -267,7 +267,7 @@ describe('DocumentAddModal', () => {
     expect(getByText(
       '지도 평면 기준으로 조사 경계 안에 유구 위치와 형태를 표시합니다.'
     )).toBeTruthy();
-    expect(getByText('2D 지도')).toBeTruthy();
+    expect(getByText('위성지도식 평면')).toBeTruthy();
     expect(queryByText(/위에서 보고/)).toBeNull();
 
     const canvas = getByTestId('featureLocationSketchCanvas');
