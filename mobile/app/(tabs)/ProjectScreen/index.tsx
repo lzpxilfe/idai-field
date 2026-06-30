@@ -30,7 +30,6 @@ import KoreanFieldworkHierarchyBoard from '@/components/Project/KoreanFieldworkH
 import KoreanFieldworkInvestigationModePanel from '@/components/Project/KoreanFieldworkInvestigationModePanel';
 import KoreanFieldworkNotebookLedger from '@/components/Project/KoreanFieldworkNotebookLedger';
 import KoreanFieldworkOverviewChart from '@/components/Project/KoreanFieldworkOverviewChart';
-import KoreanFieldworkPriorityTaskList from '@/components/Project/KoreanFieldworkPriorityTaskList';
 import KoreanFieldworkProgressBoard from '@/components/Project/KoreanFieldworkProgressBoard';
 import KoreanFieldworkSelectedRecordWorkbench from '@/components/Project/KoreanFieldworkSelectedRecordWorkbench';
 import KoreanFieldworkScopePanel from '@/components/Project/KoreanFieldworkScopePanel';
@@ -81,7 +80,6 @@ import {
   KoreanFieldworkRecordActionItem,
 } from '@/components/Project/korean-fieldwork-record-actions';
 import {
-  getKoreanFieldworkPriorityTasks,
   getKoreanFieldworkQuickActionStates,
   getKoreanFieldworkTodayActionTargets,
   KoreanFieldworkPriorityTaskAction,
@@ -428,15 +426,6 @@ const DocumentsList: React.FC = () => {
     () => getKoreanFieldworkTodayActionTargets(
       actionSummary,
       actionDocuments,
-      investigationModeId
-    ),
-    [actionDocuments, actionSummary, investigationModeId]
-  );
-  const priorityTasks = useMemo(
-    () => getKoreanFieldworkPriorityTasks(
-      actionSummary,
-      actionDocuments,
-      5,
       investigationModeId
     ),
     [actionDocuments, actionSummary, investigationModeId]
@@ -1062,19 +1051,6 @@ const DocumentsList: React.FC = () => {
             </>
           )}
         </View>
-
-        {activeWorkspaceTab === 'records' && priorityTasks.length > 0 && (
-          <View style={styles.priorityTaskBand}>
-            <KoreanFieldworkPriorityTaskList
-              tasks={priorityTasks}
-              documentsById={actionDocumentsById}
-              onAddDocumentOfCategory={(parentDoc, categoryName) =>
-                navigateAddCategory(categoryName, parentDoc)}
-              onOpenDocument={onDocumentSelected}
-              onOpenMap={openMap}
-            />
-          </View>
-        )}
 
         {activeWorkspaceTab === 'journal' && (
         <>
@@ -2364,14 +2340,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 12,
     paddingVertical: 10,
-  },
-  priorityTaskBand: {
-    backgroundColor: 'white',
-    borderBottomColor: '#d0d5dd',
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    paddingTop: 4,
   },
   detailToggle: {
     alignItems: 'center',

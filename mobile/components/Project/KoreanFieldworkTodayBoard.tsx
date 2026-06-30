@@ -13,10 +13,8 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { colors } from '@/utils/colors';
 import DocumentButton from '@/components/common/DocumentButton';
-import KoreanFieldworkPriorityTaskList from './KoreanFieldworkPriorityTaskList';
 import KoreanFieldworkWorkbenchPanel from './KoreanFieldworkWorkbenchPanel';
 import {
-  getKoreanFieldworkPriorityTasks,
   getKoreanFieldworkQuickActionStates,
   getKoreanFieldworkTodayActionTargets,
   KoreanFieldworkPriorityTaskAction,
@@ -64,15 +62,6 @@ const KoreanFieldworkTodayBoard: React.FC<KoreanFieldworkTodayBoardProps> = ({
       investigationModeId
     ),
     [actionTargets, investigationModeId, summary]
-  );
-  const priorityTasks = useMemo(
-    () => getKoreanFieldworkPriorityTasks(
-      summary,
-      documents,
-      4,
-      investigationModeId
-    ),
-    [documents, investigationModeId, summary]
   );
   const featureStatLabel = investigationModeId === 'trialTrench'
     ? '확인 유구'
@@ -167,13 +156,6 @@ const KoreanFieldworkTodayBoard: React.FC<KoreanFieldworkTodayBoardProps> = ({
         documents={documents}
         investigationModeId={investigationModeId}
         onEditDocument={onEditDocument}
-      />
-      <KoreanFieldworkPriorityTaskList
-        tasks={priorityTasks}
-        documentsById={documentsById}
-        onAddDocumentOfCategory={onAddDocumentOfCategory}
-        onOpenDocument={openDocument}
-        onOpenMap={onOpenMap}
       />
       {displaySummary.featureCandidates.length > 0 && (
         <ScrollView

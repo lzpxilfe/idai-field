@@ -7,9 +7,9 @@ import { KOREAN_FIELDWORK_CATEGORIES } from './korean-fieldwork-categories';
 const C = KOREAN_FIELDWORK_CATEGORIES;
 
 describe('KoreanFieldworkTodayBoard', () => {
-  it('opens the map startup task when no field records exist yet', () => {
+  it('does not show the old priority task list when no field records exist yet', () => {
     const handleOpenMap = jest.fn();
-    const { getByTestId, getByText } = render(
+    const { getByTestId, queryByText } = render(
       <KoreanFieldworkTodayBoard
         summary={createSummary()}
         documents={[]}
@@ -19,11 +19,9 @@ describe('KoreanFieldworkTodayBoard', () => {
     );
 
     expect(getByTestId('koreanFieldworkTodayBoard')).toBeTruthy();
-    expect(getByText('조사 경계 생성')).toBeTruthy();
-
-    fireEvent.press(getByText('조사 경계 생성'));
-
-    expect(handleOpenMap).toHaveBeenCalled();
+    expect(queryByText('오늘 우선 작업')).toBeNull();
+    expect(queryByText('조사 경계 생성')).toBeNull();
+    expect(handleOpenMap).not.toHaveBeenCalled();
   });
 
   it('runs mode-aware quick actions from the map today board', () => {
