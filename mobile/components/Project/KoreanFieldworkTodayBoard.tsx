@@ -25,6 +25,7 @@ import { KoreanFieldworkInvestigationModeId } from './korean-fieldwork-investiga
 
 interface KoreanFieldworkTodayBoardProps {
   summary: KoreanFieldworkTodaySummary;
+  displaySummary?: KoreanFieldworkTodaySummary;
   documents?: Document[];
   onEditDocument: (docId: string, categoryName: string) => void;
   onAddDocumentOfCategory?: (parentDoc: Document, categoryName: string) => void;
@@ -35,6 +36,7 @@ interface KoreanFieldworkTodayBoardProps {
 
 const KoreanFieldworkTodayBoard: React.FC<KoreanFieldworkTodayBoardProps> = ({
   summary,
+  displaySummary = summary,
   documents = [],
   onEditDocument,
   onAddDocumentOfCategory,
@@ -115,13 +117,16 @@ const KoreanFieldworkTodayBoard: React.FC<KoreanFieldworkTodayBoardProps> = ({
   return (
     <View style={styles.container} testID="koreanFieldworkTodayBoard">
       <View style={styles.statsRow}>
-        <Stat label="일지" value={summary.dailyLogs.length} />
-        <Stat label="경계" value={summary.surveyBoundaries.length} />
-        <Stat label={featureStatLabel} value={summary.featureCandidates.length} />
+        <Stat label="일지" value={displaySummary.dailyLogs.length} />
+        <Stat label="경계" value={displaySummary.surveyBoundaries.length} />
+        <Stat
+          label={featureStatLabel}
+          value={displaySummary.featureCandidates.length}
+        />
         <Stat
           label="확인"
-          value={summary.openIssues.length}
-          warning={summary.openIssues.length > 0}
+          value={displaySummary.openIssues.length}
+          warning={displaySummary.openIssues.length > 0}
         />
       </View>
       <View style={styles.actionsRow}>
@@ -158,7 +163,7 @@ const KoreanFieldworkTodayBoard: React.FC<KoreanFieldworkTodayBoardProps> = ({
         />
       </View>
       <KoreanFieldworkWorkbenchPanel
-        summary={summary}
+        summary={displaySummary}
         documents={documents}
         investigationModeId={investigationModeId}
         onEditDocument={onEditDocument}
@@ -170,17 +175,19 @@ const KoreanFieldworkTodayBoard: React.FC<KoreanFieldworkTodayBoardProps> = ({
         onOpenDocument={openDocument}
         onOpenMap={onOpenMap}
       />
-      {summary.featureCandidates.length > 0 && (
+      {displaySummary.featureCandidates.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.candidates}
         >
-          {summary.featureCandidates.slice(0, 8).map((document) => (
+          {displaySummary.featureCandidates.slice(0, 8).map((document) => (
             <CandidateButton
               key={document.resource.id}
               document={document}
-              issueCount={summary.issueCountByDocumentId[document.resource.id] ?? 0}
+              issueCount={
+                displaySummary.issueCountByDocumentId[document.resource.id] ?? 0
+              }
               onEditDocument={onEditDocument}
               onOpenDocument={onOpenDocument}
             />

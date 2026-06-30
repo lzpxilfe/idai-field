@@ -17,9 +17,11 @@ interface KoreanFieldworkInvestigationModePanelProps {
   modeId?: KoreanFieldworkInvestigationModeId;
   onSelectMode: (modeId: KoreanFieldworkInvestigationModeId) => void;
   operationCount?: number;
+  hasRecordingBase?: boolean;
   totalDocumentCount?: number;
   legacyRootDocumentCount?: number;
   surveyBoundaryCount?: number;
+  hasStoredBoundary?: boolean;
   boundarySummary?: string;
   onOpenMap?: () => void;
 }
@@ -32,19 +34,23 @@ const KoreanFieldworkInvestigationModePanel: React.FC<
   modeId,
   onSelectMode,
   operationCount = 0,
+  hasRecordingBase,
   totalDocumentCount = 0,
   legacyRootDocumentCount = 0,
   surveyBoundaryCount = 0,
+  hasStoredBoundary = false,
   boundarySummary,
   onOpenMap,
 }) => {
   const selectedMode = getKoreanFieldworkInvestigationMode(modeId);
   const [isModeChoiceOpen, setIsModeChoiceOpen] = React.useState(!selectedMode);
   const [areRequirementsOpen, setAreRequirementsOpen] = React.useState(false);
-  const hasOperation = operationCount > 0;
+  const hasVisibleOperation = operationCount > 0;
+  const hasOperation = hasRecordingBase ?? hasVisibleOperation;
   const hasLegacyRootsWithoutOperation =
     !hasOperation && legacyRootDocumentCount > 0;
-  const hasSurveyBoundary = surveyBoundaryCount > 0;
+  const hasVisibleSurveyBoundary = surveyBoundaryCount > 0;
+  const hasSurveyBoundary = hasVisibleSurveyBoundary || hasStoredBoundary;
   const normalizedBoundarySummary = boundarySummary?.trim();
   const hasBoundarySummary = !!normalizedBoundarySummary;
   const hasBoundarySetup = hasSurveyBoundary || hasBoundarySummary;
@@ -69,8 +75,10 @@ const KoreanFieldworkInvestigationModePanel: React.FC<
     {
       id: 'boundary',
       label: '조사 경계',
-      detail: hasSurveyBoundary
+      detail: hasVisibleSurveyBoundary
         ? `${surveyBoundaryCount}건 기록됨`
+        : hasStoredBoundary
+          ? '지도 경계 설정됨'
         : normalizedBoundarySummary ?? '구역선·기준지도 기록',
       state: boundaryStepState,
       attentionText: '지도 기록 필요',
@@ -78,8 +86,10 @@ const KoreanFieldworkInvestigationModePanel: React.FC<
     {
       id: 'operation',
       label: '기록 시작',
-      detail: hasOperation
+      detail: hasVisibleOperation
         ? `${operationCount}건 시작됨`
+        : hasOperation
+          ? '기록 시작 준비됨'
         : hasLegacyRootsWithoutOperation
           ? `기존 기록 ${legacyRootDocumentCount}건 유지`
           : '경계 생성 후 가능',

@@ -26,6 +26,10 @@ import SearchBar from './SearchBar';
 import { ProjectContext } from '@/contexts/project-context';
 import { KoreanFieldworkInvestigationModeId } from './korean-fieldwork-investigation-mode';
 import { MaterialIcons } from '@expo/vector-icons';
+import {
+  getKoreanFieldworkUserVisibleDocuments,
+  getKoreanFieldworkUserVisibleTodaySummary,
+} from './korean-fieldwork-system-records';
 interface DocumentsMapProps {
   repository: DocumentRepository;
   syncStatus: SyncStatus;
@@ -59,6 +63,17 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
   const todaySummary = useMemo(
     () => getKoreanFieldworkTodaySummary(documents),
     [documents]
+  );
+  const userVisibleDocuments = useMemo(
+    () => getKoreanFieldworkUserVisibleDocuments(documents),
+    [documents]
+  );
+  const userVisibleTodaySummary = useMemo(
+    () => getKoreanFieldworkUserVisibleTodaySummary(
+      todaySummary,
+      userVisibleDocuments
+    ),
+    [todaySummary, userVisibleDocuments]
   );
   const selectedDocumentIds = useMemo(
     () => documents.map((doc) => doc.resource.id),
@@ -229,6 +244,7 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
       </View>
       <KoreanFieldworkTodayBoard
         summary={todaySummary}
+        displaySummary={userVisibleTodaySummary}
         documents={documents}
         investigationModeId={investigationModeId}
         onEditDocument={handleEditDocument}

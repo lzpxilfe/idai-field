@@ -5,6 +5,10 @@ import {
 } from 'idai-field-core';
 import { KOREAN_FIELDWORK_CATEGORIES } from './korean-fieldwork-categories';
 import { getKoreanFieldworkOverviewChartData } from './korean-fieldwork-overview-chart';
+import {
+  KOREAN_FIELDWORK_INITIAL_OPERATION_ID,
+  KOREAN_FIELDWORK_INITIAL_SURVEY_BOUNDARY_ID,
+} from './korean-fieldwork-system-records';
 
 const C = KOREAN_FIELDWORK_CATEGORIES;
 
@@ -133,6 +137,40 @@ describe('Korean fieldwork overview chart data', () => {
     expect(data.checklistDone).toBe(2);
     expect(data.checklistTotal).toBe(9);
     expect(data.checklistPercent).toBe(22);
+  });
+
+  it('does not count initial project boundary records as user records', () => {
+    const documents = [
+      createDoc(
+        KOREAN_FIELDWORK_INITIAL_OPERATION_ID,
+        C.OPERATION,
+        '프로젝트 경계'
+      ),
+      createDoc(
+        KOREAN_FIELDWORK_INITIAL_SURVEY_BOUNDARY_ID,
+        C.SURVEY_BOUNDARY,
+        '프로젝트 경계선',
+        { isRecordedIn: [KOREAN_FIELDWORK_INITIAL_OPERATION_ID] }
+      ),
+    ];
+    const data = getKoreanFieldworkOverviewChartData(
+      createSummary([
+        createIssue(KOREAN_FIELDWORK_INITIAL_OPERATION_ID, 'warning'),
+      ]),
+      documents
+    );
+
+    expect(data.totalDocumentCount).toBe(0);
+    expect(data.investigationUnitCount).toBe(0);
+    expect(data.operationCount).toBe(0);
+    expect(data.surveyBoundaryCount).toBe(0);
+    expect(data.openIssueCount).toBe(0);
+    expect(data.metrics.find((metric) => metric.id === 'investigation'))
+      .toMatchObject({
+        value: 0,
+        detail: '경계 0 · 트렌치 0',
+        tone: 'neutral',
+      });
   });
 });
 

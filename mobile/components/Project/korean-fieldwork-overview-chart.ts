@@ -11,6 +11,10 @@ import {
   getKoreanFieldworkChecklistQuickOptions,
   isKoreanFieldworkChecklistRecord,
 } from './korean-fieldwork-quick-record';
+import {
+  getKoreanFieldworkUserVisibleDocuments,
+  getKoreanFieldworkUserVisibleTodaySummary,
+} from './korean-fieldwork-system-records';
 
 export type KoreanFieldworkOverviewTone =
   'neutral'
@@ -108,7 +112,12 @@ export const getKoreanFieldworkOverviewChartData = (
   documents: Document[],
   investigationModeId?: KoreanFieldworkInvestigationModeId
 ): KoreanFieldworkOverviewChartData => {
-  const categoryCounts = getCategoryCounts(documents);
+  const userVisibleDocuments = getKoreanFieldworkUserVisibleDocuments(documents);
+  const userVisibleSummary = getKoreanFieldworkUserVisibleTodaySummary(
+    summary,
+    userVisibleDocuments
+  );
+  const categoryCounts = getCategoryCounts(userVisibleDocuments);
   const surveyCount = categoryCounts.get(C.SURVEY) ?? 0;
   const surveyBoundaryCount = categoryCounts.get(C.SURVEY_BOUNDARY) ?? 0;
   const operationCount = categoryCounts.get(C.OPERATION) ?? 0;
@@ -116,17 +125,18 @@ export const getKoreanFieldworkOverviewChartData = (
   const featureGroupCount = categoryCounts.get(C.FEATURE_GROUP) ?? 0;
   const featureCount = categoryCounts.get(C.FEATURE) ?? 0;
   const featureSegmentCount = categoryCounts.get(C.FEATURE_SEGMENT) ?? 0;
-  const investigationUnitCount = documents.filter((document) =>
+  const investigationUnitCount = userVisibleDocuments.filter((document) =>
     INVESTIGATION_UNIT_CATEGORIES.has(document.resource.category)
   ).length;
-  const featureWorkflowDocuments = documents.filter((document) =>
+  const featureWorkflowDocuments = userVisibleDocuments.filter((document) =>
     FEATURE_WORKFLOW_CATEGORY_SET.has(document.resource.category)
   );
   const checklistStats = getChecklistStats(
-    documents,
+    userVisibleDocuments,
     investigationModeId
   );
-  const directPhotoCount = countDirectFieldworkPhotoEvidenceDocuments(documents);
+  const directPhotoCount =
+    countDirectFieldworkPhotoEvidenceDocuments(userVisibleDocuments);
   const photoEvidenceCount = (categoryCounts.get(C.PHOTO) ?? 0)
     + (categoryCounts.get(C.SOIL_PROFILE_PHOTO) ?? 0)
     + directPhotoCount;
@@ -137,8 +147,8 @@ export const getKoreanFieldworkOverviewChartData = (
     + (categoryCounts.get(C.SAMPLE) ?? 0);
   const evidenceCount = countCategoryGroup(categoryCounts, EVIDENCE_DOCUMENT_CATEGORIES)
     + directPhotoCount;
-  const openIssueCount = summary.openIssues.length;
-  const criticalIssueCount = summary.openIssues.filter((issue) =>
+  const openIssueCount = userVisibleSummary.openIssues.length;
+  const criticalIssueCount = userVisibleSummary.openIssues.filter((issue) =>
     issue.severity === 'critical'
   ).length;
   const checklistPercent = checklistStats.total > 0
@@ -146,7 +156,7 @@ export const getKoreanFieldworkOverviewChartData = (
     : 0;
 
   return {
-    totalDocumentCount: documents.length,
+    totalDocumentCount: userVisibleDocuments.length,
     investigationUnitCount,
     surveyBoundaryCount,
     surveyCount,

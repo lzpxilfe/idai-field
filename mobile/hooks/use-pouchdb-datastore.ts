@@ -35,14 +35,16 @@ import {
   SURVEY_BOUNDARY_SOURCE_DEFAULT,
 } from '@/components/Project/Map/korean-fieldwork-drafts';
 import {
+  KOREAN_FIELDWORK_INITIAL_BOUNDARY_SYSTEM_RECORD,
+  KOREAN_FIELDWORK_INITIAL_OPERATION_ID,
+  KOREAN_FIELDWORK_INITIAL_SURVEY_BOUNDARY_ID,
+} from '@/components/Project/korean-fieldwork-system-records';
+import {
   isSampleProject,
   SAMPLE_PROJECT_LABEL,
 } from '@/constants/sample-project';
 
 PouchDB.plugin(require('@neighbourhoodie/pouchdb-asyncstorage-adapter').default)
-
-const INITIAL_OPERATION_ID = 'initial-fieldwork-operation';
-const INITIAL_SURVEY_BOUNDARY_ID = 'initial-survey-boundary';
 
 const usePouchDbDatastore = (project: string): PouchdbDatastore | undefined => {
   const [pouchdbDatastore, setpouchdbDatastore] = useState<PouchdbDatastore>();
@@ -172,7 +174,9 @@ const createInitialBoundaryDocuments = async (
   if (!boundaryDraft) return;
 
   const db = datastore.getDb();
-  const alreadyCreated = await db.get(INITIAL_SURVEY_BOUNDARY_ID)
+  const alreadyCreated = await db.get(
+    KOREAN_FIELDWORK_INITIAL_SURVEY_BOUNDARY_ID
+  )
     .then(() => true)
     .catch(() => false);
   if (alreadyCreated) {
@@ -191,7 +195,9 @@ const createInitialBoundaryDocuments = async (
     boundarySummary,
     investigationModeId: projectSetupDefaults.investigationModeId,
   });
-  operationDraft.resource.id = INITIAL_OPERATION_ID;
+  operationDraft.resource.id = KOREAN_FIELDWORK_INITIAL_OPERATION_ID;
+  operationDraft.resource.koreanFieldworkSystemRecord =
+    KOREAN_FIELDWORK_INITIAL_BOUNDARY_SYSTEM_RECORD;
   const operationDocument = {
     resource: operationDraft.resource,
   } as Document;
@@ -208,7 +214,9 @@ const createInitialBoundaryDocuments = async (
       ),
     }
   );
-  boundaryDocument.resource.id = INITIAL_SURVEY_BOUNDARY_ID;
+  boundaryDocument.resource.id = KOREAN_FIELDWORK_INITIAL_SURVEY_BOUNDARY_ID;
+  boundaryDocument.resource.koreanFieldworkSystemRecord =
+    KOREAN_FIELDWORK_INITIAL_BOUNDARY_SYSTEM_RECORD;
 
   await datastore.bulkCreate([operationDraft, boundaryDocument], '');
   await removeKoreanFieldworkProjectBoundaryDraft(project);

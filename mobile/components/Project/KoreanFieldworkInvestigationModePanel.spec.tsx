@@ -135,6 +135,25 @@ describe('KoreanFieldworkInvestigationModePanel', () => {
     expect(getByText('지도에서 조사 경계 생성')).toBeTruthy();
     expect(getByText('다음: 지도에서 조사 경계를 생성하세요. 기존 기록은 유지됩니다.')).toBeTruthy();
   });
+
+  it('shows setup readiness without counting hidden initial boundary records', () => {
+    const { getByText, queryByText } = render(
+      <KoreanFieldworkInvestigationModePanel
+        modeId="excavation"
+        onSelectMode={jest.fn()}
+        operationCount={0}
+        hasRecordingBase
+        surveyBoundaryCount={0}
+        hasStoredBoundary
+        onOpenMap={jest.fn()}
+      />
+    );
+
+    expect(getByText('지도 경계 설정됨')).toBeTruthy();
+    expect(getByText('기록 시작 준비됨')).toBeTruthy();
+    expect(queryByText('1건 기록됨')).toBeNull();
+    expect(queryByText('1건 시작됨')).toBeNull();
+  });
 });
 
 const expectSetupStepOrder = (

@@ -106,6 +106,11 @@ import {
   syncKoreanFieldworkProjectSetupDefaultsToProjectDocument,
 } from '@/components/Project/korean-fieldwork-project-setup-sync';
 import {
+  getKoreanFieldworkUserVisibleDocuments,
+  getKoreanFieldworkUserVisibleTodaySummary,
+  isKoreanFieldworkInitialBoundaryDocument,
+} from '@/components/Project/korean-fieldwork-system-records';
+import {
   getLegacyRootDocumentsForOperation,
 } from '@/components/Project/korean-fieldwork-operation-wrap';
 import { ConfigurationContext } from '@/contexts/configuration-context';
@@ -281,10 +286,21 @@ const DocumentsList: React.FC = () => {
     () => new Map(documents.map((document) => [document.resource.id, document])),
     [documents]
   );
+  const userVisibleDocuments = useMemo(
+    () => getKoreanFieldworkUserVisibleDocuments(documents),
+    [documents]
+  );
   const currentScopeParent = hierarchyPath[hierarchyPath.length - 1];
   const todaySummary = useMemo(
     () => getKoreanFieldworkTodaySummary(documents),
     [documents]
+  );
+  const userVisibleTodaySummary = useMemo(
+    () => getKoreanFieldworkUserVisibleTodaySummary(
+      todaySummary,
+      userVisibleDocuments
+    ),
+    [todaySummary, userVisibleDocuments]
   );
   const actionDocuments = useMemo(() => {
     const documentsByActionId = new Map<string, Document>();
@@ -323,29 +339,37 @@ const DocumentsList: React.FC = () => {
     return getKoreanFieldworkCategoryLabel(categoryName);
   }, [config, labels]);
 
-  const categoryFilteredDocuments = useMemo(() => documents.filter((document) => {
-    const filterCategories = activeFilterDefinition.categories;
-    return filterCategories.length === 0
-      || filterCategories.includes(document.resource.category);
-  }), [
-    activeFilterDefinition,
-    documents,
-  ]);
+  const categoryFilteredDocuments = useMemo(
+    () => userVisibleDocuments.filter((document) => {
+      const filterCategories = activeFilterDefinition.categories;
+      return filterCategories.length === 0
+        || filterCategories.includes(document.resource.category);
+    }),
+    [
+      activeFilterDefinition,
+      userVisibleDocuments,
+    ]
+  );
   const workFilterCounts = useMemo(
     () => getKoreanFieldworkRecordWorkFilterCounts(
       categoryFilteredDocuments,
       documents,
-      todaySummary.issueCountByDocumentId,
+      userVisibleTodaySummary.issueCountByDocumentId,
       now
     ),
-    [categoryFilteredDocuments, documents, now, todaySummary.issueCountByDocumentId]
+    [
+      categoryFilteredDocuments,
+      documents,
+      now,
+      userVisibleTodaySummary.issueCountByDocumentId,
+    ]
   );
   const filteredDocuments = useMemo(() => categoryFilteredDocuments.filter((document) => {
     const matchesWorkFilter = matchesKoreanFieldworkRecordWorkFilter(
       document,
       activeWorkFilter,
       documents,
-      todaySummary.issueCountByDocumentId,
+      userVisibleTodaySummary.issueCountByDocumentId,
       now
     );
     const matchesQuery = !normalizedQuery
@@ -360,16 +384,16 @@ const DocumentsList: React.FC = () => {
     getCategoryLabel,
     now,
     normalizedQuery,
-    todaySummary.issueCountByDocumentId,
+    userVisibleTodaySummary.issueCountByDocumentId,
   ]);
   const recordListEmptyState = useMemo(
     () => getKoreanFieldworkRecordListEmptyState({
       activeCategoryFilterId: activeFilter,
       activeWorkFilterId: activeWorkFilter,
       query,
-      totalDocumentCount: documents.length,
+      totalDocumentCount: userVisibleDocuments.length,
     }),
-    [activeFilter, activeWorkFilter, documents.length, query]
+    [activeFilter, activeWorkFilter, query, userVisibleDocuments.length]
   );
 
   const groupedDocuments = useMemo(() => RECORD_GROUPS
@@ -414,20 +438,26 @@ const DocumentsList: React.FC = () => {
     [actionSummary, actionTargets, currentScopeParent, investigationModeId]
   );
   const closeoutSummary = useMemo(
-    () => makeKoreanFieldworkCloseoutSummary(documents, 5),
-    [documents]
+    () => makeKoreanFieldworkCloseoutSummary(userVisibleDocuments, 5),
+    [userVisibleDocuments]
   );
-  const operationCount = useMemo(
+  const recordingBaseCount = useMemo(
     () => documents.filter((document) =>
       document.resource.category === KOREAN_FIELDWORK_CATEGORIES.OPERATION
     ).length,
     [documents]
   );
+  const operationCount = useMemo(
+    () => userVisibleDocuments.filter((document) =>
+      document.resource.category === KOREAN_FIELDWORK_CATEGORIES.OPERATION
+    ).length,
+    [userVisibleDocuments]
+  );
   const legacyRootDocumentCount = useMemo(
-    () => operationCount === 0
-      ? getLegacyRootDocumentsForOperation(documents).length
+    () => recordingBaseCount === 0
+      ? getLegacyRootDocumentsForOperation(userVisibleDocuments).length
       : 0,
-    [documents, operationCount]
+    [recordingBaseCount, userVisibleDocuments]
   );
   const hasFieldRecords = documents.length > 0;
   const hierarchyLabel = hierarchyPath.length > 0
@@ -464,14 +494,16 @@ const DocumentsList: React.FC = () => {
     [config]
   );
   const defaultWorkbenchDocument = useMemo(
-    () => actionTargets.issueDocument
-      ?? actionTargets.featureCandidate
-      ?? actionTargets.primaryOperation
-      ?? filteredDocuments[0],
+    () => [
+      actionTargets.issueDocument,
+      actionTargets.featureCandidate,
+      filteredDocuments[0],
+    ].find((document): document is Document =>
+      !!document && !isKoreanFieldworkInitialBoundaryDocument(document)
+    ),
     [
       actionTargets.featureCandidate,
       actionTargets.issueDocument,
-      actionTargets.primaryOperation,
       filteredDocuments,
     ]
   );
@@ -824,9 +856,11 @@ const DocumentsList: React.FC = () => {
           modeId={investigationModeId}
           onSelectMode={selectInvestigationMode}
           operationCount={operationCount}
-          totalDocumentCount={documents.length}
+          hasRecordingBase={recordingBaseCount > 0}
+          totalDocumentCount={userVisibleDocuments.length}
           legacyRootDocumentCount={legacyRootDocumentCount}
-          surveyBoundaryCount={todaySummary.surveyBoundaries.length}
+          surveyBoundaryCount={userVisibleTodaySummary.surveyBoundaries.length}
+          hasStoredBoundary={todaySummary.surveyBoundaries.length > 0}
           boundarySummary={boundarySummary}
           onOpenMap={openMap}
         />
@@ -834,30 +868,34 @@ const DocumentsList: React.FC = () => {
         {hasFieldRecords && (
           <>
             <KoreanFieldworkOverviewChart
-              summary={todaySummary}
-              documents={documents}
+              summary={userVisibleTodaySummary}
+              documents={userVisibleDocuments}
               currentScopeLabel={overviewScopeLabel}
               investigationModeId={investigationModeId}
               onReturnToInvestigationOverview={returnToInvestigationOverview}
             />
 
             <View style={styles.metricsBand}>
-              <Metric label="전체 기록" value={documents.length} icon="inventory-2" />
+              <Metric
+                label="전체 기록"
+                value={userVisibleDocuments.length}
+                icon="inventory-2"
+              />
               <Metric
                 label="오늘 일지"
-                value={todaySummary.dailyLogs.length}
+                value={userVisibleTodaySummary.dailyLogs.length}
                 icon="event-note"
               />
               <Metric
                 label="유구"
-                value={todaySummary.featureCandidates.length}
+                value={userVisibleTodaySummary.featureCandidates.length}
                 icon="add-location-alt"
               />
               <Metric
                 label="확인 필요"
-                value={todaySummary.openIssues.length}
+                value={userVisibleTodaySummary.openIssues.length}
                 icon="priority-high"
-                warning={todaySummary.openIssues.length > 0}
+                warning={userVisibleTodaySummary.openIssues.length > 0}
               />
             </View>
 
@@ -901,7 +939,7 @@ const DocumentsList: React.FC = () => {
 
         <KoreanFieldworkDailyNotebookDigest
           canOpenDailyLog={!quickActions.dailyLog.disabled}
-          documents={documents}
+          documents={userVisibleDocuments}
           now={now}
           onContinueEntry={continueNotebookEntry}
           onOpenDailyLog={openDailyLog}
@@ -986,14 +1024,14 @@ const DocumentsList: React.FC = () => {
         {showFieldworkDetails && (
           <>
             <KoreanFieldworkNotebookLedger
-              documents={documents}
+              documents={userVisibleDocuments}
               onContinueEntry={continueNotebookEntry}
               onOpenDocument={selectWorkbenchDocument}
             />
 
             <KoreanFieldworkWorkbenchPanel
-              summary={todaySummary}
-              documents={documents}
+              summary={userVisibleTodaySummary}
+              documents={userVisibleDocuments}
               investigationModeId={investigationModeId}
               getAllowedAddCategoryNames={getAllowedAddCategoryNames}
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
@@ -1002,9 +1040,9 @@ const DocumentsList: React.FC = () => {
             />
 
             <KoreanFieldworkScopePanel
-              documents={documents}
+              documents={userVisibleDocuments}
               hierarchyPath={hierarchyPath}
-              issueCount={todaySummary.openIssues.length}
+              issueCount={userVisibleTodaySummary.openIssues.length}
               onAddChild={openAddChildModal}
               onBackScope={popFromHierarchy}
               onClearScope={clearHierarchy}
@@ -1012,8 +1050,8 @@ const DocumentsList: React.FC = () => {
             />
 
             <KoreanFieldworkProgressBoard
-              summary={todaySummary}
-              documents={documents}
+              summary={userVisibleTodaySummary}
+              documents={userVisibleDocuments}
               investigationModeId={investigationModeId}
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
@@ -1022,8 +1060,8 @@ const DocumentsList: React.FC = () => {
             />
 
             <KoreanFieldworkUnitMatrix
-              summary={todaySummary}
-              documents={documents}
+              summary={userVisibleTodaySummary}
+              documents={userVisibleDocuments}
               scopeParent={currentScopeParent}
               investigationModeId={investigationModeId}
               onOpenDocument={onDocumentSelected}
@@ -1032,10 +1070,12 @@ const DocumentsList: React.FC = () => {
             />
 
             <KoreanFieldworkHierarchyBoard
-              documents={documents}
+              documents={userVisibleDocuments}
               documentsById={documentsById}
               hierarchyPath={hierarchyPath}
-              issueCountByDocumentId={todaySummary.issueCountByDocumentId}
+              issueCountByDocumentId={
+                userVisibleTodaySummary.issueCountByDocumentId
+              }
               onOpenDocument={onDocumentSelected}
               onDrillDown={pushToHierarchy}
               onAddChild={openAddChildModal}
@@ -1172,7 +1212,9 @@ const DocumentsList: React.FC = () => {
               documents={group.documents}
               documentsById={documentsById}
               getCategoryLabel={getCategoryLabel}
-              issueCountByDocumentId={todaySummary.issueCountByDocumentId}
+              issueCountByDocumentId={
+                userVisibleTodaySummary.issueCountByDocumentId
+              }
               investigationModeId={investigationModeId}
               selectedDocumentId={selectedWorkbenchDocument?.resource.id}
               onOpenDocument={selectWorkbenchDocument}
@@ -1191,7 +1233,9 @@ const DocumentsList: React.FC = () => {
               documents={otherDocuments}
               documentsById={documentsById}
               getCategoryLabel={getCategoryLabel}
-              issueCountByDocumentId={todaySummary.issueCountByDocumentId}
+              issueCountByDocumentId={
+                userVisibleTodaySummary.issueCountByDocumentId
+              }
               investigationModeId={investigationModeId}
               selectedDocumentId={selectedWorkbenchDocument?.resource.id}
               onOpenDocument={selectWorkbenchDocument}
