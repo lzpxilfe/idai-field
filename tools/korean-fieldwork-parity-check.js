@@ -1094,7 +1094,8 @@ function validateGuidedFeatureDraftDefaults() {
     findings.push('tablet add flow must place new features on a flat placement map surface');
   }
   if (!desktopRecordContextTemplateText.includes('flat-map-surface')
-      || !desktopRecordContextTemplateText.includes('위성지도식 평면')
+      || !desktopRecordContextTemplateText.includes('지도처럼 위에서 보기')
+      || desktopRecordContextTemplateText.includes('위성지도식 평면')
       || desktopRecordContextTemplateText.includes('평면 배치 지도')
       || !desktopRecordContextTemplateText.includes('satellite-field')
       || !desktopRecordContextStyleText.includes('.flat-map-surface')
