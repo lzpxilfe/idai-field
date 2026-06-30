@@ -192,7 +192,7 @@ const featureRows = [
   },
   {
     id: 'daily-notebook',
-    title: 'Daily notebook, follow-up notes, and narrative assist',
+    title: 'Daily notebook, follow-up notes, and evidence-linked summaries',
     tablet: [
       'mobile/components/Project/KoreanFieldworkDailyJournalCalendar.tsx',
       'mobile/components/Project/KoreanFieldworkFieldNotePanel.tsx',
@@ -208,8 +208,7 @@ const featureRows = [
       'desktop/src/app/components/resources/korean-fieldwork-priority-strip.html',
       'desktop/src/app/components/resources/korean-fieldwork-priority-strip.scss',
       'desktop/src/app/util/korean-fieldwork-evidence-review.ts',
-      'desktop/src/app/util/korean-fieldwork-notebook-digest.ts',
-      'desktop/src/app/util/korean-fieldwork-narrative-assist.ts'
+      'desktop/src/app/util/korean-fieldwork-notebook-digest.ts'
     ],
     tabletTests: [
       'mobile/components/Project/KoreanFieldworkDailyJournalCalendar.spec.tsx',
@@ -225,8 +224,7 @@ const featureRows = [
     desktopTests: [
       'desktop/test/unit/components/resources/korean-fieldwork-priority-strip.component.spec.ts',
       'desktop/test/unit/util/korean-fieldwork-evidence-review.spec.ts',
-      'desktop/test/unit/util/korean-fieldwork-notebook-digest.spec.ts',
-      'desktop/test/unit/util/korean-fieldwork-narrative-assist.spec.ts'
+      'desktop/test/unit/util/korean-fieldwork-notebook-digest.spec.ts'
     ]
   },
   {
@@ -1897,9 +1895,6 @@ function validateProjectInvestigationModeWording() {
   const desktopRecordContextPanelSpecText = readTextFile(
     'desktop/test/unit/components/docedit/core/korean-fieldwork-record-context-panel.component.spec.ts'
   );
-  const desktopNarrativeAssistText = readTextFile(
-    'desktop/src/app/util/korean-fieldwork-narrative-assist.ts'
-  );
   const desktopFeatureGuidanceText = readTextFile(
     'desktop/src/app/util/korean-fieldwork-feature-guidance.ts'
   );
@@ -1990,9 +1985,6 @@ function validateProjectInvestigationModeWording() {
     if (!tabletNarrativeAssistText.includes(requiredAnchor)) {
       findings.push(`tablet narrative assist must bind feature descriptions to sketches/measurements: ${requiredAnchor}`);
     }
-    if (!desktopNarrativeAssistText.includes(requiredAnchor)) {
-      findings.push(`desktop narrative assist must bind feature descriptions to sketches/measurements: ${requiredAnchor}`);
-    }
   }
   for (const requiredAnchor of ['스케치/약측 기준', '사진/도면 번호']) {
     if (!desktopFeatureGuidanceText.includes(requiredAnchor)) {
@@ -2078,8 +2070,7 @@ function validateProjectInvestigationModeWording() {
     { label: 'desktop workbench', text: desktopWorkbenchText },
     { label: 'desktop progress board', text: desktopProgressBoardText },
     { label: 'desktop closeout', text: desktopCloseoutText },
-    { label: 'desktop record context panel', text: desktopRecordContextPanelText },
-    { label: 'desktop narrative assist', text: desktopNarrativeAssistText }
+    { label: 'desktop record context panel', text: desktopRecordContextPanelText }
   ];
   for (const { label, text } of desktopFieldFlowWordingSources) {
     for (const forbiddenTerm of ['조사 기준', '기록 기준', '작업 단위', '조사 단위']) {
