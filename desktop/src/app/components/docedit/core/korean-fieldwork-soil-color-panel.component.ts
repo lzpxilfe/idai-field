@@ -21,7 +21,6 @@ const SOIL_COLOR_FIELDS = {
     activeLayerNumber: 'soilProfileActiveLayerNumber',
     assistCandidates: 'soilColorAssistCandidates',
     assistStatus: 'soilColorAssistStatus',
-    captureCondition: 'soilColorCaptureCondition',
     manualMunsell: 'soilColorMunsellManual',
     moistureState: 'soilColorMoistureState',
     profileCaptureNote: 'soilProfileCaptureNote',
@@ -77,14 +76,6 @@ export class KoreanFieldworkSoilColorPanelComponent {
         { value: 'moist', label: '습윤' },
         { value: 'wet', label: '젖음' },
         { value: 'unclear', label: '불명확' }
-    ];
-
-    public readonly captureConditionOptions: readonly SoilColorOption[] = [
-        { value: 'naturalLight', label: '자연광' },
-        { value: 'shade', label: '그늘' },
-        { value: 'calibrationTargetUsed', label: '보정판' },
-        { value: 'flash', label: '플래시' },
-        { value: 'poorCondition', label: '조건 불량' }
     ];
 
     public activeSoilColorRowNumber = 1;

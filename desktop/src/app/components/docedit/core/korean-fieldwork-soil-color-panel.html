@@ -133,20 +133,6 @@
         </div>
     </div>
 
-    <div *ngIf="hasField(fields.captureCondition)"
-         class="korean-fieldwork-soil-color-section">
-        <div class="korean-fieldwork-soil-color-label">촬영 조건</div>
-        <div class="korean-fieldwork-soil-color-chip-row">
-            <button *ngFor="let option of captureConditionOptions"
-                    type="button"
-                    class="btn korean-fieldwork-soil-color-chip"
-                    [class.active]="getValue(fields.captureCondition) === option.value"
-                    (click)="setValue(fields.captureCondition, option.value)">
-                {{option.label}}
-            </button>
-        </div>
-    </div>
-
     <div class="korean-fieldwork-soil-color-section">
         <div class="korean-fieldwork-soil-color-label">토색 메모</div>
         <textarea class="form-control korean-fieldwork-soil-color-textarea"
@@ -161,6 +147,6 @@
         <textarea class="form-control korean-fieldwork-soil-color-textarea"
                   [ngModel]="getValue(fields.profileCaptureNote)"
                   (ngModelChange)="setValue(fields.profileCaptureNote, $event)"
-                  placeholder="촬영 방향, 그늘, 보정판 위치 등을 적어두세요."></textarea>
+                  placeholder="사진 번호, 보정판 위치, 토색 판독에 필요한 특이사항을 적어두세요."></textarea>
     </div>
 </div>

@@ -3302,6 +3302,22 @@ function validateSoilColorReviewWorkflow() {
       || tabletSoilColorPanelText.includes('CAPTURE_CONDITION_OPTIONS')) {
     findings.push('tablet soil color panel must keep photo capture-condition fields out of the fast soil color UI');
   }
+  const desktopSoilColorPanelText = readTextFile(
+    'desktop/src/app/components/docedit/core/korean-fieldwork-soil-color-panel.component.ts'
+  );
+  const desktopSoilColorPanelTemplateText = readTextFile(
+    'desktop/src/app/components/docedit/core/korean-fieldwork-soil-color-panel.html'
+  );
+  const desktopSoilColorPanelSpecText = readTextFile(
+    'desktop/test/unit/components/docedit/core/korean-fieldwork-soil-color-panel.component.spec.ts'
+  );
+  if (desktopSoilColorPanelText.includes('soilColorCaptureCondition')
+      || desktopSoilColorPanelText.includes('captureConditionOptions')
+      || desktopSoilColorPanelTemplateText.includes('촬영 조건')
+      || desktopSoilColorPanelTemplateText.includes('fields.captureCondition')
+      || !desktopSoilColorPanelSpecText.includes("not.toContain('촬영 조건')")) {
+    findings.push('desktop soil color panel must keep photo capture-condition fields out of the fast soil color UI');
+  }
 
   for (const source of panelTests) {
     const text = readTextFile(source.filePath);
@@ -3328,12 +3344,6 @@ function validateSoilColorReviewWorkflow() {
   ).includes('field-facing soil color labels')) {
     findings.push('desktop soil color panel test must cover field-facing labels');
   }
-  const desktopSoilColorPanelText = readTextFile(
-    'desktop/src/app/components/docedit/core/korean-fieldwork-soil-color-panel.component.ts'
-  );
-  const desktopSoilColorPanelSpecText = readTextFile(
-    'desktop/test/unit/components/docedit/core/korean-fieldwork-soil-color-panel.component.spec.ts'
-  );
   if (!desktopSoilColorPanelText.includes('extractMunsellCandidateOptions')
       || desktopSoilColorPanelText.includes('RegExpMatchArray')) {
     findings.push('desktop soil color panel must use shared Munsell candidate parser instead of inline regex');

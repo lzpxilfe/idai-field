@@ -35,6 +35,11 @@ describe('KoreanFieldworkSoilColorPanelComponent', () => {
         expect(template).toContain('getAssistSampleSourceLabel()');
         expect(template).toContain('토색 메모');
         expect(template).toContain('보정판 위치');
+        expect(template).not.toContain('촬영 조건');
+        expect(template).not.toContain('그늘');
+        expect(template).not.toContain('fields.captureCondition');
+        expect(template).not.toContain('captureConditionOptions');
+        expect(JSON.stringify((component as any).fields)).not.toContain('soilColorCaptureCondition');
         expect(template).not.toContain('보정표');
     });
 
