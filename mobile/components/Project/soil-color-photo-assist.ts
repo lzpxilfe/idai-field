@@ -195,7 +195,7 @@ export const getNearestMunsellCandidates = (
 
 export const extractMunsellCandidateOptions = (text: string): string[] => {
   const matches = text.toUpperCase().match(
-    /\b(?:GLEY\s*[12]\s*\d\/N|(?:10|7\.5|5|2\.5)(?:YR|Y|R)\s+\d(?:\.\d)?\/\d(?:\.\d)?)\b/g
+    /\b(?:GLEY\s*[12]\s*\d(?:\.\d)?\/N|(?:10|7\.5|5|2\.5)(?:R|YR|Y|GY|G|BG|B|PB|P|RP)\s+\d(?:\.\d)?\/\d+(?:\.\d)?|N\s*\d(?:\.\d)?\/0)\b/g
   ) ?? [];
 
   return Array.from(new Set(

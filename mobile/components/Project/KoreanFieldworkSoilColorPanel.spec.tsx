@@ -102,7 +102,7 @@ describe('KoreanFieldworkSoilColorPanel', () => {
     );
   });
 
-  it('writes Munsell builder output to the selected soil layer row', () => {
+  it('writes expanded and neutral Munsell builder output to the selected soil layer row', () => {
     const handleUpdateResourceField = jest.fn();
     const { getByTestId } = render(
       <KoreanFieldworkSoilColorPanel
@@ -118,19 +118,26 @@ describe('KoreanFieldworkSoilColorPanel', () => {
     );
 
     fireEvent.press(getByTestId('soilColorLayerSelect_2'));
-    fireEvent.press(getByTestId('soilColorOption_5YR'));
-    fireEvent.press(getByTestId('soilColorValueOption_4'));
-    fireEvent.press(getByTestId('soilColorChromaOption_6'));
+    fireEvent.press(getByTestId('soilColorOption_2.5GY'));
+    fireEvent.press(getByTestId('soilColorValueOption_2.5'));
+    fireEvent.press(getByTestId('soilColorChromaOption_10'));
 
     expect(handleUpdateResourceField).toHaveBeenLastCalledWith(
       'soilProfileColorSwatches',
-      '1: 10YR 4/3\n2: 5YR 4/6'
+      '1: 10YR 4/3\n2: 2.5GY 2.5/10'
+    );
+
+    fireEvent.press(getByTestId('soilColorOption_N'));
+
+    expect(handleUpdateResourceField).toHaveBeenLastCalledWith(
+      'soilProfileColorSwatches',
+      '1: 10YR 4/3\n2: N 2.5/0'
     );
   });
 
   it('lets users accept photo-derived Munsell candidates into the selected layer', () => {
     const handleUpdateResourceFields = jest.fn();
-    const { getByTestId, getByText } = render(
+    const { getByTestId, getByText, queryByText, queryByTestId } = render(
       <KoreanFieldworkSoilColorPanel
         category={createCategoryForm([
           'soilProfileColorSwatches',
@@ -148,29 +155,16 @@ describe('KoreanFieldworkSoilColorPanel', () => {
       />
     );
 
-    expect(getByText('사진에서 찍은 토색')).toBeTruthy();
+    expect(queryByText('사진에서 찍은 토색')).toBeNull();
+    expect(getByText('1층 스포이드 후보')).toBeTruthy();
+    expect(queryByTestId('soilColorInput_assistCandidates')).toBeNull();
     fireEvent.press(getByTestId('soilColorLayerSelect_2'));
+    expect(getByText('2층 스포이드 후보')).toBeTruthy();
     fireEvent.press(getByTestId('soilColorCandidateOption_10YR 4/3'));
-    fireEvent.changeText(
-      getByTestId('soilColorInput_assistCandidates'),
-      '1: 10YR 3/2'
-    );
-    fireEvent.changeText(
-      getByTestId('soilColorInput_assistCandidates'),
-      ''
-    );
 
     expect(handleUpdateResourceFields).toHaveBeenCalledWith({
       soilProfileColorSwatches: '1: \n2: 10YR 4/3',
       soilColorAssistStatus: 'reviewed',
-    });
-    expect(handleUpdateResourceFields).toHaveBeenCalledWith({
-      soilColorAssistCandidates: '1: 10YR 3/2',
-      soilColorAssistStatus: 'candidatesAvailable',
-    });
-    expect(handleUpdateResourceFields).toHaveBeenCalledWith({
-      soilColorAssistCandidates: '',
-      soilColorAssistStatus: 'notRun',
     });
   });
 

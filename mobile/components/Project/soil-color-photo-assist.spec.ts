@@ -30,8 +30,8 @@ describe('soil color photo assist', () => {
 
   it('extracts unique Munsell options from candidate text', () => {
     expect(extractMunsellCandidateOptions(
-      '1: 10YR 4/3 (보통)\n2: 10YR 4/3\n3: GLEY 1 4/N'
-    )).toEqual(['10YR 4/3', 'GLEY 1 4/N']);
+      '1: 10YR 4/3 (보통)\n2: 10YR 4/3\n3: GLEY 1 4/N\n4: 2.5GY 2.5/10\n5: N 4/0'
+    )).toEqual(['10YR 4/3', 'GLEY 1 4/N', '2.5GY 2.5/10', 'N 4/0']);
   });
 
   it('uses Korean field wording when photo color sampling fails', () => {

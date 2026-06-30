@@ -46,27 +46,59 @@ const SOIL_COLOR_FIELDS = {
   soilColorNote: 'soilColorNote',
 } as const;
 
-const MUNSELL_HUE_OPTIONS: readonly SoilColorOption[] = [
-  { value: '10YR', label: '10YR' },
-  { value: '7.5YR', label: '7.5YR' },
-  { value: '5YR', label: '5YR' },
-  { value: '2.5YR', label: '2.5YR' },
-  { value: '10R', label: '10R' },
-  { value: '7.5R', label: '7.5R' },
-  { value: '5R', label: '5R' },
-  { value: '2.5Y', label: '2.5Y' },
-  { value: '5Y', label: '5Y' },
-  { value: '10Y', label: '10Y' },
-];
+const MUNSELL_HUE_OPTIONS: readonly SoilColorOption[] =
+  [
+    'N',
+    '10R',
+    '2.5YR',
+    '5YR',
+    '7.5YR',
+    '10YR',
+    '2.5Y',
+    '5Y',
+    '7.5Y',
+    '10Y',
+    '2.5GY',
+    '5GY',
+    '7.5GY',
+    '10GY',
+    '2.5G',
+    '5G',
+    '7.5G',
+    '10G',
+    '2.5BG',
+    '5BG',
+    '7.5BG',
+    '10BG',
+    '2.5B',
+    '5B',
+    '7.5B',
+    '10B',
+    '2.5PB',
+    '5PB',
+    '7.5PB',
+    '10PB',
+    '2.5P',
+    '5P',
+    '7.5P',
+    '10P',
+    '2.5RP',
+    '5RP',
+    '7.5RP',
+    '10RP',
+    '2.5R',
+    '5R',
+    '7.5R',
+  ].map((value) => ({ value, label: value }));
 
 const MUNSELL_VALUE_OPTIONS: readonly SoilColorOption[] =
-  ['2', '3', '4', '5', '6', '7', '8'].map((value) => ({
+  ['1', '2', '2.5', '3', '4', '5', '6', '7', '8', '9'].map((value) => ({
     value,
     label: value,
   }));
 
 const MUNSELL_CHROMA_OPTIONS: readonly SoilColorOption[] =
-  ['1', '2', '3', '4', '6', '8'].map((value) => ({
+  ['0', '1', '2', '3', '4', '5', '6', '8', '10', '12'].map((value) => ({
     value,
     label: `/${value}`,
   }));
@@ -225,7 +257,7 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
                   )
                 )}
                 onFocus={() => setSelectedRowNumber(row.number)}
-                placeholder="먼셀값 또는 토색 메모"
+                placeholder="예: 10YR 4/3 갈색, GLEY 1 4/N"
                 placeholderTextColor="#98a2b3"
                 style={styles.layerInput}
                 testID={`soilColorLayerInput_${row.number}`}
@@ -249,6 +281,16 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
             <MaterialIcons name="add" size={16} color="#175cd3" />
             <Text style={styles.addNumberButtonText}>층 추가</Text>
           </TouchableOpacity>
+          {hasAssistCandidates && (
+            <LayerSampleCandidatePanel
+              activeRowNumber={activeRowNumber}
+              assistCandidateOptions={assistCandidateOptions}
+              assistCandidateText={assistCandidateText}
+              activeValue={soilColorRows.find((row) =>
+                row.number === activeRowNumber)?.value}
+              onPressCandidate={applyAssistCandidate}
+            />
+          )}
         </QuickSection>
       )}
 
@@ -293,7 +335,7 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
             onChangeText={(value) => updateFields(
               getLayerMunsellUpdates(fieldNames, value)
             )}
-            placeholder="직접 입력"
+            placeholder="직접 입력 예: 10YR 4/3, GLEY 1 4/N"
             placeholderTextColor="#98a2b3"
             style={styles.textInput}
             testID="soilColorInput_manualMunsell"
@@ -302,29 +344,17 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
         )}
       </QuickSection>
 
-      {hasAssistCandidates && (
-        <QuickSection title="사진에서 찍은 토색">
-          <TextInput
-            autoCapitalize="characters"
-            autoCorrect={false}
-            multiline
-            onChangeText={(value) => updateFields(
-              getAssistCandidateUpdates(fieldNames, value)
-            )}
-            placeholder="사진에서 찍은 먼셀 후보가 여기에 표시됩니다."
-            placeholderTextColor="#98a2b3"
-            style={[styles.textInput, styles.candidateInput]}
-            testID="soilColorInput_assistCandidates"
+      {hasAssistCandidates && canRecordLayerMunsell && (
+        <QuickSection title="스포이드 후보">
+          <AssistCandidateTextInput
+            fieldNames={fieldNames}
+            onUpdateFields={updateFields}
             value={assistCandidateText}
           />
           {assistCandidateOptions.length > 0 && (
             <PresetRow
               options={assistCandidateOptions}
-              activeValue={
-                canRecordLayerMunsell
-                  ? getTextValue(resource, SOIL_COLOR_FIELDS.manualMunsell)
-                  : soilColorRows.find((row) => row.number === activeRowNumber)?.value
-              }
+              activeValue={getTextValue(resource, SOIL_COLOR_FIELDS.manualMunsell)}
               onPress={applyAssistCandidate}
               testIDPrefix="soilColorCandidateOption"
             />
@@ -370,6 +400,68 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
     </View>
   );
 };
+
+const LayerSampleCandidatePanel: React.FC<{
+  activeRowNumber: number;
+  activeValue?: string;
+  assistCandidateOptions: SoilColorOption[];
+  assistCandidateText: string;
+  onPressCandidate: (value: string) => void;
+}> = ({
+  activeRowNumber,
+  activeValue,
+  assistCandidateOptions,
+  assistCandidateText,
+  onPressCandidate,
+}) => {
+  if (
+    assistCandidateOptions.length === 0
+    && assistCandidateText.trim().length === 0
+  ) {
+    return null;
+  }
+
+  return (
+    <View style={styles.layerSamplePanel} testID="soilColorLayerSamplePanel">
+      <View style={styles.layerSampleHeader}>
+        <MaterialIcons name="colorize" size={16} color="#175cd3" />
+        <Text style={styles.layerSampleTitle}>
+          {`${activeRowNumber}층 스포이드 후보`}
+        </Text>
+      </View>
+      {assistCandidateOptions.length > 0 ? (
+        <PresetRow
+          options={assistCandidateOptions}
+          activeValue={activeValue}
+          onPress={onPressCandidate}
+          testIDPrefix="soilColorCandidateOption"
+        />
+      ) : (
+        <Text style={styles.layerSampleStatus}>{assistCandidateText}</Text>
+      )}
+    </View>
+  );
+};
+
+const AssistCandidateTextInput: React.FC<{
+  fieldNames: Set<string>;
+  onUpdateFields: (updates: Record<string, unknown>) => void;
+  value: string;
+}> = ({ fieldNames, onUpdateFields, value }) => (
+  <TextInput
+    autoCapitalize="characters"
+    autoCorrect={false}
+    multiline
+    onChangeText={(nextValue) => onUpdateFields(
+      getAssistCandidateUpdates(fieldNames, nextValue)
+    )}
+    placeholder="사진에서 찍은 먼셀 후보가 여기에 표시됩니다."
+    placeholderTextColor="#98a2b3"
+    style={[styles.textInput, styles.candidateInput]}
+    testID="soilColorInput_assistCandidates"
+    value={value}
+  />
+);
 
 const QuickSection: React.FC<{
   title: string;
@@ -474,7 +566,7 @@ const getAssistCandidateUpdates = (
 };
 
 const formatMunsell = (hue: string, value: string, chroma: string): string =>
-  `${hue} ${value}/${chroma}`;
+  hue === 'N' ? `N ${value}/0` : `${hue} ${value}/${chroma}`;
 
 const getSoilColorRows = (currentValue: string): SoilColorLayerRow[] => {
   const lines = currentValue
@@ -628,6 +720,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
     marginLeft: 4,
+  },
+  layerSamplePanel: {
+    backgroundColor: '#eff8ff',
+    borderColor: '#b2ddff',
+    borderRadius: 6,
+    borderWidth: 1,
+    marginTop: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+  },
+  layerSampleHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  layerSampleTitle: {
+    color: '#175cd3',
+    fontSize: 12,
+    fontWeight: '900',
+    marginLeft: 5,
+  },
+  layerSampleStatus: {
+    color: '#475467',
+    fontSize: 12,
+    fontWeight: '700',
   },
   builderPreviewRow: {
     alignItems: 'center',
