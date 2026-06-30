@@ -1039,6 +1039,7 @@ describe('KoreanFieldworkPriorityStripComponent', () => {
             dailyLogSafetyEducationPhoto: true,
             dailyLogSafetyEducationStretching: true,
             dailyLogBoundaryMemoImportedAt: `${getTodayLabel()}T08:30:00.000Z`,
+            dailyLogWorkMemoUpdatedAt: `${getTodayLabel()}T10:15:00.000Z`,
             dailyLogBoundaryMemoStrokes: {
                 version: 1,
                 strokes: [
@@ -1076,6 +1077,7 @@ describe('KoreanFieldworkPriorityStripComponent', () => {
             safetyLabel: '안전교육 완료',
             boundaryMemoLabel: '경계 메모 1획/2점',
             boundaryMemoImportedAtLabel: `경계 가져옴 ${getTodayLabel()}`,
+            workMemoUpdatedAtLabel: `작업일지 수정 ${getTodayLabel()}`,
             boundaryMemoPreview: expect.objectContaining({
                 path: expect.stringContaining('M '),
                 viewBox: '0 0 120 72'

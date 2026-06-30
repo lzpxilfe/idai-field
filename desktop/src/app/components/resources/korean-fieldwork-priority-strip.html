@@ -589,6 +589,10 @@
                       class="korean-fieldwork-notebook-journal-detail">
                     {{summary.boundaryMemoImportedAtLabel}}
                 </span>
+                <span *ngIf="summary.workMemoUpdatedAtLabel"
+                      class="korean-fieldwork-notebook-journal-detail">
+                    {{summary.workMemoUpdatedAtLabel}}
+                </span>
                 <svg *ngIf="summary.boundaryMemoPreview as boundaryPreview"
                      class="korean-fieldwork-notebook-journal-boundary-preview"
                      [attr.viewBox]="boundaryPreview.viewBox"

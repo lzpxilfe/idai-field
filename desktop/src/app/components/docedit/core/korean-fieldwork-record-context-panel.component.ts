@@ -162,6 +162,7 @@ const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'dailyLogLaborerCount',
     'dailyLogSafetyEducationPhoto',
     'dailyLogSafetyEducationStretching',
+    'dailyLogWorkMemoUpdatedAt',
     'dailyLogWorkerCount',
     'featureFreeDrawingStrokes',
     'featureFreeDrawingUpdatedAt',

@@ -38,6 +38,7 @@ export interface KoreanFieldworkDailyJournalSummary {
     safetyLabel: string;
     boundaryMemoLabel: string;
     boundaryMemoImportedAtLabel: string;
+    workMemoUpdatedAtLabel: string;
     boundaryMemoPreview?: KoreanFieldworkPenMemoSketchPreview;
     detail: string;
     hasPersonnel: boolean;
@@ -90,6 +91,7 @@ const DAILY_JOURNAL_FIELD = {
     laborerCount: 'dailyLogLaborerCount',
     safetyEducationPhoto: 'dailyLogSafetyEducationPhoto',
     safetyEducationStretching: 'dailyLogSafetyEducationStretching',
+    workMemoUpdatedAt: 'dailyLogWorkMemoUpdatedAt',
     workerCount: 'dailyLogWorkerCount'
 } as const;
 
@@ -548,6 +550,11 @@ export function createDailyJournalSummary(dailyLogDocument: Document): KoreanFie
         DAILY_JOURNAL_FIELD.boundaryMemoImportedAt,
         '경계 가져옴'
     );
+    const workMemoUpdatedAtLabel = getDailyJournalDateFieldLabel(
+        dailyLogDocument,
+        DAILY_JOURNAL_FIELD.workMemoUpdatedAt,
+        '작업일지 수정'
+    );
 
     return {
         document: dailyLogDocument,
@@ -557,13 +564,15 @@ export function createDailyJournalSummary(dailyLogDocument: Document): KoreanFie
         safetyLabel,
         boundaryMemoLabel,
         boundaryMemoImportedAtLabel,
+        workMemoUpdatedAtLabel,
         boundaryMemoPreview,
         detail: [
             personnelLabel,
             equipmentLabel,
             safetyLabel,
             boundaryMemoLabel,
-            boundaryMemoImportedAtLabel
+            boundaryMemoImportedAtLabel,
+            workMemoUpdatedAtLabel
         ].filter(value => value.length > 0).join(' · '),
         hasPersonnel,
         hasSafetyComplete: safetyPhotoDone && safetyStretchingDone,

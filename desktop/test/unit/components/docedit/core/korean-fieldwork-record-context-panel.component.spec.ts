@@ -364,7 +364,8 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
             dailyLogEquipmentSize: '0.6㎥',
             dailyLogSafetyEducationPhoto: true,
             dailyLogSafetyEducationStretching: false,
-            dailyLogBoundaryMemoImportedAt: '2026-06-30T08:30:00.000Z'
+            dailyLogBoundaryMemoImportedAt: '2026-06-30T08:30:00.000Z',
+            dailyLogWorkMemoUpdatedAt: '2026-06-30T10:15:00.000Z'
         });
         const component = createComponent({
             find: jest.fn().mockResolvedValue({ documents: [dailyLog] })
@@ -384,6 +385,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         expect(summary.safetyLabel).toBe('안전교육 · 사진 · 체조 미확인');
         expect(summary.boundaryMemoLabel).toBe('경계 메모 없음');
         expect(summary.boundaryMemoImportedAtLabel).toBe('경계 가져옴 2026-06-30');
+        expect(summary.workMemoUpdatedAtLabel).toBe('작업일지 수정 2026-06-30');
         expect(summary.hasSafetyComplete).toBe(false);
         expect(summary.hasBoundaryMemo).toBe(false);
     });
@@ -404,6 +406,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
         expect(template).toContain('dailyJournalSummary.personnelLabel');
         expect(template).toContain('dailyJournalSummary.safetyLabel');
         expect(template).toContain('dailyJournalSummary.boundaryMemoImportedAtLabel');
+        expect(template).toContain('dailyJournalSummary.workMemoUpdatedAtLabel');
     });
 
 

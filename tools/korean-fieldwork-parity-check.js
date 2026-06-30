@@ -2674,21 +2674,28 @@ function validateRecordPanelOrder() {
   }
   if (!desktopNotebookDigestText.includes('boundaryMemoPreview')
       || !desktopNotebookDigestText.includes('boundaryMemoImportedAtLabel')
+      || !desktopNotebookDigestText.includes('workMemoUpdatedAtLabel')
       || !desktopPriorityStripTemplateText.includes('korean-fieldwork-notebook-journal-boundary-preview')
       || !desktopPriorityStripTemplateText.includes('summary.boundaryMemoImportedAtLabel')
+      || !desktopPriorityStripTemplateText.includes('summary.workMemoUpdatedAtLabel')
       || !desktopPriorityStripStyleText.includes('korean-fieldwork-notebook-journal-boundary-preview')
       || !desktopNotebookDigestSpecText.includes('boundaryMemoPreview')
       || !desktopNotebookDigestSpecText.includes('경계 가져옴')
+      || !desktopNotebookDigestSpecText.includes('작업일지 수정')
+      || !desktopPriorityStripSpecText.includes('작업일지 수정')
       || !desktopPriorityStripSpecText.includes('boundaryMemoPreview')) {
-    findings.push('desktop notebook panel must preview tablet daily-journal boundary handwriting and imported boundary date, not only count it');
+    findings.push('desktop notebook panel must preview tablet daily-journal boundary handwriting, imported boundary date, and last work-memo update, not only count it');
   }
   if (!desktopNotebookDigestText.includes('export function createDailyJournalSummary')
       || !desktopRecordContextPanelText.includes('getDailyJournalSummary')
       || !desktopRecordContextPanelText.includes('dailyLogInvestigatorCount')
+      || !desktopRecordContextPanelText.includes('dailyLogWorkMemoUpdatedAt')
       || !desktopRecordContextPanelTemplateText.includes('korean-fieldwork-record-context-daily-summary')
       || !desktopRecordContextPanelStyleText.includes('korean-fieldwork-record-context-daily-summary-chip')
+      || !desktopRecordContextPanelTemplateText.includes('dailyJournalSummary.workMemoUpdatedAtLabel')
+      || !desktopRecordContextPanelSpecText.includes('작업일지 수정')
       || !desktopRecordContextPanelSpecText.includes('personnel, equipment, and safety on opened DailyLog records')) {
-    findings.push('desktop record context must summarize tablet daily-journal personnel, equipment, and safety on opened DailyLog records');
+    findings.push('desktop record context must summarize tablet daily-journal personnel, equipment, safety, and last work-memo update on opened DailyLog records');
   }
   if (!desktopRecordContextPanelText.includes('getDailyJournalBoundaryMemoPreview')
       || !desktopRecordContextPanelText.includes('dailyLogBoundaryMemoImportedAt')
