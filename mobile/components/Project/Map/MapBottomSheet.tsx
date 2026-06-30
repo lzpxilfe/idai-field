@@ -28,11 +28,11 @@ interface MapBottomSheetProps {
   editDocument: (docId: string, categoryName: string) => void;
   removeDocument: (doc: Document) => void;
   focusHandler: (docId: string) => void;
-  canCreateLocationCandidate: boolean;
+  canOpenFeatureSketchCreation: boolean;
   canCreatePenMemo: boolean;
   canCreateSoilProfilePhoto: boolean;
   canCreateSurveyBoundary: boolean;
-  createFeatureCandidateAtCurrentLocation: () => void;
+  openFeatureSketchCreation: () => void;
   createPenMemoDraft: () => void;
   createSoilProfilePhotoDraft: () => void;
   createSurveyBoundaryDraft: () => void;
@@ -59,11 +59,11 @@ const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
   editDocument,
   removeDocument,
   focusHandler,
-  canCreateLocationCandidate,
+  canOpenFeatureSketchCreation,
   canCreatePenMemo,
   canCreateSoilProfilePhoto,
   canCreateSurveyBoundary,
-  createFeatureCandidateAtCurrentLocation,
+  openFeatureSketchCreation,
   createPenMemoDraft,
   createSoilProfilePhotoDraft,
   createSurveyBoundaryDraft,
@@ -146,9 +146,9 @@ const MapBottomSheet: React.FC<MapBottomSheetProps> = ({
           style={styles.button}
           variant="success"
           title="유구 추가"
-          isDisabled={!canCreateLocationCandidate}
-          onPress={createFeatureCandidateAtCurrentLocation}
-          icon={<MaterialIcons name="add-location-alt" size={iconSize} />}
+          isDisabled={!canOpenFeatureSketchCreation}
+          onPress={openFeatureSketchCreation}
+          icon={<MaterialIcons name="polyline" size={iconSize} />}
         />
         <Button
           style={styles.button}

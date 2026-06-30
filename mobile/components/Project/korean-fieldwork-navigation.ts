@@ -29,7 +29,7 @@ export const getKoreanFieldworkReturnParam = (
 export const getKoreanFieldworkFieldBoardOverviewRoute = (
   resetKey: string
 ) => ({
-  pathname: '/ProjectScreen',
+  pathname: '/ProjectScreen' as const,
   params: { [KOREAN_FIELDWORK_FIELD_BOARD_RESET_PARAM]: resetKey },
 });
 

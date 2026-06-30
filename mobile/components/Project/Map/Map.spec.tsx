@@ -210,8 +210,7 @@ describe('Map', () => {
 
     expect(addDocumentOfCategory).toHaveBeenCalledWith(
       operation,
-      C.FEATURE,
-      expect.any(Object)
+      C.FEATURE
     );
   });
 

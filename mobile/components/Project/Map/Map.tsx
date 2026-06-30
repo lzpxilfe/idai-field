@@ -23,8 +23,6 @@ import {
   createOperationDraft as buildOperationDraft,
   createSoilProfilePhotoDraft as buildSoilProfilePhotoDraft,
   createSurveyBoundaryDraft as buildSurveyBoundaryDraft,
-  GEOMETRY_CONFIDENCE_ROUGH,
-  GEOMETRY_SOURCE_GPS_APPROXIMATE,
   MapLocation,
   REFERENCE_BASEMAP_PROVIDER_KAKAO_HYBRID,
   REFERENCE_BASEMAP_PROVIDER_KAKAO_ROADMAP,
@@ -234,7 +232,7 @@ const Map: React.FC<MapProps> = (props) => {
     props.investigationModeId
   );
   const canCreateFeatureCandidate =
-    !!featureParent && !!location && !!config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.FEATURE);
+    !!featureParent && !!config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.FEATURE);
   const canCreateOperation = !!config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.OPERATION);
   const canCreateTrench =
     usesTrenchWorkflow
@@ -373,18 +371,17 @@ const Map: React.FC<MapProps> = (props) => {
     props.addDocumentOfCategory(primaryOperation, KOREAN_FIELDWORK_CATEGORIES.TRENCH);
   };
 
-  const createFeatureCandidateAtCurrentLocation = () => {
-    if (!featureParent || !location || !config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.FEATURE)) return;
+  const openFeatureSketchCreation = () => {
+    if (!featureParent || !config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.FEATURE)) return;
 
     setHighlightedDoc(featureParent);
     props.addDocumentOfCategory(
       featureParent,
-      KOREAN_FIELDWORK_CATEGORIES.FEATURE,
-      createFeatureCandidateLocationDraftParams(location)
+      KOREAN_FIELDWORK_CATEGORIES.FEATURE
     );
   };
 
-  const createFeatureCandidateAndEdit = createFeatureCandidateAtCurrentLocation;
+  const createFeatureCandidateAndEdit = openFeatureSketchCreation;
 
   const createPenMemoDraft = async () => {
     if (!highlightedDoc || !config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.PEN_MEMO)) return;
@@ -721,12 +718,12 @@ const Map: React.FC<MapProps> = (props) => {
         <View style={styles.quickCreateContainer}>
           <Button
             variant="success"
-            title={canCreateFeatureCandidate ? '유구 추가' : 'GPS 확인 중'}
+            title="유구 추가"
             isDisabled={!canCreateFeatureCandidate}
             onPress={createFeatureCandidateAndEdit}
           />
           <Text style={styles.quickCreateHint}>
-            현 위치에 유구 점을 찍고 바로 입력합니다.
+            조사 경계 위에 유구 위치와 형태를 평면으로 그립니다.
           </Text>
           <View style={styles.quickSatelliteAction}>
             <Button
@@ -744,11 +741,11 @@ const Map: React.FC<MapProps> = (props) => {
           editDocument={props.editDocument}
           removeDocument={props.removeDocument}
           focusHandler={focusMapOnDocumentId}
-          canCreateLocationCandidate={canCreateFeatureCandidate}
+          canOpenFeatureSketchCreation={canCreateFeatureCandidate}
           canCreatePenMemo={!!config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.PEN_MEMO)}
           canCreateSoilProfilePhoto={canCreateSoilProfilePhoto}
           canCreateSurveyBoundary={canCreateSurveyBoundary}
-          createFeatureCandidateAtCurrentLocation={createFeatureCandidateAtCurrentLocation}
+          openFeatureSketchCreation={openFeatureSketchCreation}
           createPenMemoDraft={createPenMemoDraft}
           createSoilProfilePhotoDraft={createSoilProfilePhotoDraft}
           createSurveyBoundaryDraft={createSurveyBoundaryDraft}
@@ -766,19 +763,6 @@ const Map: React.FC<MapProps> = (props) => {
     </View>
   );
 };
-
-const createFeatureCandidateLocationDraftParams = (
-  location: MapLocation
-): Record<string, string> => ({
-  featureGeometry: JSON.stringify({
-    type: 'Point',
-    coordinates: [location.x, location.y],
-  }),
-  featureGeometryRevisionNote: '현재 GPS 위치에서 시작',
-  geometryConfidence: GEOMETRY_CONFIDENCE_ROUGH,
-  geometrySource: GEOMETRY_SOURCE_GPS_APPROXIMATE,
-  shortDescription: '현재 GPS 위치에서 시작',
-});
 
 const styles = StyleSheet.create({
   container: {

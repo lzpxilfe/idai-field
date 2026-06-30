@@ -45,8 +45,8 @@ import type {
 
 const ICON_SIZE = 34;
 const FEATURE_SKETCH_CANVAS_DEFAULT_SIZE = {
-  height: 300,
-  width: 260,
+  height: 460,
+  width: 520,
 };
 const FEATURE_SKETCH_TABLET_WIDTH = 760;
 const FEATURE_SKETCH_SCALE_STEP = 10;
@@ -106,9 +106,9 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     windowDimensions.width >= FEATURE_SKETCH_TABLET_WIDTH;
   const featureSketchCanvasHeight = useMemo(
     () => clamp(
-      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.58 : 0.46)),
-      isFeatureWideLayout ? 430 : 360,
-      isFeatureWideLayout ? 580 : 480
+      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.68 : 0.56)),
+      isFeatureWideLayout ? 520 : 400,
+      isFeatureWideLayout ? 720 : 560
     ),
     [isFeatureWideLayout, windowDimensions.height]
   );
@@ -408,7 +408,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         <View>
           <Text style={styles.featureLocationTitle}>유구 위치 그리기</Text>
           <Text style={styles.featureLocationDetail}>
-            조사 경계를 위에서 본 평면으로 두고 유구 경계를 표시합니다.
+            위성사진·평면지도처럼 조사 경계를 위에서 보고 유구 경계를 표시합니다.
           </Text>
         </View>
         {featureSketchWasEdited && (
@@ -577,19 +577,11 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     );
 
     return (
-      <View
-        style={[
-          styles.featureCreationLayout,
-          isFeatureWideLayout && styles.featureCreationLayoutWide,
-        ]}
-      >
+      <View style={styles.featureCreationLayout}>
         <View style={styles.featureCreationMapPane}>
           {renderFeatureLocationSketchPanel()}
         </View>
-        <View style={[
-          styles.featureCreationFormPane,
-          isFeatureWideLayout && styles.featureCreationFormPaneWide,
-        ]}>
+        <View style={styles.featureCreationFormPane}>
           <View style={styles.parentPanel}>
             <Text style={styles.parentLabel} numberOfLines={1}>
               포함 위치: {parentDoc.resource.identifier}
@@ -1184,22 +1176,12 @@ const styles = StyleSheet.create({
   featureCreationLayout: {
     flexDirection: 'column',
   },
-  featureCreationLayoutWide: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-  },
   featureCreationMapPane: {
     flex: 1,
     minWidth: 0,
   },
   featureCreationFormPane: {
     minWidth: 0,
-  },
-  featureCreationFormPaneWide: {
-    flexGrow: 0,
-    flexShrink: 0,
-    marginLeft: 12,
-    width: 360,
   },
   parentPanel: {
     backgroundColor: '#f8fafc',
