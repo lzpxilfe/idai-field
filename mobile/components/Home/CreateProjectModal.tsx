@@ -48,8 +48,8 @@ interface CreateProjectModalProps {
 
 const KOREAN_FIELDWORK_START_STEPS = [
   '프로젝트 기본 조사 방식을 정합니다.',
-  '지도에서 유적 경계를 직접 그립니다.',
-  '필요하면 경계 메모를 덧붙입니다.',
+  '조사 경계 기준을 문장으로 남깁니다.',
+  '프로젝트 생성 후 지도에서 경계를 그리거나 가져옵니다.',
 ];
 
 const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
@@ -221,7 +221,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             <View style={styles.setupSection}>
               <Text style={styles.sectionTitle}>프로젝트 기본 설정</Text>
               <Text style={styles.sectionText}>
-                조사 방식과 경계 도형은 프로젝트를 만들 때 정하는 기준입니다.
+                조사 방식과 경계 기준은 프로젝트를 만들 때 정하는 기준입니다.
+                지도에서 도형을 그리거나 지원되는 파일 가져오기로 확정합니다.
               </Text>
               <View style={styles.startSteps}>
                 {KOREAN_FIELDWORK_START_STEPS.map((step, index) => (
@@ -509,7 +510,7 @@ const getCreateProjectSetupStatusText = (
     return '지도에서 유적 경계를 그리면 만들 수 있습니다.';
   }
 
-  return '준비 완료. 생성하면 이 경계 도형이 조사 경계 기록으로 저장됩니다.';
+  return '준비 완료. 생성 뒤 지도에서 이 경계를 그리거나 가져와 확정하세요.';
 };
 
 const getPickedBoundaryStatusText = (

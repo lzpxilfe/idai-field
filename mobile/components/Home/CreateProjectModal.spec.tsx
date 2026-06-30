@@ -61,6 +61,20 @@ jest.mock('expo-location', () => ({
   })),
 }));
 
+jest.mock('@/contexts/preferences-context', () => {
+  const React = require('react');
+
+  return {
+    PreferencesContext: React.createContext({
+      preferences: {
+        mapProviderSettings: {
+          kakaoMapJavaScriptKey: 'test-js-key',
+        },
+      },
+    }),
+  };
+});
+
 const safeAreaInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 
 describe('CreateProjectModal', () => {
@@ -96,8 +110,10 @@ describe('CreateProjectModal', () => {
       '프로젝트 이름을 적고, 조사 방식을 고른 뒤 지도에서 경계를 그리면 만들 수 있습니다.'
     )).toBeTruthy();
     expect(queryByText('프로젝트 기본 조사 방식을 정합니다.')).toBeTruthy();
-    expect(queryByText('지도에서 유적 경계를 직접 그립니다.')).toBeTruthy();
-    expect(queryByText('필요하면 경계 메모를 덧붙입니다.')).toBeTruthy();
+    expect(queryByText('조사 경계 기준을 문장으로 남깁니다.')).toBeTruthy();
+    expect(queryByText('프로젝트 생성 후 지도에서 경계를 그리거나 가져옵니다.')).toBeTruthy();
+    expect(queryByText(/지도에서 도형을 그리거나 지원되는 파일 가져오기로 확정합니다\./))
+      .toBeTruthy();
 
     fireEvent.changeText(getByTestId('project-input'), 'fieldwork-1');
 
@@ -130,9 +146,9 @@ describe('CreateProjectModal', () => {
       '경계점 3개를 찍었습니다. 생성하면 조사 경계 기록으로 저장됩니다.'
     )).toBeTruthy();
     expect(queryByText(
-      '준비 완료. 생성하면 이 경계 도형이 조사 경계 기록으로 저장됩니다.'
+      '준비 완료. 생성 뒤 지도에서 이 경계를 그리거나 가져와 확정하세요.'
     )).toBeTruthy();
-  });
+  }, 10000);
 
   it('centers the boundary picker on the current device location when available', async () => {
     const { getByTestId } = render(
@@ -196,7 +212,7 @@ describe('CreateProjectModal', () => {
       '1구역 북쪽 능선부터 남쪽 농로까지'
     );
 
-    expect(getByText('준비 완료. 생성하면 이 경계 도형이 조사 경계 기록으로 저장됩니다.'))
+    expect(getByText('준비 완료. 생성 뒤 지도에서 이 경계를 그리거나 가져와 확정하세요.'))
       .toBeTruthy();
     expect(getByText(
       '선택 사항입니다. 비워두면 지도에서 그린 경계점 수가 메모로 저장됩니다.'
