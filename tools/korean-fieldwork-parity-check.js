@@ -1037,6 +1037,12 @@ function validateGuidedFeatureDraftDefaults() {
   const desktopRecordContextTemplateText = readTextFile(
     'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.html'
   );
+  const desktopRecordContextStyleText = readTextFile(
+    'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.scss'
+  );
+  const desktopRecordContextSpecText = readTextFile(
+    'desktop/test/unit/components/docedit/core/korean-fieldwork-record-context-panel.component.spec.ts'
+  );
   const desktopPriorityStripText = readTextFile(
     'desktop/src/app/components/resources/korean-fieldwork-priority-strip.component.ts'
   );
@@ -1069,6 +1075,12 @@ function validateGuidedFeatureDraftDefaults() {
       || !tabletAddModalText.includes('2D 지도')
       || !tabletAddModalSpecText.includes('featureSketchFlatMapSurface')) {
     findings.push('tablet add flow must place new features on a top-down 2D map surface');
+  }
+  if (!desktopRecordContextTemplateText.includes('flat-map-surface')
+      || !desktopRecordContextTemplateText.includes('2D 지도')
+      || !desktopRecordContextStyleText.includes('.flat-map-surface')
+      || !desktopRecordContextSpecText.includes('top-down 2D map')) {
+    findings.push('desktop record context must preview tablet feature placement as a top-down 2D map surface');
   }
   if (
     !tabletQuickRecordText.includes('getFeatureAttributeSectionTitle')

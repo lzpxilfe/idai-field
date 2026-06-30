@@ -191,7 +191,7 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
-    it('keeps the desktop feature location preview framed as a flat map', () => {
+    it('keeps the desktop feature location preview framed as a top-down 2D map', () => {
 
         const template = fs.readFileSync(
             path.resolve(
@@ -209,8 +209,10 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
             'utf8'
         );
 
+        expect(template).toContain('class="flat-map-surface"');
         expect(template).toContain('class="flat-map-grid"');
-        expect(template).toContain('평면 지도');
+        expect(template).toContain('2D 지도');
+        expect(styles).toContain('.flat-map-surface');
         expect(styles).toContain('.flat-map-grid path');
         expect(styles).toContain('.flat-map-badge text');
     });
