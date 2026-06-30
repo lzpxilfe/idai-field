@@ -185,6 +185,7 @@ const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'fieldRecordQuality',
     'longAxisOrientation',
     'operationRoleResponsibility',
+    'period',
     'shortAxisOrientation',
     'projectBoundarySummary',
     'projectInvestigationMode',
@@ -280,6 +281,31 @@ const GEOMETRY_EDIT_STATUS_LABELS: Readonly<Record<string, ContextChip>> = {
     alignedToAerialMap: { label: '항공 보정됨', tone: 'success' },
     measured: { label: '실측', tone: 'success' }
 };
+
+const FEATURE_PERIOD_LABELS: Readonly<Record<string, string>> = {
+    paleolithic: '구석기',
+    neolithic: '신석기',
+    bronzeAge: '청동기',
+    earlyIronAge: '초기철기',
+    protoThreeKingdoms: '원삼국',
+    threeKingdoms: '삼국',
+    goguryeo: '고구려',
+    baekje: '백제',
+    silla: '신라',
+    gaya: '가야',
+    unifiedSilla: '통일신라',
+    balhae: '발해',
+    goryeo: '고려',
+    joseon: '조선',
+    koreanEmpire: '대한제국',
+    japaneseColonial: '일제강점기',
+    liberationKoreanWar: '해방 전후·한국전쟁기',
+    modernContemporary: '근현대',
+    mixedPeriod: '복합시기',
+    undated: '시기미상'
+};
+
+const FEATURE_PERIOD_CATEGORIES = new Set<string>(['FeatureGroup', 'Feature', 'FeatureSegment']);
 
 const OPERATION_ROLE_RESPONSIBILITY_LABELS: Readonly<Record<string, string>> = {
     principalInvestigator: '조사단장',
@@ -544,6 +570,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         this.pushOperationRoleResponsibilityChip(chips, resource);
         this.pushFeatureStratigraphyReviewChips(chips, resource);
         this.pushSurveyPredictionReviewChip(chips, resource);
+        this.pushFeaturePeriodChip(chips, resource);
         this.pushMappedChip(chips, resource.featureRecordingStatus, FEATURE_RECORDING_STATUS_LABELS);
         this.pushFeatureAttributeChip(chips);
         this.pushMappedChip(chips, resource.verificationState, VERIFICATION_STATE_LABELS);
@@ -1789,6 +1816,48 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         if (typeof value !== 'string') return;
         const chip = labels[value];
         if (chip) chips.push(chip);
+    }
+
+
+    private pushFeaturePeriodChip(chips: ContextChip[], resource: any) {
+
+        if (!FEATURE_PERIOD_CATEGORIES.has(resource.category)) return;
+
+        const periodLabel = this.getFeaturePeriodLabel(resource.period);
+        if (!periodLabel) return;
+
+        chips.push({
+            label: `시기 ${periodLabel}`,
+            tone: periodLabel === FEATURE_PERIOD_LABELS.undated ? 'warning' : 'info'
+        });
+    }
+
+
+    private getFeaturePeriodLabel(value: unknown): string|undefined {
+
+        const periodValues = this.getFeaturePeriodValues(value);
+        if (periodValues.length === 0) return undefined;
+
+        return periodValues
+            .map(periodValue => FEATURE_PERIOD_LABELS[periodValue] ?? periodValue)
+            .join('~');
+    }
+
+
+    private getFeaturePeriodValues(value: unknown): string[] {
+
+        if (typeof value === 'string') {
+            const trimmedValue = value.trim();
+            return trimmedValue ? [trimmedValue] : [];
+        }
+
+        if (!this.isRecord(value)) return [];
+
+        const rangeValues = [value.value, value.endValue]
+            .map(entry => typeof entry === 'string' ? entry.trim() : '')
+            .filter(entry => entry.length > 0);
+
+        return rangeValues.filter((entry, index) => rangeValues.indexOf(entry) === index);
     }
 
 

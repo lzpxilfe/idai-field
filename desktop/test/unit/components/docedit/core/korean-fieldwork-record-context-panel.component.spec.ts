@@ -519,6 +519,31 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('shows tablet feature period values on opened desktop feature records', async () => {
+
+        const feature = createDocument('feature-1', 'Feature', 'F1', {}, {
+            period: 'joseon',
+            featureRecordingStatus: 'investigating'
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [feature] })
+        });
+        component.document = feature as any;
+        component.fieldDefinitions = [
+            field('period', 'KoreanFieldwork-featurePeriod'),
+            field('featureRecordingStatus', 'KoreanFieldwork-featureRecordingStatus')
+        ] as any;
+
+        await component.ngOnChanges();
+
+        expect(component.shouldShow()).toBe(true);
+        expect(component.getStatusChips()).toEqual(expect.arrayContaining([
+            { label: '시기 조선', tone: 'info' },
+            { label: '조사 중', tone: 'info' }
+        ]));
+    });
+
+
     it('keeps tablet project setup visible on desktop operation records', async () => {
 
         const operation = createDocument('operation-1', 'Operation', 'OP1', {}, {

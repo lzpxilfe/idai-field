@@ -2810,6 +2810,13 @@ function validateRecordPanelOrder() {
       || !desktopRecordContextPanelSpecText.includes('가마 핵심 속성 미기록')) {
     findings.push('desktop record context panel must render guided feature core attributes inside the opened record');
   }
+  if (!desktopRecordContextPanelText.includes('pushFeaturePeriodChip')
+      || !desktopRecordContextPanelText.includes('FEATURE_PERIOD_LABELS')
+      || !desktopRecordContextPanelText.includes("'period'")
+      || !desktopRecordContextPanelSpecText.includes('tablet feature period values')
+      || !desktopRecordContextPanelSpecText.includes('시기 조선')) {
+    findings.push('desktop record context panel must render tablet feature period values inside the opened record');
+  }
   if (!desktopRecordContextPanelText.includes('pushFeatureStratigraphyReviewChips')
       || !desktopRecordContextPanelText.includes('featureFillInterpretation')
       || !desktopRecordContextPanelText.includes('soilTextureFieldAssessment')
