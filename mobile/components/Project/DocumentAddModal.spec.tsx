@@ -267,7 +267,8 @@ describe('DocumentAddModal', () => {
     expect(getByText(
       '지도 평면 기준으로 조사 경계 안에 유구 위치와 형태를 표시합니다.'
     )).toBeTruthy();
-    expect(getByText('위성지도식 평면')).toBeTruthy();
+    expect(getByText('평면 배치 지도')).toBeTruthy();
+    expect(queryByText('위성지도식 평면')).toBeNull();
     expect(queryByText(/위에서 보고/)).toBeNull();
 
     const canvas = getByTestId('featureLocationSketchCanvas');
@@ -345,7 +346,7 @@ describe('DocumentAddModal', () => {
     );
     const canvasStyles = canvas.props.style as Array<{ height?: number }>;
     const dynamicCanvasStyle = canvasStyles[canvasStyles.length - 1];
-    expect(dynamicCanvasStyle.height).toBeGreaterThanOrEqual(540);
+    expect(dynamicCanvasStyle.height).toBeGreaterThanOrEqual(680);
     fireEvent(canvas, 'layout', {
       nativeEvent: { layout: { height: 100, width: 200 } },
     });

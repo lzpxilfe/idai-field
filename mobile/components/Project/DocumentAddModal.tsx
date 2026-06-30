@@ -45,8 +45,8 @@ import type {
 
 const ICON_SIZE = 34;
 const FEATURE_SKETCH_CANVAS_DEFAULT_SIZE = {
-  height: 720,
-  width: 1100,
+  height: 780,
+  width: 1180,
 };
 const FEATURE_SKETCH_TABLET_WIDTH = 640;
 const FEATURE_SKETCH_SCALE_STEP = 10;
@@ -107,9 +107,9 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     windowDimensions.width >= FEATURE_SKETCH_TABLET_WIDTH;
   const featureSketchCanvasHeight = useMemo(
     () => clamp(
-      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.78 : 0.56)),
-      isFeatureWideLayout ? 620 : 420,
-      isFeatureWideLayout ? 860 : 600
+      Math.round(windowDimensions.height * (isFeatureWideLayout ? 0.84 : 0.66)),
+      isFeatureWideLayout ? 700 : 500,
+      isFeatureWideLayout ? 980 : 760
     ),
     [isFeatureWideLayout, windowDimensions.height]
   );
@@ -538,7 +538,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         {renderFeatureSketchGrid()}
         <View pointerEvents="none" style={styles.featureSketchPlaneBadge}>
           <Ionicons name="map-outline" size={13} color="#175cd3" />
-          <Text style={styles.featureSketchPlaneBadgeText}>위성지도식 평면</Text>
+          <Text style={styles.featureSketchPlaneBadgeText}>평면 배치 지도</Text>
         </View>
         <View pointerEvents="box-none" style={styles.featureSketchModeRow}>
           {FEATURE_LOCATION_SKETCH_SHAPES.map((shape) => {
@@ -1230,7 +1230,7 @@ const styles = StyleSheet.create({
   featureCreationCard: {
     height: '100%',
     maxHeight: '100%',
-    padding: 4,
+    padding: 2,
     width: '100%',
   },
   cardShell: {
@@ -1246,12 +1246,14 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   featureCreationCategories: {
-    marginHorizontal: 4,
-    marginVertical: 2,
+    flex: 1,
+    marginHorizontal: 2,
+    marginVertical: 0,
   },
   featureCreationContent: {
-    paddingHorizontal: 2,
     paddingBottom: 10,
+    paddingHorizontal: 2,
+    flexGrow: 1,
   },
   featureCreationLayout: {
     flexDirection: 'column',
@@ -1265,15 +1267,15 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   featureCreationMapPaneWide: {
-    flex: 3.2,
-    marginRight: 10,
+    flex: 4,
+    marginRight: 8,
   },
   featureCreationFormPane: {
     minWidth: 0,
   },
   featureCreationFormPaneWide: {
-    flex: 0.8,
-    maxWidth: 340,
+    flex: 0.9,
+    maxWidth: 320,
   },
   parentPanel: {
     backgroundColor: '#f8fafc',
@@ -1318,13 +1320,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   featureLocationPanel: {
-    backgroundColor: '#f8fafc',
-    borderColor: '#cbd5e1',
-    borderRadius: 6,
+    backgroundColor: '#ffffff',
+    borderColor: '#b8c4d0',
+    borderRadius: 5,
     borderWidth: 1,
-    marginBottom: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 9,
+    marginBottom: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
   },
   featureLocationHeader: {
     alignItems: 'flex-start',
@@ -1391,9 +1393,9 @@ const styles = StyleSheet.create({
     color: '#c2410c',
   },
   featureSketchCanvas: {
-    backgroundColor: '#4f624f',
-    borderColor: '#475467',
-    borderRadius: 6,
+    backgroundColor: '#f5f8f2',
+    borderColor: '#8294a9',
+    borderRadius: 4,
     borderWidth: 1,
     height: 300,
     overflow: 'hidden',
@@ -1402,37 +1404,37 @@ const styles = StyleSheet.create({
   },
   featureSketchMapSurface: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#536653',
+    backgroundColor: '#f5f8f2',
   },
   featureSketchSatelliteField: {
-    borderColor: 'rgba(255, 255, 255, 0.16)',
+    borderColor: 'rgba(52, 64, 84, 0.11)',
     borderWidth: 1,
     position: 'absolute',
   },
   featureSketchSatelliteFieldA: {
-    backgroundColor: '#65775a',
+    backgroundColor: '#dde9d3',
     bottom: '50%',
     left: 0,
     right: '46%',
     top: 0,
   },
   featureSketchSatelliteFieldB: {
-    backgroundColor: '#766f55',
+    backgroundColor: '#eee1c3',
     bottom: 0,
     left: 0,
     right: '56%',
     top: '50%',
   },
   featureSketchSatelliteFieldC: {
-    backgroundColor: '#405a5f',
+    backgroundColor: '#d5e2dc',
     bottom: 0,
     left: '44%',
     right: 0,
     top: '34%',
   },
   featureSketchSatelliteRoad: {
-    backgroundColor: 'rgba(222, 226, 216, 0.76)',
-    borderColor: 'rgba(52, 64, 84, 0.28)',
+    backgroundColor: 'rgba(244, 247, 240, 0.9)',
+    borderColor: 'rgba(52, 64, 84, 0.16)',
     borderWidth: 1,
     position: 'absolute',
   },
@@ -1449,7 +1451,7 @@ const styles = StyleSheet.create({
     width: 14,
   },
   featureSketchSatelliteTreeLine: {
-    backgroundColor: 'rgba(39, 78, 57, 0.62)',
+    backgroundColor: 'rgba(91, 141, 98, 0.28)',
     position: 'absolute',
   },
   featureSketchSatelliteTreeLineA: {
@@ -1459,8 +1461,8 @@ const styles = StyleSheet.create({
     right: 0,
   },
   featureSketchSatelliteWater: {
-    backgroundColor: 'rgba(112, 169, 190, 0.72)',
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(143, 193, 216, 0.36)',
+    borderColor: 'rgba(52, 64, 84, 0.12)',
     borderWidth: 1,
     position: 'absolute',
   },
@@ -1471,7 +1473,7 @@ const styles = StyleSheet.create({
     width: '22%',
   },
   featureSketchGridLine: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(52, 64, 84, 0.1)',
     position: 'absolute',
   },
   featureSketchGridLineVertical: {
@@ -1506,7 +1508,7 @@ const styles = StyleSheet.create({
   },
   featureSketchBoundaryFallback: {
     alignItems: 'center',
-    borderColor: 'rgba(255, 255, 255, 0.82)',
+    borderColor: 'rgba(71, 84, 103, 0.45)',
     borderRadius: 6,
     borderStyle: 'dashed',
     borderWidth: 2,
@@ -1518,7 +1520,7 @@ const styles = StyleSheet.create({
     top: 18,
   },
   featureSketchBoundaryFallbackText: {
-    color: '#f8fafc',
+    color: '#475467',
     fontSize: 11,
     fontWeight: '800',
   },
