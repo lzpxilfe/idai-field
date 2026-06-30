@@ -30,6 +30,43 @@
         </span>
     </div>
 
+    <div *ngIf="hasRecordActions()" class="korean-fieldwork-record-context-actions primary-action-rail">
+        <div class="korean-fieldwork-record-context-actions-title">
+            <span class="mdi mdi-view-dashboard-edit-outline"></span>
+            <span>바로 할 일</span>
+        </div>
+        <div class="korean-fieldwork-record-context-actions-grid">
+            <button *ngFor="let action of getRecordActions()"
+                    type="button"
+                    class="korean-fieldwork-record-context-action"
+                    [class.info]="action.tone === 'info'"
+                    [class.warning]="action.tone === 'warning'"
+                    [class.danger]="action.tone === 'danger'"
+                    [class.success]="action.tone === 'success'"
+                    (click)="runRecordAction(action)">
+                <span class="mdi korean-fieldwork-record-context-action-icon"
+                      [ngClass]="action.icon"></span>
+                <span class="korean-fieldwork-record-context-action-text">
+                    <span class="korean-fieldwork-record-context-action-label">
+                        {{action.label}}
+                    </span>
+                    <span class="korean-fieldwork-record-context-action-detail">
+                        {{action.detail}}
+                    </span>
+                </span>
+            </button>
+        </div>
+    </div>
+    <div *ngIf="hasRecordActionEmptyState()" class="korean-fieldwork-record-context-actions empty primary-action-rail">
+        <div class="korean-fieldwork-record-context-actions-title success">
+            <span class="mdi mdi-check-circle-outline"></span>
+            <span>바로 할 일</span>
+        </div>
+        <div class="korean-fieldwork-record-context-action-empty">
+            현재 기록에서 바로 이어갈 필수 작업은 없습니다.
+        </div>
+    </div>
+
     <div *ngIf="getFeatureLocationSketchPreview() as sketchPreview"
          class="korean-fieldwork-record-context-feature-sketch">
         <div class="korean-fieldwork-record-context-feature-sketch-title">
@@ -311,43 +348,6 @@
                     </button>
                 </span>
             </span>
-        </div>
-    </div>
-
-    <div *ngIf="hasRecordActions()" class="korean-fieldwork-record-context-actions">
-        <div class="korean-fieldwork-record-context-actions-title">
-            <span class="mdi mdi-view-dashboard-edit-outline"></span>
-            <span>바로 할 일</span>
-        </div>
-        <div class="korean-fieldwork-record-context-actions-grid">
-            <button *ngFor="let action of getRecordActions()"
-                    type="button"
-                    class="korean-fieldwork-record-context-action"
-                    [class.info]="action.tone === 'info'"
-                    [class.warning]="action.tone === 'warning'"
-                    [class.danger]="action.tone === 'danger'"
-                    [class.success]="action.tone === 'success'"
-                    (click)="runRecordAction(action)">
-                <span class="mdi korean-fieldwork-record-context-action-icon"
-                      [ngClass]="action.icon"></span>
-                <span class="korean-fieldwork-record-context-action-text">
-                    <span class="korean-fieldwork-record-context-action-label">
-                        {{action.label}}
-                    </span>
-                    <span class="korean-fieldwork-record-context-action-detail">
-                        {{action.detail}}
-                    </span>
-                </span>
-            </button>
-        </div>
-    </div>
-    <div *ngIf="hasRecordActionEmptyState()" class="korean-fieldwork-record-context-actions empty">
-        <div class="korean-fieldwork-record-context-actions-title success">
-            <span class="mdi mdi-check-circle-outline"></span>
-            <span>바로 할 일</span>
-        </div>
-        <div class="korean-fieldwork-record-context-action-empty">
-            현재 기록에서 바로 이어갈 필수 작업은 없습니다.
         </div>
     </div>
 

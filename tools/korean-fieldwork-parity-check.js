@@ -3695,6 +3695,9 @@ function validateRecordActionEvidencePriority() {
   const expectedChipIds = ['photos', 'soilProfilePhotos', 'drawings', 'finds', 'samples'];
   const desktopRecordContextText = readTextFile(desktopRecordContextSource);
   const desktopRecordContextTemplateText = readTextFile(desktopRecordContextTemplate);
+  const desktopRecordContextStyleText = readTextFile(
+    'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.scss'
+  );
   const desktopRecordContextSpecText = readTextFile(desktopRecordContextSpec);
   const desktopRecordEvidenceText = readTextFile(desktopRecordEvidenceSource);
   const desktopRecordEvidenceSpecText = readTextFile(desktopRecordEvidenceSpec);
@@ -3812,6 +3815,21 @@ function validateRecordActionEvidencePriority() {
       || !desktopRecordContextSpecText.includes('스케치 메모 1획/1점')
       || !desktopRecordContextSpecText.includes('pen-memo-handwriting-transcription')) {
     findings.push('desktop record context panel test must prove tablet PenMemo backlog is an openable action');
+  }
+  const desktopContextActionRailIndex = desktopRecordContextTemplateText.indexOf('primary-action-rail');
+  const desktopContextFeatureSketchIndex =
+    desktopRecordContextTemplateText.indexOf('korean-fieldwork-record-context-feature-sketch');
+  const desktopContextEvidenceIndex =
+    desktopRecordContextTemplateText.indexOf('korean-fieldwork-record-context-evidence');
+  if (!desktopRecordContextTemplateText.includes('class="korean-fieldwork-record-context-actions primary-action-rail"')
+      || !desktopRecordContextTemplateText.includes('class="korean-fieldwork-record-context-actions empty primary-action-rail"')
+      || !desktopRecordContextStyleText.includes('.korean-fieldwork-record-context-actions.primary-action-rail')
+      || !desktopRecordContextStyleText.includes('background: #f7fbf8;')
+      || !desktopRecordContextSpecText.includes('first context rail before review sections')
+      || desktopContextActionRailIndex < 0
+      || desktopContextActionRailIndex > desktopContextFeatureSketchIndex
+      || desktopContextActionRailIndex > desktopContextEvidenceIndex) {
+    findings.push('desktop record context panel must surface immediate record actions before review sections');
   }
 
   if (!desktopRecordContextText.includes('getKoreanFieldworkEvidenceChips')

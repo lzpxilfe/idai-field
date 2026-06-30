@@ -1605,6 +1605,38 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('keeps desktop record actions in the first context rail before review sections', () => {
+
+        const template = fs.readFileSync(
+            path.resolve(
+                __dirname,
+                '../../../../../src/app/components/docedit/core/korean-fieldwork-record-context-panel.html'
+            ),
+            'utf8'
+        );
+        const styles = fs.readFileSync(
+            path.resolve(
+                __dirname,
+                '../../../../../src/app/components/docedit/core/korean-fieldwork-record-context-panel.scss'
+            ),
+            'utf8'
+        );
+
+        const chipsIndex = template.indexOf('korean-fieldwork-record-context-chips');
+        const actionIndex = template.indexOf('primary-action-rail');
+        const featureSketchIndex = template.indexOf('korean-fieldwork-record-context-feature-sketch');
+        const evidenceIndex = template.indexOf('korean-fieldwork-record-context-evidence');
+
+        expect(actionIndex).toBeGreaterThan(chipsIndex);
+        expect(actionIndex).toBeLessThan(featureSketchIndex);
+        expect(actionIndex).toBeLessThan(evidenceIndex);
+        expect(template).toContain('class="korean-fieldwork-record-context-actions primary-action-rail"');
+        expect(template).toContain('class="korean-fieldwork-record-context-actions empty primary-action-rail"');
+        expect(styles).toContain('.korean-fieldwork-record-context-actions.primary-action-rail');
+        expect(styles).toContain('background: #f7fbf8;');
+    });
+
+
     it('applies report identifiers while preserving the field number', async () => {
 
         const feature = createDocument('feature-1', 'Feature', '수혈 17', {}, {
