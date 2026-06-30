@@ -204,7 +204,6 @@ const featureRows = [
       'mobile/components/Project/korean-fieldwork-stylus-input.ts'
     ],
     desktop: [
-      'desktop/src/app/components/docedit/core/korean-fieldwork-narrative-assist-panel.component.ts',
       'desktop/src/app/components/resources/korean-fieldwork-priority-strip.component.ts',
       'desktop/src/app/components/resources/korean-fieldwork-priority-strip.html',
       'desktop/src/app/components/resources/korean-fieldwork-priority-strip.scss',
@@ -224,7 +223,6 @@ const featureRows = [
       'mobile/components/Project/korean-fieldwork-narrative-assist.spec.ts'
     ],
     desktopTests: [
-      'desktop/test/unit/components/docedit/core/korean-fieldwork-narrative-assist-panel.component.spec.ts',
       'desktop/test/unit/components/resources/korean-fieldwork-priority-strip.component.spec.ts',
       'desktop/test/unit/util/korean-fieldwork-evidence-review.spec.ts',
       'desktop/test/unit/util/korean-fieldwork-notebook-digest.spec.ts',
@@ -397,12 +395,8 @@ const classifiedSupportSourceGroups = [
   {
     reason: 'desktop docedit panel template and style companions',
     files: [
-      'desktop/src/app/components/docedit/core/korean-fieldwork-draft-preset-panel.html',
-      'desktop/src/app/components/docedit/core/korean-fieldwork-draft-preset-panel.scss',
       'desktop/src/app/components/docedit/core/korean-fieldwork-feature-guidance-panel.html',
       'desktop/src/app/components/docedit/core/korean-fieldwork-feature-guidance-panel.scss',
-      'desktop/src/app/components/docedit/core/korean-fieldwork-narrative-assist-panel.html',
-      'desktop/src/app/components/docedit/core/korean-fieldwork-narrative-assist-panel.scss',
       'desktop/src/app/components/docedit/core/korean-fieldwork-orientation-panel.html',
       'desktop/src/app/components/docedit/core/korean-fieldwork-orientation-panel.scss',
       'desktop/src/app/components/docedit/core/korean-fieldwork-quick-record-panel.html',
@@ -418,7 +412,6 @@ const classifiedSupportSourceGroups = [
   {
     reason: 'desktop support panels embedded in the fieldwork edit flow',
     files: [
-      'desktop/src/app/components/docedit/core/korean-fieldwork-draft-preset-panel.component.ts',
       'desktop/src/app/components/docedit/core/korean-fieldwork-readiness-panel.component.ts',
       'desktop/src/app/components/docedit/core/korean-fieldwork-record-context-panel.component.ts'
     ]
