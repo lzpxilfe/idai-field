@@ -2677,6 +2677,13 @@
           <context context-type="linenumber">47</context>
         </context-group>
       </trans-unit>
+      <trans-unit id="resources.plusButton.koreanFeatureQuickCreate.detail" datatype="html">
+        <source>조사 경계 위 평면지도에 유구선을 그립니다.</source>
+        <target state="translated">조사 경계 위 평면지도에 유구선을 그립니다.</target><context-group purpose="location">
+          <context context-type="sourcefile">src/app/components/resources/plus-button.html</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+      </trans-unit>
       <trans-unit id="resources.contextMenu.edit" datatype="html">
         <source>Bearbeiten</source>
         <target state="translated">편집</target><context-group purpose="location">

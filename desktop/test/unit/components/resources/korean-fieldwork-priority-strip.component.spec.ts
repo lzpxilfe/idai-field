@@ -502,7 +502,13 @@ describe('KoreanFieldworkPriorityStripComponent', () => {
                 resource: expect.objectContaining({
                     identifier: '3호 수혈',
                     category: 'Feature',
-                    featureType: 'pit'
+                    featureType: 'pit',
+                    featureGeometryRevisionNote:
+                        '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작',
+                    geometryConfidence: 'rough',
+                    geometrySource: 'aerialLayerTrace',
+                    shortDescription:
+                        '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작'
                 })
             })
         );
@@ -520,7 +526,8 @@ describe('KoreanFieldworkPriorityStripComponent', () => {
                 resource: expect.objectContaining({
                     identifier: '북쪽 배수로',
                     category: 'Feature',
-                    featureType: 'ditch'
+                    featureType: 'ditch',
+                    geometrySource: 'aerialLayerTrace'
                 })
             })
         );
@@ -1839,7 +1846,11 @@ const getActionCategoryFields = (categoryName: string) => {
                 name: 'featureRecordingStatus',
                 valuelist: { id: 'KoreanFieldwork-featureRecordingStatus' }
             },
-            { name: 'featureInvestigationChecklist' }
+            { name: 'featureInvestigationChecklist' },
+            { name: 'featureGeometryRevisionNote' },
+            { name: 'geometryConfidence' },
+            { name: 'geometrySource' },
+            { name: 'shortDescription' }
         ];
     }
     if (categoryName === 'SurveyBoundary') {

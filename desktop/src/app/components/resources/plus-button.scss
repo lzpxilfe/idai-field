@@ -35,3 +35,17 @@
     top: -1px;
   }
 }
+
+.button-label-stack {
+  display: inline-flex;
+  flex-direction: column;
+  margin-left: 4px;
+  vertical-align: middle;
+
+  .button-detail {
+    color: #5f6b76;
+    font-size: 12px;
+    line-height: 15px;
+    margin-top: 2px;
+  }
+}

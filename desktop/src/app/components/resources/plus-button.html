@@ -45,8 +45,12 @@
                  class="list-group-item popover-item"
                  (click)="startFeaturePolygonCreation()">
                 <span class="mdi mdi-shape-polygon-plus mdi-18px"></span>
-                <span class="button-label"
-                      i18n="@@resources.plusButton.koreanFeatureQuickCreate">유구 그리기</span>
+                <span class="button-label-stack">
+                    <span class="button-label"
+                          i18n="@@resources.plusButton.koreanFeatureQuickCreate">유구 그리기</span>
+                    <span class="button-detail"
+                          i18n="@@resources.plusButton.koreanFeatureQuickCreate.detail">조사 경계 위 평면지도에 유구선을 그립니다.</span>
+                </span>
             </div>
             <category-picker [topLevelCategoriesArray]="topLevelCategoriesArray"
                              (onCategoryPicked)="chooseCategory($event)"></category-picker>

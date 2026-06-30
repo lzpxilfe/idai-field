@@ -5,7 +5,10 @@ import {
     ProjectConfiguration,
     Resource
 } from 'idai-field-core';
-import { getKoreanFieldworkDefaultFieldValues } from './korean-fieldwork-draft-defaults';
+import {
+    getKoreanFieldworkDefaultFieldValues,
+    getKoreanFieldworkFeatureTraceDraftValues
+} from './korean-fieldwork-draft-defaults';
 import {
     KOREAN_FIELDWORK_FEATURE_GUIDANCE_PRESETS
 } from './korean-fieldwork-feature-guidance';
@@ -201,6 +204,7 @@ export function createKoreanFieldworkDraftResource(
             boundarySource: options.boundarySource,
             referenceBasemapProvider: options.referenceBasemapProvider
         }),
+        ...getKoreanFieldworkFeatureTraceDraftValues(category),
         ...getFeatureGuidanceDraftValues(category, featurePreset),
         ...getRecordMemoDraftValues(
             category,

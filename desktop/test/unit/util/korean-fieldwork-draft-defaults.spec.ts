@@ -1,4 +1,5 @@
 import {
+    getKoreanFieldworkFeatureTraceDraftValues,
     getKoreanFieldworkDefaultFieldValues,
     isKoreanFieldworkFeatureCategory
 } from '../../../src/app/util/korean-fieldwork-draft-defaults';
@@ -27,6 +28,25 @@ describe('Korean fieldwork draft defaults', () => {
             featureSoilProfilePhotoCount: 0,
             geometrySource: 'tabletSketch',
             geometryConfidence: 'rough'
+        });
+    });
+
+
+    it('adds desktop flat-map trace notes for Korean fieldwork feature drafts', () => {
+
+        const category = createCategory('Feature', [
+            field('featureRecordingStatus', 'KoreanFieldwork-featureRecordingStatus'),
+            field('featureGeometryRevisionNote'),
+            field('geometrySource'),
+            field('geometryConfidence'),
+            field('shortDescription')
+        ]);
+
+        expect(getKoreanFieldworkFeatureTraceDraftValues(category)).toEqual({
+            featureGeometryRevisionNote: '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작',
+            geometryConfidence: 'rough',
+            geometrySource: 'aerialLayerTrace',
+            shortDescription: '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작'
         });
     });
 

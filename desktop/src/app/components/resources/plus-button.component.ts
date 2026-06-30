@@ -2,8 +2,8 @@ import { Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, OnIni
     ViewChild } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { to, Map } from 'tsfun';
-import { CategoryForm, Datastore, Resource, FieldDocument, Name, Named, Tree, ProjectConfiguration, PouchdbDatastore, 
-    FieldGeometryType } from 'idai-field-core';
+import { CategoryForm, Datastore, Resource, FieldDocument, Name, Named, Tree, ProjectConfiguration, PouchdbDatastore,
+    FieldGeometryType, KOREAN_FIELDWORK_GEOMETRY_SOURCE_AERIAL_LAYER_TRACE } from 'idai-field-core';
 import { ViewFacade } from '../../components/resources/view/view-facade';
 import { M } from '../messages/m';
 import { Messages } from '../messages/messages';
@@ -11,6 +11,7 @@ import { ResourcesComponent } from './resources.component';
 import { ComponentHelpers } from '../component-helpers';
 import {
     getKoreanFieldworkDefaultFieldValues,
+    getKoreanFieldworkFeatureTraceDraftValues,
     isKoreanFieldworkFeatureCategory
 } from '../../util/korean-fieldwork-draft-defaults';
 import { createNextFeatureIdentifier } from '../../util/korean-fieldwork-document-drafts';
@@ -22,7 +23,6 @@ export type PlusButtonStatus = 'enabled'|'disabled-hierarchy';
 const KOREAN_FIELDWORK_FEATURE_CATEGORY = 'Feature';
 const KOREAN_FIELDWORK_FEATURE_GEOMETRY_TYPE: FieldGeometryType = 'Polygon';
 const KOREAN_FIELDWORK_DEFAULT_FEATURE_TYPE = 'unknown';
-const KOREAN_FIELDWORK_DESKTOP_GEOMETRY_SOURCE_AERIAL_LAYER_TRACE = 'aerialLayerTrace';
 
 
 @Component({
@@ -323,6 +323,9 @@ export class PlusButtonComponent implements OnInit, OnChanges, OnDestroy {
                 geometrySource: this.getGeometrySourceDefault(geometryType),
                 geometryType
             }),
+            ...(this.isKoreanFieldworkFeaturePolygonDraft(geometryType)
+                ? getKoreanFieldworkFeatureTraceDraftValues(this.selectedCategory)
+                : {}),
             ...(await this.getKoreanFieldworkFeatureDraftDefaults(geometryType)),
             ...defaultFieldValues
         };
@@ -332,7 +335,7 @@ export class PlusButtonComponent implements OnInit, OnChanges, OnDestroy {
     private getGeometrySourceDefault(geometryType: string): string|undefined {
 
         return this.isKoreanFieldworkFeaturePolygonDraft(geometryType)
-            ? KOREAN_FIELDWORK_DESKTOP_GEOMETRY_SOURCE_AERIAL_LAYER_TRACE
+            ? KOREAN_FIELDWORK_GEOMETRY_SOURCE_AERIAL_LAYER_TRACE
             : undefined;
     }
 

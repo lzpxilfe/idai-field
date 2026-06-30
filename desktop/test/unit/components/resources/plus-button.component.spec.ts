@@ -32,10 +32,14 @@ describe('PlusButtonComponent', () => {
                     featureGeometryRevisionHistory: '[]',
                     featureRecordingStatus: 'candidate',
                     featureType: 'unknown',
+                    featureGeometryRevisionNote:
+                        '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작',
                     geometryConfidence: 'rough',
                     geometrySource: 'aerialLayerTrace',
                     identifier: '2호 유구',
-                    relations: { isRecordedIn: ['operation-1'] }
+                    relations: { isRecordedIn: ['operation-1'] },
+                    shortDescription:
+                        '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작'
                 })
             }),
             'Polygon'
@@ -64,7 +68,9 @@ describe('PlusButtonComponent', () => {
             expect.objectContaining({
                 resource: expect.objectContaining({
                     geometrySource: 'aerialLayerTrace',
-                    identifier: '북쪽 배수로'
+                    identifier: '북쪽 배수로',
+                    shortDescription:
+                        '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작'
                 })
             }),
             'Polygon'
@@ -100,8 +106,10 @@ const createKoreanFeatureCategory = () => ({
             field('featureInvestigationChecklist'),
             field('featureSoilProfilePhotoCount'),
             field('featureType'),
+            field('featureGeometryRevisionNote'),
             field('geometrySource'),
-            field('geometryConfidence')
+            field('geometryConfidence'),
+            field('shortDescription')
         ]
     }]
 });

@@ -5,6 +5,7 @@ import {
     KOREAN_FIELDWORK_FEATURE_GEOMETRY_REVISION_HISTORY_DEFAULT,
     KOREAN_FIELDWORK_FEATURE_RECORDING_STATUS_CANDIDATE,
     KOREAN_FIELDWORK_GEOMETRY_CONFIDENCE_ROUGH,
+    KOREAN_FIELDWORK_GEOMETRY_SOURCE_AERIAL_LAYER_TRACE,
     KOREAN_FIELDWORK_GEOMETRY_SOURCE_TABLET_SKETCH,
     KOREAN_FIELDWORK_LAYER_SEQUENCE_MEANING_DEFAULT,
     KOREAN_FIELDWORK_REFERENCE_BASEMAP_PROVIDER_DEFAULT,
@@ -26,6 +27,9 @@ const PHOTO_CATEGORY = 'Photo';
 const SOIL_PROFILE_PHOTO_CATEGORY = 'SoilProfilePhoto';
 const SURVEY_BOUNDARY_CATEGORY = 'SurveyBoundary';
 const TRENCH_CATEGORY = 'Trench';
+
+export const KOREAN_FIELDWORK_DESKTOP_FEATURE_TRACE_NOTE =
+    '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작';
 
 export interface KoreanFieldworkDefaultFieldOptions {
     boundaryAccuracy?: string;
@@ -134,6 +138,19 @@ export function isKoreanFieldworkFeatureCategory(category: CategoryForm|undefine
     if (!category || !FEATURE_WORKFLOW_CATEGORIES.includes(category.name)) return false;
 
     return hasValuelist(category, 'featureRecordingStatus', 'KoreanFieldwork-featureRecordingStatus');
+}
+
+
+export function getKoreanFieldworkFeatureTraceDraftValues(category: CategoryForm|undefined): Map<any> {
+
+    if (!isKoreanFieldworkFeatureCategory(category)) return {};
+
+    return getConfiguredDefaults(category, {
+        geometrySource: KOREAN_FIELDWORK_GEOMETRY_SOURCE_AERIAL_LAYER_TRACE,
+        geometryConfidence: KOREAN_FIELDWORK_GEOMETRY_CONFIDENCE_ROUGH,
+        featureGeometryRevisionNote: KOREAN_FIELDWORK_DESKTOP_FEATURE_TRACE_NOTE,
+        shortDescription: KOREAN_FIELDWORK_DESKTOP_FEATURE_TRACE_NOTE
+    });
 }
 
 

@@ -85,7 +85,11 @@ describe('Korean fieldwork document drafts', () => {
             },
             featureType: 'unknown',
             featureRecordingStatus: 'candidate',
-            featureInvestigationChecklist: []
+            featureInvestigationChecklist: [],
+            featureGeometryRevisionNote: '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작',
+            geometryConfidence: 'rough',
+            geometrySource: 'aerialLayerTrace',
+            shortDescription: '조사 경계 위 평면지도에서 유구 위치와 형태를 그리며 시작'
         });
         expect(createKoreanFieldworkDraftResource(operationDoc, 'Feature', config, {
             featureType: 'kiln'
@@ -364,7 +368,11 @@ const createFields = (categoryName: string) => {
                 field('featureGeometryEditStatus'),
                 field('featureGeometryRevisionHistory'),
                 field('featureInvestigationChecklist'),
-                field('featureSoilProfilePhotoCount')
+                field('featureSoilProfilePhotoCount'),
+                field('featureGeometryRevisionNote'),
+                field('geometryConfidence'),
+                field('geometrySource'),
+                field('shortDescription')
             ];
         case 'Photo':
             return [
