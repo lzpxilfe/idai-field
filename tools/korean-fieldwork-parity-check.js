@@ -2808,6 +2808,14 @@ function validateRecordPanelOrder() {
       || !desktopRecordContextPanelSpecText.includes('가마 핵심 속성 미기록')) {
     findings.push('desktop record context panel must render guided feature core attributes inside the opened record');
   }
+  if (!desktopRecordContextPanelText.includes('pushFeatureStratigraphyReviewChips')
+      || !desktopRecordContextPanelText.includes('featureFillInterpretation')
+      || !desktopRecordContextPanelText.includes('soilTextureFieldAssessment')
+      || !desktopRecordContextPanelSpecText.includes('tablet feature stratigraphy and soil checks')
+      || !desktopRecordContextPanelSpecText.includes('해석 내부토 귀속 주의')
+      || !desktopRecordContextPanelSpecText.includes('토성 판정 정량분석 대조 필요')) {
+    findings.push('desktop record context panel must summarize tablet feature-segment stratigraphy and soil checklists inside the opened record');
+  }
   for (const { label, text } of [
     { label: 'desktop notebook digest', text: desktopNotebookDigestText },
     { label: 'tablet field notes', text: tabletFieldNotesText }

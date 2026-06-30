@@ -152,6 +152,12 @@ interface DailyJournalBoundaryMemoPreview {
     viewBox: string;
 }
 
+interface ChecklistSummaryField {
+    fieldName: string;
+    labels: Readonly<Record<string, string>>;
+    prefix: string;
+}
+
 const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'dailyLogBoundaryMemoImportedAt',
     'dailyLogBoundaryMemoStrokes',
@@ -169,7 +175,11 @@ const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'dailyLogWorkerCount',
     'featureFreeDrawingStrokes',
     'featureFreeDrawingUpdatedAt',
+    'featureBlockInclusionAssessment',
+    'featureBurialProcessAssessment',
+    'featureFillInterpretation',
     'featureInvestigationChecklist',
+    'featureLifecycleReview',
     'fieldworkPhotoAnnotationStrokes',
     'featureRecordingStatus',
     'fieldRecordQuality',
@@ -182,8 +192,10 @@ const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'recordCreationTiming',
     'soilColorAssistStatus',
     'soilColorAssistCandidates',
+    'soilParticleFieldCheck',
     'soilProfileAnnotationStrokes',
     'soilProfilePhotoAnnotationStrokes',
+    'soilTextureFieldAssessment',
     'surveyBoundaryAccuracy',
     'surveyBoundaryNote',
     'surveyBoundarySource',
@@ -294,6 +306,138 @@ const OPERATION_ROLE_RESPONSIBILITY_WARNING_VALUES = new Set([
     'pendingDecision'
 ]);
 
+const FEATURE_FILL_INTERPRETATION_LABELS: Readonly<Record<string, string>> = {
+    workedSurface: '가공면',
+    formationDuringCutting: '가공시 형성층',
+    functionalSurface: '기능면',
+    useDeposit: '기능시 퇴적층',
+    intentionalBackfill: '인위 매립토',
+    collapseDeposit: '붕락토',
+    naturalInflow: '자연 유입토',
+    naturalDeposit: '자연 퇴적층',
+    pedogenicHiatus: '토양화 휴지기',
+    packingDeposit: '충전토',
+    postAbandonmentDeposit: '폐기 후 퇴적층',
+    attributionCaution: '귀속 주의',
+    pendingDecision: '추가 확인'
+};
+
+const FEATURE_LIFECYCLE_REVIEW_LABELS: Readonly<Record<string, string>> = {
+    locationFormRecorded: '입지 형태 기록',
+    generalFunctionCandidate: '일반 기능 후보',
+    culturalLayerRelation: '문화층 관계',
+    naturalDepositRelation: '자연퇴적층 관계',
+    cutSurface: '가공면',
+    useSurface: '기능면',
+    individualLayerGroup: '개별층 묶음',
+    constructionProcess: '축조 과정',
+    useProcess: '사용 과정',
+    abandonmentProcess: '폐기 과정',
+    burialProcess: '매몰 과정',
+    comparativeCase: '유사사례',
+    scientificAnalysisData: '자연과학 분석자료',
+    findLayerRelationRecorded: '유물-층위 관계 기록',
+    depositProcessNarrativeChecked: '퇴적 과정 서술 검토',
+    pendingDecision: '추가 확인'
+};
+
+const FEATURE_BLOCK_INCLUSION_ASSESSMENT_LABELS: Readonly<Record<string, string>> = {
+    blockBearingLayer: '블록 포함층',
+    blockMaterialRecorded: '블록 구성물질 기록',
+    baseLayerDerived: '기반층 유래',
+    transportedFromElsewhere: '타처 운반',
+    angularBlock: '각진 블록',
+    roundedBlock: '마모 블록',
+    collapseDepositCandidate: '붕락층 후보',
+    artificialFillCandidate: '인위매립층 후보',
+    formationLayerCandidate: '가공시 형성층 후보',
+    artifactSpansBlock: '유물 블록 걸침',
+    exposureTimingReviewed: '노출시기 검토',
+    pendingDecision: '추가 확인'
+};
+
+const FEATURE_BURIAL_PROCESS_ASSESSMENT_LABELS: Readonly<Record<string, string>> = {
+    rapidBurial: '급격 매몰',
+    gradualBurial: '점진 매몰',
+    artificialFill: '인위매립층',
+    naturalInflow: '자연유입층',
+    waterlaidDeposit: '수성퇴적층',
+    repeatedCollapse: '붕락층 반복',
+    laminaPresent: '라미나 있음',
+    hiatusTrace: '휴지기 흔적',
+    soilFormationTrace: '토양화 흔적',
+    burntSoilInclusion: '소토 혼입',
+    charcoalAshInclusion: '탄화재 혼입',
+    bulkArtifactBurial: '일괄유물 매몰',
+    pendingDecision: '추가 확인'
+};
+
+const SOIL_TEXTURE_FIELD_ASSESSMENT_LABELS: Readonly<Record<string, string>> = {
+    fingerRubbing: '손가락 비빔',
+    ballRibbonTest: '구슬·리본 시험',
+    notebookDryingTest: '노트 찍어 말림',
+    referenceSampleComparison: '표본시료 대조',
+    quantitativeAnalysisNeeded: '정량분석 대조 필요',
+    assessmentMethodStandardized: '판정법 통일',
+    pendingDecision: '추가 확인'
+};
+
+const SOIL_PARTICLE_FIELD_CHECK_LABELS: Readonly<Record<string, string>> = {
+    gravelDirectMeasured: '자갈 직접 계측',
+    particleSizeChartUsed: '입자 크기표 대조',
+    sandSieveChecked: '모래 체질',
+    wetSmearChecked: '수분 가미 도말',
+    touchTestChecked: '촉감 테스트',
+    referenceSampleCompared: '표본시료 대조',
+    siltClayMudWordingReviewed: '실트·점토·니 표현 검토',
+    laboratoryGrainSizeComparison: '실내 입도분석 대조',
+    expertReviewRequested: '전문가 판정 의뢰',
+    pendingDecision: '추가 확인'
+};
+
+const FEATURE_STRATIGRAPHY_WARNING_VALUES = new Set([
+    'attributionCaution',
+    'expertReviewRequested',
+    'pendingDecision',
+    'quantitativeAnalysisNeeded'
+]);
+
+const FEATURE_STRATIGRAPHY_INTERPRETATION_FIELDS: readonly ChecklistSummaryField[] = [
+    {
+        fieldName: 'featureFillInterpretation',
+        labels: FEATURE_FILL_INTERPRETATION_LABELS,
+        prefix: '내부토'
+    },
+    {
+        fieldName: 'featureLifecycleReview',
+        labels: FEATURE_LIFECYCLE_REVIEW_LABELS,
+        prefix: '라이프사이클'
+    },
+    {
+        fieldName: 'featureBlockInclusionAssessment',
+        labels: FEATURE_BLOCK_INCLUSION_ASSESSMENT_LABELS,
+        prefix: '블록'
+    },
+    {
+        fieldName: 'featureBurialProcessAssessment',
+        labels: FEATURE_BURIAL_PROCESS_ASSESSMENT_LABELS,
+        prefix: '매몰'
+    }
+];
+
+const FEATURE_STRATIGRAPHY_SOIL_FIELDS: readonly ChecklistSummaryField[] = [
+    {
+        fieldName: 'soilTextureFieldAssessment',
+        labels: SOIL_TEXTURE_FIELD_ASSESSMENT_LABELS,
+        prefix: '판정'
+    },
+    {
+        fieldName: 'soilParticleFieldCheck',
+        labels: SOIL_PARTICLE_FIELD_CHECK_LABELS,
+        prefix: '입자'
+    }
+];
+
 @Component({
     selector: 'korean-fieldwork-record-context-panel',
     templateUrl: './korean-fieldwork-record-context-panel.html',
@@ -365,6 +509,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         this.pushSurveyBoundaryChips(chips, resource);
         if (orientationChip) chips.push(orientationChip);
         this.pushOperationRoleResponsibilityChip(chips, resource);
+        this.pushFeatureStratigraphyReviewChips(chips, resource);
         this.pushMappedChip(chips, resource.featureRecordingStatus, FEATURE_RECORDING_STATUS_LABELS);
         this.pushFeatureAttributeChip(chips);
         this.pushMappedChip(chips, resource.verificationState, VERIFICATION_STATE_LABELS);
@@ -1632,6 +1777,67 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
                 ? 'warning'
                 : 'success'
         });
+    }
+
+
+    private pushFeatureStratigraphyReviewChips(chips: ContextChip[], resource: any) {
+
+        const interpretationSummary = this.getChecklistSummaryLabel(
+            resource,
+            FEATURE_STRATIGRAPHY_INTERPRETATION_FIELDS
+        );
+        if (interpretationSummary) {
+            chips.push({
+                label: this.shortenChipText(`해석 ${interpretationSummary.label}`, 58),
+                tone: interpretationSummary.hasWarning ? 'warning' : 'info'
+            });
+        }
+
+        const soilSummary = this.getChecklistSummaryLabel(
+            resource,
+            FEATURE_STRATIGRAPHY_SOIL_FIELDS
+        );
+        if (soilSummary) {
+            chips.push({
+                label: this.shortenChipText(`토성 ${soilSummary.label}`, 58),
+                tone: soilSummary.hasWarning ? 'warning' : 'info'
+            });
+        }
+    }
+
+
+    private getChecklistSummaryLabel(resource: any,
+                                     fields: readonly ChecklistSummaryField[]):
+            { label: string, hasWarning: boolean }|undefined {
+
+        const summaries = fields
+            .map(field => {
+                const values = this.getStringArrayResourceValues(resource[field.fieldName]);
+                if (values.length === 0) return undefined;
+
+                const visibleLabels = values
+                    .slice(0, 2)
+                    .map(value => field.labels[value] ?? value);
+                const hiddenCount = values.length - visibleLabels.length;
+                const label = hiddenCount > 0
+                    ? `${field.prefix} ${visibleLabels.join('·')} +${hiddenCount}`
+                    : `${field.prefix} ${visibleLabels.join('·')}`;
+
+                return {
+                    hasWarning: values.some(value => FEATURE_STRATIGRAPHY_WARNING_VALUES.has(value)),
+                    label
+                };
+            })
+            .filter((summary): summary is { label: string, hasWarning: boolean } =>
+                summary !== undefined
+            );
+
+        if (summaries.length === 0) return undefined;
+
+        return {
+            hasWarning: summaries.some(summary => summary.hasWarning),
+            label: summaries.map(summary => summary.label).join(' / ')
+        };
     }
 
 

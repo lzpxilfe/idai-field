@@ -570,6 +570,33 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('summarizes tablet feature stratigraphy and soil checks on desktop segment records', async () => {
+
+        const segment = createDocument('segment-1', 'FeatureSegment', 'F1-fill', {}, {
+            featureFillInterpretation: ['attributionCaution'],
+            featureLifecycleReview: ['burialProcess'],
+            soilTextureFieldAssessment: ['quantitativeAnalysisNeeded'],
+            soilParticleFieldCheck: ['touchTestChecked']
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [segment] })
+        });
+        component.document = segment as any;
+        component.fieldDefinitions = [
+            checkboxesField('featureFillInterpretation'),
+            checkboxesField('soilTextureFieldAssessment')
+        ] as any;
+
+        await component.ngOnChanges();
+
+        expect(component.shouldShow()).toBe(true);
+        expect(component.getStatusChips()).toEqual([
+            { label: '해석 내부토 귀속 주의 / 라이프사이클 매몰 과정', tone: 'warning' },
+            { label: '토성 판정 정량분석 대조 필요 / 입자 촉감 테스트', tone: 'warning' }
+        ]);
+    });
+
+
     it('keeps tablet imported boundary file details visible on desktop boundary records', async () => {
 
         const boundary = createDocument('boundary-1', 'SurveyBoundary', 'B1', {}, {
