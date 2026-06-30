@@ -192,6 +192,7 @@ const KOREAN_FIELDWORK_CONTEXT_FIELDS = [
     'recordCreationTiming',
     'soilColorAssistStatus',
     'soilColorAssistCandidates',
+    'soilMapPredictionVerification',
     'soilParticleFieldCheck',
     'soilProfileAnnotationStrokes',
     'soilProfilePhotoAnnotationStrokes',
@@ -395,11 +396,35 @@ const SOIL_PARTICLE_FIELD_CHECK_LABELS: Readonly<Record<string, string>> = {
     pendingDecision: '추가 확인'
 };
 
-const FEATURE_STRATIGRAPHY_WARNING_VALUES = new Set([
+const SOIL_MAP_PREDICTION_VERIFICATION_LABELS: Readonly<Record<string, string>> = {
+    soilMapSheetRecorded: '토양도 도엽 기록',
+    mapScaleRecorded: '지도 축척 기록',
+    soilSeriesMapped: '토양통 매핑',
+    greatSoilGroupReclassified: '대토양군 재분류',
+    alluvialSoilCandidate: '충적토 후보',
+    graySoilCandidate: '회색토 후보',
+    redYellowSoilCandidate: '적황색토 후보',
+    salineOrganicSoilCandidate: '염류·유기질토 후보',
+    soilMapDepthLimitChecked: '토양도 반영깊이 한계 확인',
+    buriedMicroLandformNotReflected: '매몰 미지형 미반영',
+    surroundingSiteCompared: '주변 유적 대조',
+    residentReportCompared: '주민 제보 대조',
+    trenchResultSupportsPrediction: '시굴 결과가 예측 지지',
+    trenchResultRevisesPrediction: '시굴 결과로 예측 수정',
+    siteAbsenceNotConfirmed: '유적 부재 확정 금지',
+    preservationPotentialReviewed: '보존능 검토',
+    reportFeedbackRequired: '보고서 환류 필요',
+    pendingDecision: '추가 확인'
+};
+
+const RECORD_CONTEXT_CHECKLIST_WARNING_VALUES = new Set([
     'attributionCaution',
     'expertReviewRequested',
     'pendingDecision',
-    'quantitativeAnalysisNeeded'
+    'quantitativeAnalysisNeeded',
+    'reportFeedbackRequired',
+    'siteAbsenceNotConfirmed',
+    'trenchResultRevisesPrediction'
 ]);
 
 const FEATURE_STRATIGRAPHY_INTERPRETATION_FIELDS: readonly ChecklistSummaryField[] = [
@@ -435,6 +460,14 @@ const FEATURE_STRATIGRAPHY_SOIL_FIELDS: readonly ChecklistSummaryField[] = [
         fieldName: 'soilParticleFieldCheck',
         labels: SOIL_PARTICLE_FIELD_CHECK_LABELS,
         prefix: '입자'
+    }
+];
+
+const SURVEY_PREDICTION_REVIEW_FIELDS: readonly ChecklistSummaryField[] = [
+    {
+        fieldName: 'soilMapPredictionVerification',
+        labels: SOIL_MAP_PREDICTION_VERIFICATION_LABELS,
+        prefix: '토양도'
     }
 ];
 
@@ -510,6 +543,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
         if (orientationChip) chips.push(orientationChip);
         this.pushOperationRoleResponsibilityChip(chips, resource);
         this.pushFeatureStratigraphyReviewChips(chips, resource);
+        this.pushSurveyPredictionReviewChip(chips, resource);
         this.pushMappedChip(chips, resource.featureRecordingStatus, FEATURE_RECORDING_STATUS_LABELS);
         this.pushFeatureAttributeChip(chips);
         this.pushMappedChip(chips, resource.verificationState, VERIFICATION_STATE_LABELS);
@@ -1806,6 +1840,23 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
     }
 
 
+    private pushSurveyPredictionReviewChip(chips: ContextChip[], resource: any) {
+
+        if (resource.category !== 'Survey') return;
+
+        const predictionSummary = this.getChecklistSummaryLabel(
+            resource,
+            SURVEY_PREDICTION_REVIEW_FIELDS
+        );
+        if (!predictionSummary) return;
+
+        chips.push({
+            label: this.shortenChipText(`예측 ${predictionSummary.label}`, 58),
+            tone: predictionSummary.hasWarning ? 'warning' : 'info'
+        });
+    }
+
+
     private getChecklistSummaryLabel(resource: any,
                                      fields: readonly ChecklistSummaryField[]):
             { label: string, hasWarning: boolean }|undefined {
@@ -1824,7 +1875,7 @@ export class KoreanFieldworkRecordContextPanelComponent implements OnChanges {
                     : `${field.prefix} ${visibleLabels.join('·')}`;
 
                 return {
-                    hasWarning: values.some(value => FEATURE_STRATIGRAPHY_WARNING_VALUES.has(value)),
+                    hasWarning: values.some(value => RECORD_CONTEXT_CHECKLIST_WARNING_VALUES.has(value)),
                     label
                 };
             })

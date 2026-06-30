@@ -2816,6 +2816,12 @@ function validateRecordPanelOrder() {
       || !desktopRecordContextPanelSpecText.includes('토성 판정 정량분석 대조 필요')) {
     findings.push('desktop record context panel must summarize tablet feature-segment stratigraphy and soil checklists inside the opened record');
   }
+  if (!desktopRecordContextPanelText.includes('pushSurveyPredictionReviewChip')
+      || !desktopRecordContextPanelText.includes('soilMapPredictionVerification')
+      || !desktopRecordContextPanelSpecText.includes('tablet soil-map prediction checks')
+      || !desktopRecordContextPanelSpecText.includes('예측 토양도 토양도 반영깊이 한계 확인')) {
+    findings.push('desktop record context panel must summarize tablet soil-map prediction verification on opened Survey records');
+  }
   for (const { label, text } of [
     { label: 'desktop notebook digest', text: desktopNotebookDigestText },
     { label: 'tablet field notes', text: tabletFieldNotesText }

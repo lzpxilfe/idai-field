@@ -597,6 +597,31 @@ describe('KoreanFieldworkRecordContextPanelComponent', () => {
     });
 
 
+    it('summarizes tablet soil-map prediction checks on desktop survey records', async () => {
+
+        const survey = createDocument('survey-1', 'Survey', 'SUR1', {}, {
+            soilMapPredictionVerification: [
+                'soilMapDepthLimitChecked',
+                'trenchResultRevisesPrediction'
+            ]
+        });
+        const component = createComponent({
+            find: jest.fn().mockResolvedValue({ documents: [survey] })
+        });
+        component.document = survey as any;
+        component.fieldDefinitions = [
+            checkboxesField('soilMapPredictionVerification')
+        ] as any;
+
+        await component.ngOnChanges();
+
+        expect(component.shouldShow()).toBe(true);
+        expect(component.getStatusChips()).toEqual([
+            { label: '예측 토양도 토양도 반영깊이 한계 확인·시굴 결과로 예측 수정', tone: 'warning' }
+        ]);
+    });
+
+
     it('keeps tablet imported boundary file details visible on desktop boundary records', async () => {
 
         const boundary = createDocument('boundary-1', 'SurveyBoundary', 'B1', {}, {
