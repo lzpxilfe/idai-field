@@ -234,6 +234,10 @@ const DocumentsList: React.FC = () => {
     useState<FieldworkWorkspaceTabId>('records');
   const [query, setQuery] = useState('');
   const [addModalParent, setAddModalParent] = useState<Document>();
+  const [addModalInitialCategoryName, setAddModalInitialCategoryName] =
+    useState<string>();
+  const [addModalInitialDraftParams, setAddModalInitialDraftParams] =
+    useState<Record<string, string>>({});
   const [selectedWorkbenchDocumentId, setSelectedWorkbenchDocumentId] =
     useState<string>();
   const [selectedInvestigationModeId, setSelectedInvestigationModeId] =
@@ -577,8 +581,20 @@ const DocumentsList: React.FC = () => {
       },
     });
   };
-  const openAddChildModal = (document: Document) => setAddModalParent(document);
-  const closeAddChildModal = () => setAddModalParent(undefined);
+  const openAddChildModal = (
+    document: Document,
+    initialCategoryName?: string,
+    initialDraftParams: Record<string, string> = {}
+  ) => {
+    setAddModalParent(document);
+    setAddModalInitialCategoryName(initialCategoryName);
+    setAddModalInitialDraftParams(initialDraftParams);
+  };
+  const closeAddChildModal = () => {
+    setAddModalParent(undefined);
+    setAddModalInitialCategoryName(undefined);
+    setAddModalInitialDraftParams({});
+  };
   const selectInvestigationMode = (modeId: KoreanFieldworkInvestigationModeId) => {
     setSelectedInvestigationModeId(modeId);
     saveKoreanFieldworkInvestigationModeId(projectId, modeId)
@@ -596,9 +612,24 @@ const DocumentsList: React.FC = () => {
     parentDoc: Document | undefined,
     draftParams: Record<string, string> = {}
   ) => {
-    closeAddChildModal();
+    if (!parentDoc) {
+      closeAddChildModal();
+      return;
+    }
 
-    if (!parentDoc) return;
+    if (
+      categoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE
+      && !draftParams.identifier?.trim()
+    ) {
+      openAddChildModal(
+        parentDoc,
+        KOREAN_FIELDWORK_CATEGORIES.FEATURE,
+        draftParams
+      );
+      return;
+    }
+
+    closeAddChildModal();
 
     router.navigate({
       pathname: '/ProjectScreen/DocumentAdd',
@@ -803,6 +834,8 @@ const DocumentsList: React.FC = () => {
     <View style={styles.screen}>
       {addModalParent && (
         <DocumentAddModal
+          initialCategoryName={addModalInitialCategoryName}
+          initialDraftParams={addModalInitialDraftParams}
           investigationModeId={investigationModeId}
           onClose={closeAddChildModal}
           parentDoc={addModalParent}

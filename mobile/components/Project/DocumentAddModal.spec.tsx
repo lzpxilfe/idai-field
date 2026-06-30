@@ -18,6 +18,48 @@ import { KOREAN_FIELDWORK_CATEGORIES } from './korean-fieldwork-categories';
 const C = KOREAN_FIELDWORK_CATEGORIES;
 
 describe('DocumentAddModal', () => {
+  it('starts with the feature name field when Feature is the initial category', () => {
+    const onAddCategory = jest.fn();
+    const parentDoc = {
+      resource: {
+        id: 'operation-1',
+        identifier: 'Operation 1',
+        category: C.TRENCH,
+        relations: {},
+      },
+    } as any;
+
+    const { getByTestId, queryByTestId } = render(
+      <LabelsContext.Provider value={{ labels: new Labels(() => ['ko']) }}>
+        <ConfigurationContext.Provider value={createConfig([
+          createCategory(C.TRENCH),
+          createCategory(C.FEATURE),
+        ])}
+        >
+          <DocumentAddModal
+            initialCategoryName={C.FEATURE}
+            initialDraftParams={{ geometrySource: 'gpsApproximate' }}
+            onAddCategory={onAddCategory}
+            onClose={jest.fn()}
+            parentDoc={parentDoc}
+          />
+        </ConfigurationContext.Provider>
+      </LabelsContext.Provider>
+    );
+
+    expect(getByTestId('featureIdentifierInput')).toBeTruthy();
+    expect(queryByTestId(`addCategory_${C.FEATURE}`)).toBeNull();
+
+    fireEvent.changeText(getByTestId('featureIdentifierInput'), '1호 유구');
+    fireEvent.press(getByTestId('featureType_startUnknown'));
+
+    expect(onAddCategory).toHaveBeenCalledWith(C.FEATURE, parentDoc, {
+      featureType: 'unknown',
+      geometrySource: 'gpsApproximate',
+      identifier: '1호 유구',
+    });
+  });
+
   it('asks for a feature type before creating a Feature record', () => {
     const onAddCategory = jest.fn();
     const parentDoc = {

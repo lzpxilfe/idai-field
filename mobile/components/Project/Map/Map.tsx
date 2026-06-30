@@ -20,10 +20,11 @@ import { PreferencesContext } from '@/contexts/preferences-context';
 import Button from '@/components/common/Button';
 import GLMap from './GLMap/GLMap';
 import {
-  createFeatureCandidateDraft as buildFeatureCandidateDraft,
   createOperationDraft as buildOperationDraft,
   createSoilProfilePhotoDraft as buildSoilProfilePhotoDraft,
   createSurveyBoundaryDraft as buildSurveyBoundaryDraft,
+  GEOMETRY_CONFIDENCE_ROUGH,
+  GEOMETRY_SOURCE_GPS_APPROXIMATE,
   MapLocation,
   REFERENCE_BASEMAP_PROVIDER_KAKAO_HYBRID,
   REFERENCE_BASEMAP_PROVIDER_KAKAO_ROADMAP,
@@ -101,7 +102,11 @@ interface MapProps {
   selectedDocumentIds: string[];
   highlightedDocId?: string;
   addDocument: (parentDoc: Document) => void;
-  addDocumentOfCategory: (parentDoc: Document, categoryName: string) => void;
+  addDocumentOfCategory: (
+    parentDoc: Document,
+    categoryName: string,
+    draftParams?: Record<string, string>
+  ) => void;
   editDocument: (docID: string, categoryName: string) => void;
   removeDocument: (doc: Document) => void;
   selectParent: (doc: Document) => void;
@@ -355,26 +360,18 @@ const Map: React.FC<MapProps> = (props) => {
     props.addDocumentOfCategory(primaryOperation, KOREAN_FIELDWORK_CATEGORIES.TRENCH);
   };
 
-  const createFeatureCandidateAtCurrentLocation = async () => {
+  const createFeatureCandidateAtCurrentLocation = () => {
     if (!featureParent || !location || !config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.FEATURE)) return;
 
-    const createdDocument = await props.repository.create(
-      buildFeatureCandidateDraft(featureParent, location)
+    setHighlightedDoc(featureParent);
+    props.addDocumentOfCategory(
+      featureParent,
+      KOREAN_FIELDWORK_CATEGORIES.FEATURE,
+      createFeatureCandidateLocationDraftParams(location)
     );
-
-    setHighlightedDoc(createdDocument);
   };
 
-  const createFeatureCandidateAndEdit = async () => {
-    if (!featureParent || !location || !config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.FEATURE)) return;
-
-    const createdDocument = await props.repository.create(
-      buildFeatureCandidateDraft(featureParent, location)
-    );
-
-    setHighlightedDoc(createdDocument);
-    props.editDocument(createdDocument.resource.id, KOREAN_FIELDWORK_CATEGORIES.FEATURE);
-  };
+  const createFeatureCandidateAndEdit = createFeatureCandidateAtCurrentLocation;
 
   const createPenMemoDraft = async () => {
     if (!highlightedDoc || !config?.getCategory(KOREAN_FIELDWORK_CATEGORIES.PEN_MEMO)) return;
@@ -754,6 +751,19 @@ const Map: React.FC<MapProps> = (props) => {
     </View>
   );
 };
+
+const createFeatureCandidateLocationDraftParams = (
+  location: MapLocation
+): Record<string, string> => ({
+  featureGeometry: JSON.stringify({
+    type: 'Point',
+    coordinates: [location.x, location.y],
+  }),
+  featureGeometryRevisionNote: '현재 GPS 위치에서 시작',
+  geometryConfidence: GEOMETRY_CONFIDENCE_ROUGH,
+  geometrySource: GEOMETRY_SOURCE_GPS_APPROXIMATE,
+  shortDescription: '현재 GPS 위치에서 시작',
+});
 
 const styles = StyleSheet.create({
   container: {

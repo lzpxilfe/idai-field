@@ -163,6 +163,42 @@ describe('Korean fieldwork document drafts', () => {
     });
   });
 
+  it('stores map feature geometry metadata in Feature drafts', () => {
+    const trenchDoc = createDoc('trench-1', C.TRENCH, {
+      isRecordedIn: ['operation-1'],
+    });
+    const config = allowRelations({
+      [`${C.FEATURE}:${C.TRENCH}`]: ['liesWithin'],
+    });
+
+    const draft = createKoreanFieldworkDraftResource(
+      trenchDoc,
+      C.FEATURE,
+      config,
+      {
+        featureGeometry: JSON.stringify({
+          type: 'Point',
+          coordinates: [127, 37],
+        }),
+        featureGeometryRevisionNote: ' 현재 GPS 위치에서 시작 ',
+        geometryConfidence: 'rough',
+        geometrySource: 'gpsApproximate',
+        identifier: '1호 유구',
+      }
+    );
+
+    expect(draft).toMatchObject({
+      identifier: '1호 유구',
+      geometry: {
+        type: 'Point',
+        coordinates: [127, 37],
+      },
+      featureGeometryRevisionNote: '현재 GPS 위치에서 시작',
+      geometryConfidence: 'rough',
+      geometrySource: 'gpsApproximate',
+    });
+  });
+
   it('starts kiln Feature drafts with kiln interpretation metadata', () => {
     const trenchDoc = createDoc('trench-1', C.TRENCH, {
       isRecordedIn: ['operation-1'],

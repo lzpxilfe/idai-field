@@ -30,6 +30,7 @@ import {
   getKoreanFieldworkUserVisibleDocuments,
   getKoreanFieldworkUserVisibleTodaySummary,
 } from './korean-fieldwork-system-records';
+import { KOREAN_FIELDWORK_CATEGORIES } from './korean-fieldwork-categories';
 interface DocumentsMapProps {
   repository: DocumentRepository;
   syncStatus: SyncStatus;
@@ -52,6 +53,10 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isDeleteModelOpen, setIsDeleteModelOpen] = useState<boolean>(false);
   const [highlightedDoc, setHighlightedDoc] = useState<Document>();
+  const [addModalInitialCategoryName, setAddModalInitialCategoryName] =
+    useState<string>();
+  const [addModalInitialDraftParams, setAddModalInitialDraftParams] =
+    useState<Record<string, string>>({});
   const [satellitePickerRequestId, setSatellitePickerRequestId] = useState(0);
   const [boundaryFileImportRequestId, setBoundaryFileImportRequestId] =
     useState(0);
@@ -105,18 +110,33 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
 
   const handleAddDocument = (parentDoc: Document) => {
     setHighlightedDoc(parentDoc);
+    setAddModalInitialCategoryName(undefined);
+    setAddModalInitialDraftParams({});
     setIsAddModalOpen(true);
   };
 
   const handleAddDocumentOfCategory = (
     parentDoc: Document,
-    categoryName: string
+    categoryName: string,
+    draftParams: Record<string, string> = {}
   ) => {
+    if (
+      categoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE
+      && !draftParams.identifier?.trim()
+    ) {
+      setHighlightedDoc(parentDoc);
+      setAddModalInitialCategoryName(KOREAN_FIELDWORK_CATEGORIES.FEATURE);
+      setAddModalInitialDraftParams(draftParams);
+      setIsAddModalOpen(true);
+      return;
+    }
+
     router.navigate({
       pathname: '/ProjectScreen/DocumentAdd',
       params: {
         parentDocId: parentDoc.resource.id,
         categoryName,
+        ...draftParams,
       },
     });
   };
@@ -136,7 +156,11 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
     setBoundaryFileImportRequestId((value) => value + 1);
   }, []);
 
-  const closeAddModal = () => setIsAddModalOpen(false);
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setAddModalInitialCategoryName(undefined);
+    setAddModalInitialDraftParams({});
+  };
 
   const openRemoveDocument = (doc: Document) => {
     if (!relationsManager) {
@@ -190,23 +214,39 @@ const DocumentsMap: React.FC<DocumentsMapProps> = ({
     parentDoc: Document | undefined,
     draftParams: Record<string, string> = {}
   ) => {
-    closeAddModal();
-    if (parentDoc) {
-      router.navigate({
-        pathname: '/ProjectScreen/DocumentAdd',
-        params: {
-          parentDocId: parentDoc.resource.id,
-          categoryName,
-          ...draftParams,
-        },
-      });
+    if (!parentDoc) {
+      closeAddModal();
+      return;
     }
+
+    if (
+      categoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE
+      && !draftParams.identifier?.trim()
+    ) {
+      setHighlightedDoc(parentDoc);
+      setAddModalInitialCategoryName(KOREAN_FIELDWORK_CATEGORIES.FEATURE);
+      setAddModalInitialDraftParams(draftParams);
+      setIsAddModalOpen(true);
+      return;
+    }
+
+    closeAddModal();
+    router.navigate({
+      pathname: '/ProjectScreen/DocumentAdd',
+      params: {
+        parentDocId: parentDoc.resource.id,
+        categoryName,
+        ...draftParams,
+      },
+    });
   };
 
   return (
     <View style={{ flex: 1 }}>
       {isAddModalOpen && (
         <DocumentAddModal
+          initialCategoryName={addModalInitialCategoryName}
+          initialDraftParams={addModalInitialDraftParams}
           investigationModeId={investigationModeId}
           onClose={closeAddModal}
           parentDoc={highlightedDoc}

@@ -59,6 +59,8 @@ type FeatureSketchPoint = {
 };
 
 interface AddModalProps {
+  initialCategoryName?: string;
+  initialDraftParams?: Record<string, string>;
   investigationModeId?: KoreanFieldworkInvestigationModeId;
   onAddCategory: (
     categoryName: string,
@@ -70,6 +72,8 @@ interface AddModalProps {
 }
 
 const DocumentAddModal: React.FC<AddModalProps> = ({
+  initialCategoryName,
+  initialDraftParams = {},
   investigationModeId,
   onAddCategory,
   onClose,
@@ -81,7 +85,10 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   const [featureIdentifier, setFeatureIdentifier] = useState('');
   const [featureIdentifierWasRequested, setFeatureIdentifierWasRequested] =
     useState(false);
-  const [isChoosingFeatureType, setIsChoosingFeatureType] = useState(false);
+  const isFeatureOnlyFlow =
+    initialCategoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE;
+  const [isChoosingFeatureType, setIsChoosingFeatureType] =
+    useState(isFeatureOnlyFlow);
   const [featureLocationShape, setFeatureLocationShape] =
     useState<FeatureLocationSketchShape>('point');
   const [featureSketchPoints, setFeatureSketchPoints] = useState<FeatureSketchPoint[]>([]);
@@ -131,11 +138,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
 
   const openAddOption = (option: KoreanFieldworkAddOption) => {
     if (option.categoryName === KOREAN_FIELDWORK_CATEGORIES.FEATURE) {
-      setExpandedFeatureGuideType(undefined);
-      setFeatureIdentifier('');
-      setFeatureIdentifierWasRequested(false);
-      resetFeatureLocationSketch();
-      setIsChoosingFeatureType(true);
+      openFeatureCreation();
       return;
     }
 
@@ -173,6 +176,26 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     setFeatureSketchScale(100);
     setFeatureSketchRotation(0);
     setFeatureSketchWasEdited(false);
+  };
+
+  const openFeatureCreation = () => {
+    setExpandedFeatureGuideType(undefined);
+    setFeatureIdentifier('');
+    setFeatureIdentifierWasRequested(false);
+    resetFeatureLocationSketch();
+    setIsChoosingFeatureType(true);
+  };
+
+  const leaveFeatureCreation = () => {
+    if (isFeatureOnlyFlow) {
+      onClose();
+      return;
+    }
+
+    setExpandedFeatureGuideType(undefined);
+    setFeatureIdentifierWasRequested(false);
+    resetFeatureLocationSketch();
+    setIsChoosingFeatureType(false);
   };
 
   const selectFeatureLocationShape = (shape: FeatureLocationSketchShape) => {
@@ -410,6 +433,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         KOREAN_FIELDWORK_CATEGORIES.FEATURE,
         parentDoc,
         {
+          ...initialDraftParams,
           featureType,
           identifier: normalizedFeatureIdentifier,
           ...getFeatureLocationSketchDraftParams({
@@ -587,20 +611,17 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
             }
             left={
               <Button
-                title={isChoosingFeatureType ? '뒤로' : '닫기'}
+                title={isChoosingFeatureType && !isFeatureOnlyFlow ? '뒤로' : '닫기'}
                 variant="transparent"
                 icon={<Ionicons
-                  name={isChoosingFeatureType ? 'chevron-back-outline' : 'close-outline'}
+                  name={
+                    isChoosingFeatureType && !isFeatureOnlyFlow
+                      ? 'chevron-back-outline'
+                      : 'close-outline'
+                  }
                   size={16}
                 />}
-                onPress={isChoosingFeatureType
-                  ? () => {
-                    setExpandedFeatureGuideType(undefined);
-                    setFeatureIdentifierWasRequested(false);
-                    resetFeatureLocationSketch();
-                    setIsChoosingFeatureType(false);
-                  }
-                  : onClose}
+                onPress={isChoosingFeatureType ? leaveFeatureCreation : onClose}
               />
             }
           />

@@ -29,6 +29,14 @@ jest.mock('@/hooks/use-mapdata', () => ({
   ]),
 }));
 
+jest.mock('@/contexts/preferences-context', () => {
+  const React = require('react');
+
+  return {
+    PreferencesContext: React.createContext(null),
+  };
+});
+
 jest.mock('@/components/common/Button', () => {
   const React = require('react');
   const { Text } = require('react-native');

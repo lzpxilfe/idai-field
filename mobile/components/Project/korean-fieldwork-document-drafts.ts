@@ -48,9 +48,12 @@ const DRAFT_IDENTIFIER_PREFIXES: Readonly<Record<string, string>> = {
 };
 
 export interface KoreanFieldworkDraftResourceOptions {
+  featureGeometry?: string;
   featureGeometryRevisionNote?: string;
   featureLocationSketch?: string;
   featureType?: string;
+  geometryConfidence?: string;
+  geometrySource?: string;
   identifier?: string;
   shortDescription?: string;
 }
@@ -82,10 +85,14 @@ export const createKoreanFieldworkDraftResource = (
       options.featureGeometryRevisionNote?.trim();
     const normalizedFeatureLocationSketch =
       options.featureLocationSketch?.trim();
+    const normalizedGeometryConfidence = options.geometryConfidence?.trim();
+    const normalizedGeometrySource = options.geometrySource?.trim();
     const normalizedShortDescription = options.shortDescription?.trim();
+    const featureGeometry = parseFeatureGeometryOption(options.featureGeometry);
 
     return {
       ...resource,
+      ...(featureGeometry ? { geometry: featureGeometry } : {}),
       ...(featureTypeOption ? { featureType: featureTypeOption.value } : {}),
       ...(featureInterpretationTypeValue
         ? { featureInterpretationType: [featureInterpretationTypeValue] }
@@ -93,6 +100,12 @@ export const createKoreanFieldworkDraftResource = (
       featureRecordingStatus: FEATURE_RECORDING_STATUS_CANDIDATE,
       featureGeometryEditStatus: FEATURE_GEOMETRY_EDIT_STATUS_ROUGH_SKETCH,
       featureGeometryRevisionHistory: FEATURE_GEOMETRY_REVISION_HISTORY_DEFAULT,
+      ...(normalizedGeometryConfidence
+        ? { geometryConfidence: normalizedGeometryConfidence }
+        : {}),
+      ...(normalizedGeometrySource
+        ? { geometrySource: normalizedGeometrySource }
+        : {}),
       ...(normalizedFeatureGeometryRevisionNote
         ? { featureGeometryRevisionNote: normalizedFeatureGeometryRevisionNote }
         : {}),
@@ -238,6 +251,25 @@ const isFeatureWorkflowCategory = (categoryName: string): boolean =>
   categoryName === C.FEATURE
   || categoryName === C.FEATURE_GROUP
   || categoryName === C.FEATURE_SEGMENT;
+
+const parseFeatureGeometryOption = (
+  featureGeometry?: string
+): Record<string, unknown> | undefined => {
+  const normalizedFeatureGeometry = featureGeometry?.trim();
+  if (!normalizedFeatureGeometry) return undefined;
+
+  try {
+    const parsedGeometry = JSON.parse(normalizedFeatureGeometry);
+    return isJsonObject(parsedGeometry) && typeof parsedGeometry.type === 'string'
+      ? parsedGeometry
+      : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const isJsonObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const toKebabCase = (value: string): string =>
   value
