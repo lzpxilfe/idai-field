@@ -150,6 +150,48 @@ describe('KoreanFieldworkPriorityStripComponent', () => {
     });
 
 
+    it('keeps tablet-hidden initial boundary records out of desktop status and workbench lists', async () => {
+
+        const component = createComponent(
+            {
+                find: jest.fn().mockResolvedValue({
+                    documents: [
+                        createDocument('project', 'Project'),
+                        createDocument('initial-fieldwork-operation', 'Operation'),
+                        createDocument('initial-survey-boundary', 'SurveyBoundary', {
+                            relations: { isRecordedIn: ['initial-fieldwork-operation'] }
+                        }),
+                        createDocument('operation-boundary-draft', 'Operation', {
+                            projectBoundarySetupState: 'draftBoundary',
+                            projectBoundarySummary: '처음 만든 유적 경계'
+                        }),
+                        createDocument('boundary-from-draft-operation', 'SurveyBoundary', {
+                            relations: { isRecordedIn: ['operation-boundary-draft'] }
+                        }),
+                        createDocument('feature-group-1', 'FeatureGroup'),
+                        createDocument('feature-candidate-1', 'Feature', {
+                            featureRecordingStatus: 'candidate'
+                        })
+                    ]
+                }),
+                get: jest.fn()
+            },
+            createActionProjectConfiguration()
+        );
+
+        await component.refresh();
+
+        expect(component.projectDocuments.map(document => document.resource.id)).toEqual([
+            'project',
+            'feature-candidate-1'
+        ]);
+        expect(component.getSummaryLabel()).toBe('일지 0 · 경계 0 · 유구 후보 1 · 확인 0');
+        expect(component.getWorkflowSteps().find(step => step.id === 'operation')?.status).toBe('todo');
+        expect(component.getProgressItems().map(item => item.documentId)).toEqual(['feature-candidate-1']);
+        expect(component.getWorkbenchItems().map(item => item.documentId)).not.toContain('feature-group-1');
+    });
+
+
     it('filters desktop record work panels by the selected work status', async () => {
 
         const component = createComponent({

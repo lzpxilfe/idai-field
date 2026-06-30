@@ -40,6 +40,9 @@ import {
     KoreanFieldworkNotebookEntry,
     makeKoreanFieldworkDailyNotebookDigest
 } from '../../util/korean-fieldwork-notebook-digest';
+import {
+    getKoreanFieldworkUserVisibleDocuments
+} from '../../util/korean-fieldwork-system-records';
 import { ViewFacade } from '../resources/view/view-facade';
 
 type KoreanNotebookFilter = 'recent'|'nextWork'|'needsEvidence';
@@ -549,8 +552,9 @@ export class ProjectInformationModalComponent implements OnInit {
         }
 
         try {
-            const documents = (await this.datastore.find({})).documents ?? [];
-            this.koreanTodayStats = makeKoreanFieldworkTodayStats(documents);
+            const allDocuments = (await this.datastore.find({})).documents ?? [];
+            const documents = getKoreanFieldworkUserVisibleDocuments(allDocuments);
+            this.koreanTodayStats = makeKoreanFieldworkTodayStats(allDocuments);
             this.koreanNotebookDigest = makeKoreanFieldworkDailyNotebookDigest(documents);
             this.koreanWorkflowSteps = makeKoreanFieldworkWorkflowSteps(
                 documents,

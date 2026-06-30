@@ -63,6 +63,37 @@ describe('korean-fieldwork-today-stats', () => {
     });
 
 
+    it('does not count tablet-hidden initial boundary setup records as today records', () => {
+
+        const stats = makeKoreanFieldworkTodayStats([
+            createDocument('initial-fieldwork-operation', 'Operation'),
+            createDocument('initial-survey-boundary', 'SurveyBoundary', {}, {
+                isRecordedIn: ['initial-fieldwork-operation']
+            }),
+            createDocument('operation-boundary-draft', 'Operation', {
+                projectBoundarySetupState: 'draftBoundary',
+                projectBoundarySummary: '처음 만든 유적 경계'
+            }),
+            createDocument('boundary-from-draft-operation', 'SurveyBoundary', {}, {
+                isRecordedIn: ['operation-boundary-draft']
+            }),
+            createDocument('feature-group-1', 'FeatureGroup'),
+            createDocument('feature-candidate-1', 'Feature', {
+                featureRecordingStatus: 'candidate'
+            })
+        ] as any);
+
+        expect(stats).toEqual(expect.objectContaining({
+            dailyLogCount: 0,
+            surveyBoundaryCount: 0,
+            featureCandidateCount: 1,
+            openIssueCount: 0,
+            statusLabel: '조사 진행',
+            statusTone: 'info'
+        }));
+    });
+
+
     it('marks the project stable when no open fieldwork issues remain', () => {
 
         const stats = makeKoreanFieldworkTodayStats([
@@ -79,12 +110,12 @@ describe('korean-fieldwork-today-stats', () => {
 });
 
 
-const createDocument = (id: string, category: string, fields: any = {}) => ({
+const createDocument = (id: string, category: string, fields: any = {}, relations: any = {}) => ({
     resource: {
         id,
         identifier: id,
         category,
-        relations: {},
+        relations,
         ...fields
     }
 });

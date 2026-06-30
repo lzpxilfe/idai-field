@@ -25,6 +25,9 @@ import {
     makeKoreanFieldworkTodayStats
 } from '../../util/korean-fieldwork-today-stats';
 import {
+    getKoreanFieldworkUserVisibleDocuments
+} from '../../util/korean-fieldwork-system-records';
+import {
     KoreanFieldworkWorkflowAction,
     KoreanFieldworkWorkflowStep,
     makeKoreanFieldworkWorkflowSteps
@@ -1247,12 +1250,13 @@ export class KoreanFieldworkPriorityStripComponent implements OnInit, OnDestroy 
         this.isLoading = true;
 
         try {
-            const documents: Document[] = (await this.datastore.find({})).documents ?? [];
-            const projectDocument = documents.find(document => document.resource.id === 'project')
+            const allDocuments: Document[] = (await this.datastore.find({})).documents ?? [];
+            const projectDocument = allDocuments.find(document => document.resource.id === 'project')
                 ?? await this.datastore.get('project');
+            const documents = getKoreanFieldworkUserVisibleDocuments(allDocuments);
 
             const stats = isKoreanFieldworkProject(projectDocument, this.projectConfiguration)
-                ? makeKoreanFieldworkTodayStats(documents)
+                ? makeKoreanFieldworkTodayStats(allDocuments)
                 : undefined;
             const workflowSteps = stats
                 ? makeKoreanFieldworkWorkflowSteps(documents, projectDocument, stats)

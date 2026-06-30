@@ -3,6 +3,10 @@ import {
     getKoreanFieldworkTodaySummary,
     KoreanFieldworkReadinessIssue
 } from 'idai-field-core';
+import {
+    getKoreanFieldworkUserVisibleDocuments,
+    getKoreanFieldworkUserVisibleTodaySummary
+} from './korean-fieldwork-system-records';
 
 
 export interface KoreanFieldworkTodayStats {
@@ -31,7 +35,11 @@ export interface KoreanFieldworkPriorityIssue {
 
 export function makeKoreanFieldworkTodayStats(documents: Document[]): KoreanFieldworkTodayStats {
 
-    const summary = getKoreanFieldworkTodaySummary(documents);
+    const userVisibleDocuments = getKoreanFieldworkUserVisibleDocuments(documents);
+    const summary = getKoreanFieldworkUserVisibleTodaySummary(
+        getKoreanFieldworkTodaySummary(documents),
+        userVisibleDocuments
+    );
     const criticalIssueCount = countIssuesBySeverity(summary.openIssues, 'critical');
     const warningIssueCount = countIssuesBySeverity(summary.openIssues, 'warning');
     const infoIssueCount = countIssuesBySeverity(summary.openIssues, 'info');

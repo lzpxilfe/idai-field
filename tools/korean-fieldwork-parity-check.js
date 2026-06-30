@@ -279,6 +279,7 @@ const featureRows = [
       'mobile/components/Project/KoreanFieldworkScopePanel.tsx',
       'mobile/components/Project/KoreanFieldworkTodayBoard.tsx',
       'mobile/components/Project/Map/korean-fieldwork-map-start-panel.ts',
+      'mobile/components/Project/korean-fieldwork-system-records.ts',
       'mobile/components/Project/korean-fieldwork-today-actions.ts'
     ],
     desktop: [
@@ -289,6 +290,7 @@ const featureRows = [
       'desktop/src/app/util/korean-fieldwork-operation-wrap.ts',
       'desktop/src/app/util/korean-fieldwork-workflow.ts',
       'desktop/src/app/util/korean-fieldwork-scope-summary.ts',
+      'desktop/src/app/util/korean-fieldwork-system-records.ts',
       'desktop/src/app/util/korean-fieldwork-today-actions.ts'
     ],
     tabletTests: [
@@ -297,6 +299,7 @@ const featureRows = [
       'mobile/components/Project/KoreanFieldworkTodayBoard.spec.tsx',
       'mobile/components/Project/Map/korean-fieldwork-map-start-panel.spec.ts',
       'mobile/components/Project/korean-fieldwork-scope.spec.ts',
+      'mobile/components/Project/korean-fieldwork-system-records.spec.ts',
       'mobile/components/Project/korean-fieldwork-today-actions.spec.ts'
     ],
     desktopTests: [
@@ -305,6 +308,7 @@ const featureRows = [
       'desktop/test/unit/util/korean-fieldwork-operation-wrap.spec.ts',
       'desktop/test/unit/util/korean-fieldwork-workflow.spec.ts',
       'desktop/test/unit/util/korean-fieldwork-scope-summary.spec.ts',
+      'desktop/test/unit/util/korean-fieldwork-system-records.spec.ts',
       'desktop/test/unit/util/korean-fieldwork-today-actions.spec.ts'
     ]
   },
@@ -483,7 +487,6 @@ const classifiedSupportSourceGroups = [
       'mobile/components/Project/KoreanFieldworkDraftPresetPanel.tsx',
       'mobile/components/Project/KoreanFieldworkHierarchyBoard.tsx',
       'mobile/components/Project/KoreanFieldworkNarrativeAssistPanel.tsx',
-      'mobile/components/Project/KoreanFieldworkPriorityTaskList.tsx',
       'mobile/components/Project/KoreanFieldworkRecordActionPanel.tsx',
       'mobile/components/Project/KoreanFieldworkRecordContextPanel.tsx',
       'mobile/components/Project/KoreanFieldworkWorkbenchPanel.tsx'
