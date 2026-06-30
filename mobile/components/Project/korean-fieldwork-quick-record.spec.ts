@@ -163,6 +163,16 @@ describe('Korean fieldwork quick record helpers', () => {
     expect(hasKoreanFieldworkQuickRecordActions(availability)).toBe(true);
   });
 
+  it('shows orientation memo quick input when only the note field is available', () => {
+    const availability = getKoreanFieldworkQuickRecordAvailability(
+      createCategoryForm([FIELDWORK_QUICK_FIELDS.orientationNote]),
+      createResource(C.FEATURE)
+    );
+
+    expect(availability.axisOrientation).toBe(true);
+    expect(hasKoreanFieldworkQuickRecordActions(availability)).toBe(true);
+  });
+
   it('normalizes quadrant-bearing long-axis orientation entries', () => {
     expect(normalizeKoreanFieldworkLongAxisOrientation('n-e'))
       .toBe('N-E');

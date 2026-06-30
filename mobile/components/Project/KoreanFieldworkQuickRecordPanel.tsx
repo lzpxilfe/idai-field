@@ -3,7 +3,7 @@ import {
   CategoryForm,
   NewResource,
 } from 'idai-field-core';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -24,9 +24,6 @@ import {
   FEATURE_PERIOD_QUICK_OPTIONS,
   FEATURE_TYPE_QUICK_OPTIONS,
   FIELDWORK_QUICK_FIELDS,
-  buildKoreanFieldworkLongAxisOrientation,
-  describeKoreanFieldworkLongAxisOrientation,
-  getKoreanFieldworkLongAxisOrientationParts,
   getKoreanFieldworkFeatureTypeUpdates,
   getKoreanFieldworkChecklistQuickOptions,
   getKoreanFieldworkQuickRecordAvailability,
@@ -35,10 +32,8 @@ import {
   getResourceFieldValue,
   getStringArrayFieldValues,
   hasKoreanFieldworkQuickRecordActions,
-  isKoreanFieldworkLongAxisOrientation,
   KoreanFieldworkQuickOption,
   KoreanFieldworkQuickPreset,
-  normalizeKoreanFieldworkLongAxisOrientation,
   QUALITY_QUICK_OPTIONS,
   TIMING_QUICK_OPTIONS,
   toggleStringArrayFieldValue,
@@ -52,30 +47,6 @@ interface KoreanFieldworkQuickRecordPanelProps {
   resource: NewResource;
   onUpdateResourceField: (fieldName: string, value: unknown) => void;
   onUpdateResourceFields?: (updates: Record<string, unknown>) => void;
-}
-
-type AxisDraft = {
-  degrees: string;
-  end: string;
-  start: string;
-};
-
-type AxisOrientationParts = {
-  degrees?: number;
-  end: string;
-  start: string;
-} | undefined;
-
-interface AxisControlConfig {
-  draft: AxisDraft;
-  fieldName: string;
-  hint: string;
-  isInvalid: boolean;
-  label: string;
-  placeholder: string;
-  setDraft: React.Dispatch<React.SetStateAction<AxisDraft>>;
-  testIdPrefix: string;
-  value: string;
 }
 
 const KoreanFieldworkQuickRecordPanel: React.FC<KoreanFieldworkQuickRecordPanelProps> = ({
@@ -123,33 +94,6 @@ const KoreanFieldworkQuickRecordPanel: React.FC<KoreanFieldworkQuickRecordPanelP
     resource,
     FIELDWORK_QUICK_FIELDS.shortAxisOrientation
   );
-  const longAxisOrientationParts = useMemo(
-    () => getKoreanFieldworkLongAxisOrientationParts(longAxisOrientationValue),
-    [longAxisOrientationValue]
-  );
-  const shortAxisOrientationParts = useMemo(
-    () => getKoreanFieldworkLongAxisOrientationParts(shortAxisOrientationValue),
-    [shortAxisOrientationValue]
-  );
-  const [longAxisDraft, setLongAxisDraft] = useState(
-    getAxisDraft(longAxisOrientationParts)
-  );
-  const [shortAxisDraft, setShortAxisDraft] = useState(
-    getAxisDraft(shortAxisOrientationParts)
-  );
-
-  useEffect(() => {
-    if (!longAxisOrientationParts) return;
-
-    setLongAxisDraft(getAxisDraft(longAxisOrientationParts));
-  }, [longAxisOrientationParts]);
-
-  useEffect(() => {
-    if (!shortAxisOrientationParts) return;
-
-    setShortAxisDraft(getAxisDraft(shortAxisOrientationParts));
-  }, [shortAxisOrientationParts]);
-
   if (!hasKoreanFieldworkQuickRecordActions(availability) && !observationFieldName) return null;
 
   const applyUpdates = (updates: Record<string, unknown>) => {
@@ -183,10 +127,6 @@ const KoreanFieldworkQuickRecordPanel: React.FC<KoreanFieldworkQuickRecordPanelP
     });
   };
 
-  const orientationReferenceValue = getTextValue(
-    resource,
-    FIELDWORK_QUICK_FIELDS.orientationReference
-  );
   const orientationNoteValue = getTextValue(
     resource,
     FIELDWORK_QUICK_FIELDS.orientationNote
@@ -213,158 +153,23 @@ const KoreanFieldworkQuickRecordPanel: React.FC<KoreanFieldworkQuickRecordPanelP
     categoryFieldNames.has(FIELDWORK_QUICK_FIELDS.longAxisOrientation);
   const hasShortAxisOrientation =
     categoryFieldNames.has(FIELDWORK_QUICK_FIELDS.shortAxisOrientation);
-  const isLongAxisOrientationInvalid =
-    isAxisOrientationInvalid(longAxisOrientationValue);
-  const isShortAxisOrientationInvalid =
-    isAxisOrientationInvalid(shortAxisOrientationValue);
-  const longAxisOrientationHint =
-    describeKoreanFieldworkLongAxisOrientation(longAxisOrientationValue)
-    ?? '자북 기준 N-E = 북에서 동쪽으로 기운 장축';
-  const shortAxisOrientationHint =
-    describeKoreanFieldworkLongAxisOrientation(shortAxisOrientationValue)
-    ?? '자북 기준 N-W = 북에서 서쪽으로 기운 단축';
-  const applyAxisDraft = (
-    fieldName: string,
-    draft: AxisDraft,
-    setDraft: React.Dispatch<React.SetStateAction<AxisDraft>>
-  ) => {
-    setDraft(draft);
-
-    const orientation = buildKoreanFieldworkLongAxisOrientation(
-      draft.start,
-      draft.degrees,
-      draft.end
-    );
-    if (!orientation) return;
-
-    const updates: Record<string, unknown> = {
-      [fieldName]: orientation,
-    };
-
-    if (hasOrientationReference && !orientationReferenceValue.trim()) {
-      updates[FIELDWORK_QUICK_FIELDS.orientationReference] = '자북';
-    }
-
-    applyUpdates(updates);
-  };
-  const normalizeAxisOrientation = (
-    fieldName: string,
-    text: string
-  ) => {
-    const normalizedValue = normalizeKoreanFieldworkLongAxisOrientation(text);
-
-    if (normalizedValue !== text.trim()) {
-      const updates: Record<string, unknown> = {
-        [fieldName]: normalizedValue,
-      };
-
-      if (
-        hasOrientationReference
-        && !orientationReferenceValue.trim()
-        && isKoreanFieldworkLongAxisOrientation(normalizedValue)
-      ) {
-        updates[FIELDWORK_QUICK_FIELDS.orientationReference] = '자북';
-      }
-
-      applyUpdates(updates);
-    } else if (
-      hasOrientationReference
-      && !orientationReferenceValue.trim()
-      && isKoreanFieldworkLongAxisOrientation(normalizedValue)
-    ) {
-      onUpdateResourceField(
-        FIELDWORK_QUICK_FIELDS.orientationReference,
-        '자북'
-      );
-    }
-  };
-  const renderAxisControl = ({
-    draft,
-    fieldName,
-    hint,
-    isInvalid,
-    label,
-    placeholder,
-    setDraft,
-    testIdPrefix,
-    value,
-  }: AxisControlConfig) => (
-    <>
-      <Text style={styles.inlineLabel}>{label}</Text>
-      <TextInput
-        testID={`quickRecordInput_${fieldName}`}
-        autoCapitalize="characters"
-        autoCorrect={false}
-        placeholder={placeholder}
-        placeholderTextColor="#98a2b3"
-        value={value}
-        onChangeText={(nextValue) => onUpdateResourceField(fieldName, nextValue)}
-        onEndEditing={(event) =>
-          normalizeAxisOrientation(fieldName, event.nativeEvent.text)}
-        style={[
-          styles.textInput,
-          isInvalid && styles.textInputInvalid,
-        ]}
-      />
-      <View style={styles.axisBuilder}>
-        <View style={styles.axisDirectionGroup}>
-          {CARDINAL_DIRECTIONS.map((direction) => (
-            <AxisDirectionButton
-              key={`${testIdPrefix}-start-${direction}`}
-              direction={direction}
-              isActive={draft.start === direction}
-              testID={`${testIdPrefix}Start_${direction}`}
-              onPress={() => applyAxisDraft(fieldName, {
-                ...draft,
-                start: direction,
-                end: getCompatibleAxisEnd(direction, draft.end),
-              }, setDraft)}
-            />
-          ))}
-        </View>
-        <TextInput
-          testID={`${testIdPrefix}DegreeInput`}
-          keyboardType="number-pad"
-          maxLength={2}
-          placeholder="각도"
-          placeholderTextColor="#98a2b3"
-          value={draft.degrees}
-          onChangeText={(nextValue) => applyAxisDraft(fieldName, {
-            ...draft,
-            degrees: nextValue.replace(/[^0-9]/g, ''),
-          }, setDraft)}
-          style={[
-            styles.axisDegreeInput,
-            isAxisDraftDegreeInvalid(draft) && styles.textInputInvalid,
-          ]}
-        />
-        <View style={styles.axisDirectionGroup}>
-          {getCompatibleAxisEnds(draft.start).map((direction) => (
-            <AxisDirectionButton
-              key={`${testIdPrefix}-end-${direction}`}
-              direction={direction}
-              isActive={draft.end === direction}
-              testID={`${testIdPrefix}End_${direction}`}
-              onPress={() => applyAxisDraft(fieldName, {
-                ...draft,
-                end: direction,
-              }, setDraft)}
-            />
-          ))}
-        </View>
-      </View>
-      <Text
-        style={[
-          styles.axisHint,
-          isInvalid && styles.axisHintInvalid,
-        ]}
-      >
-        {isInvalid
-          ? '자북 기준 예: N-E, N-23°-E, 북에서 동쪽으로 23도'
-          : hint}
-      </Text>
-    </>
+  const orientationMemoFieldName = getOrientationMemoFieldName(
+    hasOrientationNote,
+    hasLongAxisOrientation,
+    hasShortAxisOrientation,
+    hasOrientationReference
   );
+  const orientationMemoValue = orientationMemoFieldName === FIELDWORK_QUICK_FIELDS.orientationNote
+    ? orientationNoteValue
+    : getTextValue(resource, orientationMemoFieldName);
+  const existingOrientationSummary = getExistingOrientationSummary({
+    longAxisOrientationValue,
+    orientationNoteValue,
+    orientationReferenceValue: hasOrientationReference
+      ? getTextValue(resource, FIELDWORK_QUICK_FIELDS.orientationReference)
+      : '',
+    shortAxisOrientationValue,
+  });
   const hasPrimarySections =
     availability.period
     || availability.featureType
@@ -482,50 +287,28 @@ const KoreanFieldworkQuickRecordPanel: React.FC<KoreanFieldworkQuickRecordPanelP
       )}
 
       {availability.axisOrientation && (
-        <QuickSection title={getAxisSectionTitle(
-          hasLongAxisOrientation,
-          hasShortAxisOrientation
-        )}>
-          {hasLongAxisOrientation && renderAxisControl({
-            draft: longAxisDraft,
-            fieldName: FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-            hint: longAxisOrientationHint,
-            isInvalid: isLongAxisOrientationInvalid,
-            label: '장축',
-            placeholder: 'N-E 또는 N-23°-E',
-            setDraft: setLongAxisDraft,
-            testIdPrefix: 'quickRecordAxis',
-            value: longAxisOrientationValue,
-          })}
-          {hasShortAxisOrientation && renderAxisControl({
-            draft: shortAxisDraft,
-            fieldName: FIELDWORK_QUICK_FIELDS.shortAxisOrientation,
-            hint: shortAxisOrientationHint,
-            isInvalid: isShortAxisOrientationInvalid,
-            label: '단축',
-            placeholder: 'N-W 또는 N-67°-W',
-            setDraft: setShortAxisDraft,
-            testIdPrefix: 'quickRecordShortAxis',
-            value: shortAxisOrientationValue,
-          })}
-          {hasOrientationNote && (
-            <>
-              <Text style={styles.inlineLabel}>방위 메모</Text>
-              <TextInput
-                testID="quickRecordInput_orientationNote"
-                autoCorrect={false}
-                multiline
-                placeholder="재측정 필요, 나침반 흔들림, 현장 특이사항"
-                placeholderTextColor="#98a2b3"
-                value={orientationNoteValue}
-                onChangeText={(value) => onUpdateResourceField(
-                  FIELDWORK_QUICK_FIELDS.orientationNote,
-                  value
-                )}
-                style={[styles.textInput, styles.noteInput]}
-              />
-            </>
+        <QuickSection
+          title="방위 메모"
+          description="장축·단축을 따로 나눠 쓰지 않아도 됩니다. 필요한 방향감, 기준, 재측정 여부만 한 칸에 적으세요."
+        >
+          {existingOrientationSummary && (
+            <Text style={styles.orientationSummary}>
+              기존 방위 참고: {existingOrientationSummary}
+            </Text>
           )}
+          <TextInput
+            testID="quickRecordInput_orientationNote"
+            autoCorrect={false}
+            multiline
+            placeholder="예: 장축은 대략 북동-남서, 자북 기준. 나침반 흔들림 있어 재측정 필요."
+            placeholderTextColor="#98a2b3"
+            value={orientationMemoValue}
+            onChangeText={(value) => onUpdateResourceField(
+              orientationMemoFieldName,
+              value
+            )}
+            style={[styles.textInput, styles.noteInput]}
+          />
         </QuickSection>
       )}
 
@@ -687,73 +470,41 @@ const QuickSection: React.FC<{
   </View>
 );
 
-const CARDINAL_DIRECTIONS = ['N', 'S', 'E', 'W'];
-
-const getAxisDraft = (parts: AxisOrientationParts): AxisDraft => ({
-  degrees: parts?.degrees?.toString() ?? '',
-  end: parts?.end ?? 'E',
-  start: parts?.start ?? 'N',
-});
-
-const isAxisOrientationInvalid = (value: string): boolean =>
-  value.trim().length > 0 && !isKoreanFieldworkLongAxisOrientation(value);
-
-const isAxisDraftDegreeInvalid = (draft: AxisDraft): boolean =>
-  draft.degrees.trim().length > 0
-  && buildKoreanFieldworkLongAxisOrientation(
-    draft.start,
-    draft.degrees,
-    draft.end
-  ) === undefined;
-
-const getAxisSectionTitle = (
+const getOrientationMemoFieldName = (
+  hasOrientationNote: boolean,
   hasLongAxisOrientation: boolean,
-  hasShortAxisOrientation: boolean
+  hasShortAxisOrientation: boolean,
+  hasOrientationReference: boolean
 ): string => {
-  if (hasLongAxisOrientation && hasShortAxisOrientation) return '장축·단축 방위';
-  return hasShortAxisOrientation ? '단축 방위' : '장축 방위';
+  if (hasOrientationNote) return FIELDWORK_QUICK_FIELDS.orientationNote;
+  if (hasLongAxisOrientation) return FIELDWORK_QUICK_FIELDS.longAxisOrientation;
+  if (hasShortAxisOrientation) return FIELDWORK_QUICK_FIELDS.shortAxisOrientation;
+  if (hasOrientationReference) return FIELDWORK_QUICK_FIELDS.orientationReference;
+
+  return FIELDWORK_QUICK_FIELDS.orientationNote;
 };
 
-const COMPATIBLE_AXIS_ENDS: Record<string, string[]> = {
-  E: ['N', 'S'],
-  N: ['E', 'W'],
-  S: ['E', 'W'],
-  W: ['N', 'S'],
+const getExistingOrientationSummary = ({
+  longAxisOrientationValue,
+  orientationNoteValue,
+  orientationReferenceValue,
+  shortAxisOrientationValue,
+}: {
+  longAxisOrientationValue: string;
+  orientationNoteValue: string;
+  orientationReferenceValue: string;
+  shortAxisOrientationValue: string;
+}): string | undefined => {
+  const parts = [
+    longAxisOrientationValue ? `장축 ${longAxisOrientationValue}` : undefined,
+    shortAxisOrientationValue ? `단축 ${shortAxisOrientationValue}` : undefined,
+    orientationReferenceValue || undefined,
+  ].filter((part): part is string => !!part);
+
+  if (parts.length === 0 || orientationNoteValue.trim()) return undefined;
+
+  return parts.join(' · ');
 };
-
-const getCompatibleAxisEnds = (start: string): string[] =>
-  COMPATIBLE_AXIS_ENDS[start] ?? COMPATIBLE_AXIS_ENDS.N;
-
-const getCompatibleAxisEnd = (start: string, currentEnd: string): string =>
-  getCompatibleAxisEnds(start).includes(currentEnd)
-    ? currentEnd
-    : getCompatibleAxisEnds(start)[0];
-
-const AxisDirectionButton: React.FC<{
-  direction: string;
-  isActive: boolean;
-  onPress: () => void;
-  testID: string;
-}> = ({ direction, isActive, onPress, testID }) => (
-  <TouchableOpacity
-    activeOpacity={0.84}
-    onPress={onPress}
-    style={[
-      styles.axisDirectionButton,
-      isActive && styles.axisDirectionButtonActive,
-    ]}
-    testID={testID}
-  >
-    <Text
-      style={[
-        styles.axisDirectionButtonText,
-        isActive && styles.axisDirectionButtonTextActive,
-      ]}
-    >
-      {direction}
-    </Text>
-  </TouchableOpacity>
-);
 
 const OptionRow: React.FC<{
   options: readonly KoreanFieldworkQuickOption[];
@@ -1044,66 +795,12 @@ const styles = StyleSheet.create({
   optionChipTextActive: {
     color: '#027a48',
   },
-  axisHint: {
-    color: '#667085',
+  orientationSummary: {
+    color: '#526272',
     fontSize: 11,
     fontWeight: '700',
-    marginTop: 5,
-  },
-  axisHintInvalid: {
-    color: '#b42318',
-  },
-  axisBuilder: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    marginTop: 6,
-  },
-  axisDegreeInput: {
-    backgroundColor: 'white',
-    borderColor: '#d0d5dd',
-    borderRadius: 6,
-    borderWidth: 1,
-    color: '#101828',
-    fontSize: 13,
-    fontWeight: '900',
-    marginHorizontal: 6,
-    minHeight: 36,
-    paddingHorizontal: 6,
-    textAlign: 'center',
-    width: 58,
-  },
-  axisDirectionButton: {
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderColor: '#d0d5dd',
-    borderRadius: 6,
-    borderWidth: 1,
-    justifyContent: 'center',
-    marginRight: 4,
-    minHeight: 34,
-    minWidth: 34,
-  },
-  axisDirectionButtonActive: {
-    backgroundColor: '#ecfdf3',
-    borderColor: '#abefc6',
-  },
-  axisDirectionButtonText: {
-    color: '#475467',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  axisDirectionButtonTextActive: {
-    color: '#027a48',
-  },
-  axisDirectionGroup: {
-    flexDirection: 'row',
-  },
-  inlineLabel: {
-    color: '#344054',
-    fontSize: 11,
-    fontWeight: '900',
-    marginBottom: 5,
-    marginTop: 8,
+    lineHeight: 15,
+    marginBottom: 6,
   },
   textInput: {
     backgroundColor: 'white',
@@ -1116,9 +813,6 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 10,
     paddingVertical: 8,
-  },
-  textInputInvalid: {
-    borderColor: '#f04438',
   },
   noteInput: {
     fontWeight: '700',

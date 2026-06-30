@@ -214,7 +214,9 @@ export const getKoreanFieldworkQuickRecordAvailability = (
       && fieldNames.has(FIELDWORK_QUICK_FIELDS.featureStatus),
     axisOrientation: AXIS_ORIENTATION_CATEGORIES.has(resource.category)
       && (
-        fieldNames.has(FIELDWORK_QUICK_FIELDS.longAxisOrientation)
+        fieldNames.has(FIELDWORK_QUICK_FIELDS.orientationNote)
+        || fieldNames.has(FIELDWORK_QUICK_FIELDS.orientationReference)
+        || fieldNames.has(FIELDWORK_QUICK_FIELDS.longAxisOrientation)
         || fieldNames.has(FIELDWORK_QUICK_FIELDS.shortAxisOrientation)
       ),
     period: resource.category === C.FEATURE

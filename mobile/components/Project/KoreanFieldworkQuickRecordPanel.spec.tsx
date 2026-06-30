@@ -321,7 +321,7 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
     )).toBeTruthy();
   });
 
-  it('updates the long-axis orientation field from quick input', () => {
+  it('updates a single orientation memo field from the quick record flow', () => {
     const handleUpdateResourceField = jest.fn();
     const { getByTestId, getByText } = render(
       <KoreanFieldworkQuickRecordPanel
@@ -343,54 +343,31 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
       />
     );
 
-    expect(getByText('장축 방위')).toBeTruthy();
-    expect(getByText('N-23°-E = 북에서 동쪽으로 23°')).toBeTruthy();
     expect(getByText('방위 메모')).toBeTruthy();
-    expect(getByTestId('quickRecordAxisDegreeInput')).toBeTruthy();
-
-    fireEvent.changeText(
-      getByTestId('quickRecordInput_longAxisOrientation'),
-      'N-23°-E'
-    );
-    fireEvent.press(getByTestId('quickRecordAxisEnd_W'));
+    expect(getByText(
+      '장축·단축을 따로 나눠 쓰지 않아도 됩니다. 필요한 방향감, 기준, 재측정 여부만 한 칸에 적으세요.'
+    )).toBeTruthy();
+    expect(getByText('기존 방위 참고: 장축 N-23°-E')).toBeTruthy();
     fireEvent.changeText(
       getByTestId('quickRecordInput_orientationNote'),
-      'GPS 나침반 기준, 재측정 필요'
+      '장축은 대략 북동-남서, GPS 나침반 기준. 재측정 필요'
     );
 
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      1,
-      FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-      'N-23°-E'
-    );
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      2,
-      FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-      'N-23°-W'
-    );
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      3,
-      FIELDWORK_QUICK_FIELDS.orientationReference,
-      '자북'
-    );
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      4,
+    expect(handleUpdateResourceField).toHaveBeenCalledWith(
       FIELDWORK_QUICK_FIELDS.orientationNote,
-      'GPS 나침반 기준, 재측정 필요'
+      '장축은 대략 북동-남서, GPS 나침반 기준. 재측정 필요'
     );
   });
 
-  it('keeps the bearing degree in the middle when choosing directions', () => {
+  it('falls back to the available axis field when no orientation memo field exists', () => {
     const handleUpdateResourceField = jest.fn();
     const { getByTestId } = render(
       <KoreanFieldworkQuickRecordPanel
         category={createCategoryForm([
           FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-          FIELDWORK_QUICK_FIELDS.orientationReference,
         ])}
         resource={createResource(C.FEATURE, {
           longAxisOrientation: '',
-          orientationReference: '',
         })}
         onUpdateResourceField={handleUpdateResourceField}
         onUpdateResourceFields={(updates) =>
@@ -400,26 +377,19 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
       />
     );
 
-    fireEvent.press(getByTestId('quickRecordAxisEnd_W'));
-    expect(handleUpdateResourceField).not.toHaveBeenCalled();
-
-    fireEvent.changeText(getByTestId('quickRecordAxisDegreeInput'), '37');
-
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      1,
-      FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-      'N-37°-W'
+    fireEvent.changeText(
+      getByTestId('quickRecordInput_orientationNote'),
+      '대략 북동-남서'
     );
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      2,
-      FIELDWORK_QUICK_FIELDS.orientationReference,
-      '자북'
+
+    expect(handleUpdateResourceField).toHaveBeenCalledWith(
+      FIELDWORK_QUICK_FIELDS.longAxisOrientation,
+      '대략 북동-남서'
     );
   });
 
-  it('updates the short-axis orientation with the same middle-degree builder', () => {
-    const handleUpdateResourceField = jest.fn();
-    const { getByTestId, getByText } = render(
+  it('shows existing long and short orientations as reference text only', () => {
+    const { getByText } = render(
       <KoreanFieldworkQuickRecordPanel
         category={createCategoryForm([
           FIELDWORK_QUICK_FIELDS.longAxisOrientation,
@@ -428,85 +398,14 @@ describe('KoreanFieldworkQuickRecordPanel', () => {
         ])}
         resource={createResource(C.FEATURE, {
           longAxisOrientation: 'N-23°-E',
-          shortAxisOrientation: '',
-          orientationReference: '',
-        })}
-        onUpdateResourceField={handleUpdateResourceField}
-        onUpdateResourceFields={(updates) =>
-          Object.entries(updates).forEach(([fieldName, value]) =>
-            handleUpdateResourceField(fieldName, value)
-          )}
-      />
-    );
-
-    expect(getByText('장축·단축 방위')).toBeTruthy();
-    expect(getByText('단축')).toBeTruthy();
-
-    fireEvent.press(getByTestId('quickRecordShortAxisEnd_W'));
-    expect(handleUpdateResourceField).not.toHaveBeenCalled();
-
-    fireEvent.changeText(getByTestId('quickRecordShortAxisDegreeInput'), '67');
-
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      1,
-      FIELDWORK_QUICK_FIELDS.shortAxisOrientation,
-      'N-67°-W'
-    );
-    expect(handleUpdateResourceField).toHaveBeenNthCalledWith(
-      2,
-      FIELDWORK_QUICK_FIELDS.orientationReference,
-      '자북'
-    );
-  });
-
-  it('normalizes common long-axis orientation text on edit completion', () => {
-    const handleUpdateResourceField = jest.fn();
-    const { getByTestId, getByText } = render(
-      <KoreanFieldworkQuickRecordPanel
-        category={createCategoryForm([
-          FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-          FIELDWORK_QUICK_FIELDS.orientationReference,
-        ])}
-        resource={createResource(C.FEATURE, {
-          longAxisOrientation: 'N-120°-E',
-          orientationReference: '',
-        })}
-        onUpdateResourceField={handleUpdateResourceField}
-      />
-    );
-
-    expect(getByText('자북 기준 예: N-E, N-23°-E, 북에서 동쪽으로 23도')).toBeTruthy();
-
-    fireEvent(
-      getByTestId('quickRecordInput_longAxisOrientation'),
-      'endEditing',
-      { nativeEvent: { text: '북 23도 동' } }
-    );
-
-    expect(handleUpdateResourceField).toHaveBeenCalledWith(
-      FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-      'N-23°-E'
-    );
-    expect(handleUpdateResourceField).toHaveBeenCalledWith(
-      FIELDWORK_QUICK_FIELDS.orientationReference,
-      '자북'
-    );
-  });
-
-  it('shows the long-axis orientation explanation for the current value', () => {
-    const { getByText } = render(
-      <KoreanFieldworkQuickRecordPanel
-        category={createCategoryForm([
-          FIELDWORK_QUICK_FIELDS.longAxisOrientation,
-        ])}
-        resource={createResource(C.FEATURE, {
-          longAxisOrientation: 'S-45°-W',
+          shortAxisOrientation: 'N-67°-W',
+          orientationReference: '자북',
         })}
         onUpdateResourceField={jest.fn()}
       />
     );
 
-    expect(getByText('S-45°-W = 남에서 서쪽으로 45°')).toBeTruthy();
+    expect(getByText('기존 방위 참고: 장축 N-23°-E · 단축 N-67°-W · 자북')).toBeTruthy();
   });
 
   it('applies fieldwork workflow presets as a batch update', () => {
