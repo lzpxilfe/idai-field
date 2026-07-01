@@ -1,21 +1,32 @@
-import { MutableRefObject } from 'react';
+import { MutableRefObject, useRef } from 'react';
 import { GestureResponderEvent, LayoutRectangle } from 'react-native';
 import { Camera, Raycaster, Scene, Vector2 } from 'three';
-import { LONG_PRESS_DURATION_MS } from './constants';
+import {
+    DOUBLE_TAP_DURATION_MS,
+    LONG_PRESS_DURATION_MS,
+} from './constants';
 
 interface ReturnHandler {
     onPress: (e:GestureResponderEvent) => void,
     onTouchEnd: () => void
 }
 
+export interface LastMapTap {
+    docId: string;
+    time: number;
+}
+
 const useMapPressHandler = (
         setHighlightedDocId: (docId: string) => void,
         highlightedDocId: string | undefined,
         selectParentId: (docId: string) => void,
+        editDocumentId: (docId: string) => void,
         screen: LayoutRectangle,
         camera: Camera,
         scene: Scene,
         pressStartTime: MutableRefObject<number>): ReturnHandler => {
+
+    const lastTap = useRef<LastMapTap | undefined>(undefined);
 
     const screenToNormalizedDeviceCoordinates = (x: number, y: number) =>
         new Vector2(
@@ -50,7 +61,16 @@ const useMapPressHandler = (
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 const docId = filteredSortedInters[0].object.parent!.uuid;
                 setHighlightedDocId(docId);
+                if (isDoubleTapOnDocument(lastTap.current, docId, pressStartTime.current)) {
+                    lastTap.current = undefined;
+                    editDocumentId(docId);
+                    return;
+                }
+
+                lastTap.current = { docId, time: pressStartTime.current };
+                return;
             }
+            lastTap.current = undefined;
         } catch (error) {
             console.warn('Unable to process map press', error);
         }
@@ -74,5 +94,13 @@ const isUsableScreen = (screen: LayoutRectangle): boolean =>
 
 const getNow = (): number =>
     globalThis.performance?.now?.() ?? Date.now();
+
+export const isDoubleTapOnDocument = (
+        lastTap: LastMapTap | undefined,
+        docId: string,
+        now: number): boolean =>
+    !!lastTap
+    && lastTap.docId === docId
+    && now - lastTap.time <= DOUBLE_TAP_DURATION_MS;
 
 export default useMapPressHandler;

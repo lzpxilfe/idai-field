@@ -656,6 +656,7 @@ const Map: React.FC<MapProps> = (props) => {
           showCurrentLocation={!hasSurveyBoundaryGeometry}
           updateDoc={updateDoc}
           selectParentId={onParentIdSelected}
+          editDocument={props.editDocument}
           layerDocuments={layerDocuments}
           focusMapOnDocumentId={focusMapOnDocumentId}
         />

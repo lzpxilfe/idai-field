@@ -7,3 +7,4 @@ export const lineRenderingOrder = 1;
 export const pointRenderingOrder = 1;
 export const highlightedColor = 'white';
 export const LONG_PRESS_DURATION_MS = 500;
+export const DOUBLE_TAP_DURATION_MS = 350;

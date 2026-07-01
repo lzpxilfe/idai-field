@@ -62,6 +62,7 @@ interface GLMapProps {
   location: { x: number; y: number } | undefined;
   updateDoc?: UpdatedDocument;
   selectParentId: (docId: string) => void;
+  editDocument: (docId: string, categoryName: string) => void;
   layerDocuments: Document[];
   focusMapOnDocumentId: (docId: string) => void;
   showCurrentLocation?: boolean;
@@ -79,6 +80,7 @@ const GLMap: React.FC<GLMapProps> = ({
   location,
   updateDoc,
   selectParentId,
+  editDocument,
   layerDocuments,
   focusMapOnDocumentId,
   showCurrentLocation = true,
@@ -133,10 +135,22 @@ const GLMap: React.FC<GLMapProps> = ({
     screenToWorldMatrix,
     renderScene
   );
+  const editDocumentById = useCallback(
+    (docId: string) => {
+      const document = geoDocuments.find((candidate) =>
+        candidate.resource.id === docId
+      );
+      if (document) {
+        editDocument(document.resource.id, document.resource.category);
+      }
+    },
+    [editDocument, geoDocuments]
+  );
   const { onPress, onTouchEnd } = useMapPressHandler(
     setHighlightedDocId,
     highlightedDocId,
     selectParentId,
+    editDocumentById,
     screen,
     camera,
     scene,
