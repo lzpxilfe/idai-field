@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import {
+  act,
   fireEvent,
   render,
   waitFor,
@@ -169,6 +170,43 @@ describe('CreateProjectModal', () => {
     expect(Location.requestForegroundPermissionsAsync).toHaveBeenCalled();
     expect(Location.getCurrentPositionAsync).toHaveBeenCalledWith({
       accuracy: Location.Accuracy.Balanced,
+    });
+  });
+
+  it('shows a full wait overlay while preparing the boundary map', async () => {
+    let resolveLocation: (value: unknown) => void = () => {};
+    (Location.getCurrentPositionAsync as jest.Mock).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveLocation = resolve;
+      })
+    );
+
+    const { getByTestId, getByText, queryByTestId } = render(
+      <SafeAreaInsetsContext.Provider value={safeAreaInsets}>
+        <CreateProjectModal
+          onProjectCreated={jest.fn()}
+          onClose={jest.fn()}
+        />
+      </SafeAreaInsetsContext.Provider>
+    );
+
+    fireEvent.press(getByTestId('project-boundary-draw-button'));
+
+    expect(getByTestId('project-boundary-prepare-overlay')).toBeTruthy();
+    expect(getByText('잠시만 기다려주십시오')).toBeTruthy();
+
+    await act(async () => {
+      resolveLocation({
+        coords: {
+          latitude: 36.45,
+          longitude: 127.12,
+        },
+      });
+    });
+
+    await waitFor(() => {
+      expect(queryByTestId('project-boundary-prepare-overlay')).toBeNull();
+      expect(getByTestId('mock-boundary-picker-save')).toBeTruthy();
     });
   });
 

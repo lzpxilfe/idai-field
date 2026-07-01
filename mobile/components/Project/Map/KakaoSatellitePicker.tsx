@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as Location from 'expo-location';
 import {
   ActivityIndicator,
   Modal,
@@ -15,6 +16,7 @@ import {
 } from './kakao-satellite-picker-html';
 
 export interface KakaoSatellitePickedLocation {
+  accuracy?: number;
   latitude: number;
   longitude: number;
 }
@@ -54,6 +56,7 @@ const KAKAO_MAP_TYPE_OPTIONS: Array<{ id: KakaoMapTypeId; label: string }> = [
   { id: 'HYBRID', label: '혼합' },
 ];
 type BoundaryMapEngine = 'kakao' | 'open';
+type LiveLocationStatus = 'checking' | 'tracking' | 'denied' | 'unavailable';
 
 const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
   initialLocation,
@@ -75,6 +78,9 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
   const [reloadNonce, setReloadNonce] = useState(0);
   const [selectedMapTypeId, setSelectedMapTypeId] = useState<KakaoMapTypeId>('HYBRID');
   const [initialMapTypeId, setInitialMapTypeId] = useState<KakaoMapTypeId>('HYBRID');
+  const [liveLocation, setLiveLocation] = useState<KakaoSatellitePickedLocation>();
+  const [liveLocationStatus, setLiveLocationStatus] =
+    useState<LiveLocationStatus>('checking');
   const webViewBaseUrl =
     mapEngine === 'kakao'
       ? KAKAO_MAP_WEBVIEW_BASE_URLS[baseUrlIndex] ?? KAKAO_MAP_WEBVIEW_BASE_URLS[0]
@@ -104,10 +110,86 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
       setMapEngine('kakao');
       setInitialMapTypeId('HYBRID');
       setSelectedMapTypeId('HYBRID');
+      setLiveLocation(initialLocation);
+      setLiveLocationStatus('checking');
       setReloadNonce((value) => value + 1);
       setMessage('지도는 배경입니다. 꼭짓점을 찍고, 점을 끌어 옮기거나 선 중간 +로 점을 추가하세요.');
     }
   }, [javaScriptKey, visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    let isMounted = true;
+    let locationSubscription: Location.LocationSubscription | undefined;
+
+    const updateLiveLocation = (coords: Location.LocationObjectCoords) => {
+      const nextLocation = getLocationFromCoords(coords);
+      if (!nextLocation) {
+        setLiveLocationStatus('unavailable');
+        return;
+      }
+
+      setLiveLocation(nextLocation);
+      setLiveLocationStatus('tracking');
+    };
+
+    const startLocationWatch = async () => {
+      setLiveLocationStatus('checking');
+
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (!isMounted) return;
+
+        if (status !== 'granted') {
+          setLiveLocationStatus('denied');
+          return;
+        }
+
+        const currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!isMounted) return;
+
+        updateLiveLocation(currentLocation.coords);
+
+        const subscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.Balanced,
+            distanceInterval: 2,
+            timeInterval: 3000,
+          },
+          (nextLocation) => {
+            if (isMounted) updateLiveLocation(nextLocation.coords);
+          }
+        );
+        if (!isMounted) {
+          subscription.remove();
+          return;
+        }
+        locationSubscription = subscription;
+      } catch (error) {
+        console.warn('Unable to watch boundary picker location', error);
+        if (isMounted) setLiveLocationStatus('unavailable');
+      }
+    };
+
+    void startLocationWatch();
+
+    return () => {
+      isMounted = false;
+      locationSubscription?.remove();
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible || !isMapReady || !liveLocation) return;
+
+    webViewRef.current?.postMessage(JSON.stringify({
+      type: 'currentLocation',
+      payload: liveLocation,
+    }));
+  }, [isMapReady, liveLocation, visible]);
 
   const showMapLoadFailure = (diagnostic?: Record<string, unknown>) => {
     setMapLoadError(getOpenBasemapFailureMessage(diagnostic));
@@ -214,6 +296,14 @@ const KakaoSatellitePicker: React.FC<KakaoSatellitePickerProps> = ({
           <View style={styles.headerText}>
             <Text style={styles.title}>조사 경계 지도에서 그리기</Text>
             <Text style={styles.message}>{message}</Text>
+            <View style={styles.liveLocationBox}>
+              <Text
+                style={styles.liveLocationText}
+                testID="kakao-boundary-live-location"
+              >
+                {getLiveLocationText(liveLocationStatus, liveLocation)}
+              </Text>
+            </View>
             <View style={styles.mapTypeControls}>
               {KAKAO_MAP_TYPE_OPTIONS.map((option) => {
                 const selected = option.id === selectedMapTypeId;
@@ -351,6 +441,21 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
+  },
+  liveLocationBox: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#eff8ff',
+    borderColor: '#b2ddff',
+    borderRadius: 4,
+    borderWidth: 1,
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+  },
+  liveLocationText: {
+    color: '#175cd3',
+    fontSize: 12,
+    fontWeight: '800',
   },
   loadingActions: {
     flexDirection: 'row',
@@ -491,6 +596,45 @@ const getPickedLocation = (
         longitude,
       }
     : undefined;
+};
+
+const getLocationFromCoords = (
+  coords: Location.LocationObjectCoords
+): KakaoSatellitePickedLocation | undefined => {
+  const { accuracy, latitude, longitude } = coords;
+
+  return Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? {
+        ...(typeof accuracy === 'number' && Number.isFinite(accuracy)
+          ? { accuracy }
+          : {}),
+        latitude,
+        longitude,
+      }
+    : undefined;
+};
+
+const getLiveLocationText = (
+  status: LiveLocationStatus,
+  location: KakaoSatellitePickedLocation | undefined
+): string => {
+  if (status === 'denied') {
+    return '현재 위치 권한이 꺼져 있습니다.';
+  }
+
+  if (status === 'unavailable') {
+    return '현재 위치를 확인하지 못했습니다.';
+  }
+
+  if (!location) {
+    return '현재 위치 확인 중...';
+  }
+
+  const accuracyText = typeof location.accuracy === 'number'
+    ? ` · ±${Math.round(location.accuracy)}m`
+    : '';
+
+  return `현재 위치 ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}${accuracyText}`;
 };
 
 const isPickedLocation = (

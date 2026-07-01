@@ -32,8 +32,10 @@ describe('buildKakaoSatellitePickerHtml', () => {
     expect(html).toContain("var currentMapType = 'ROADMAP'");
     expect(html).toContain('map.setMapTypeId(kakaoMapTypeIds[currentMapType])');
     expect(html).toContain('mapTypeId: currentMapType');
-    expect(html).toContain("data.type !== 'setMapType'");
+    expect(html).toContain("data.type === 'setMapType'");
     expect(html).toContain('setMapType(data.payload && data.payload.mapTypeId)');
+    expect(html).toContain("data.type === 'currentLocation'");
+    expect(html).toContain('updateCurrentLocation(data.payload)');
   });
 
   it('posts drawn WGS84 boundary coordinates back to React Native', () => {
@@ -73,6 +75,9 @@ describe('buildKakaoSatellitePickerHtml', () => {
     expect(kakaoHtml).toContain('점을 끌어 옮기면 경계 범위도 같이 움직입니다.');
     expect(kakaoHtml).toContain('new kakao.maps.CustomOverlay');
     expect(kakaoHtml).toContain('points.splice(insertIndex, 0, position)');
+    expect(kakaoHtml).toContain('current-location-marker');
+    expect(kakaoHtml).toContain('currentAccuracyCircle');
+    expect(kakaoHtml).toContain('map.setCenter(position)');
     expect(kakaoHtml).toContain('새 경계점 추가');
 
     expect(openHtml).toContain('draggable: true');
@@ -83,6 +88,9 @@ describe('buildKakaoSatellitePickerHtml', () => {
     expect(openHtml).toContain('점을 끌어 옮기면 경계 범위도 같이 움직입니다.');
     expect(openHtml).toContain("className: 'boundary-midpoint-marker'");
     expect(openHtml).toContain('points.splice(insertIndex, 0, position)');
+    expect(openHtml).toContain("className: 'current-location-marker'");
+    expect(openHtml).toContain('currentAccuracyCircle');
+    expect(openHtml).toContain('map.setView(position');
     expect(openHtml).toContain('새 경계점 추가');
   });
 
@@ -110,11 +118,15 @@ describe('buildKakaoSatellitePickerHtml', () => {
     expect(html).toContain('leaflet@1.9.4');
     expect(html).toContain('tile.openstreetmap.org');
     expect(html).toContain('World_Imagery');
+    expect(html).toContain('maxNativeZoom: 18');
+    expect(html).toContain('maxZoom: 22');
     expect(html).toContain("var currentMapType = 'SKYVIEW'");
     expect(html).toContain('post(\'boundary\'');
     expect(html).toContain('latitude: point.lat');
     expect(html).toContain('longitude: point.lng');
-    expect(html).toContain("data.type !== 'setMapType'");
+    expect(html).toContain("data.type === 'setMapType'");
     expect(html).toContain('setMapType(data.payload && data.payload.mapTypeId)');
+    expect(html).toContain("data.type === 'currentLocation'");
+    expect(html).toContain('updateCurrentLocation(data.payload)');
   });
 });

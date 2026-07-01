@@ -145,6 +145,25 @@ export const buildKakaoSatellitePickerHtml = ({
       padding: 0;
       width: 26px;
     }
+    .current-location-marker {
+      align-items: center;
+      background: rgba(14, 165, 233, 0.18);
+      border: 2px solid #0284c7;
+      border-radius: 999px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.28);
+      display: flex;
+      height: 28px;
+      justify-content: center;
+      width: 28px;
+    }
+    .current-location-marker span {
+      background: #0284c7;
+      border: 2px solid white;
+      border-radius: 999px;
+      display: block;
+      height: 10px;
+      width: 10px;
+    }
   </style>
 </head>
 <body>
@@ -229,6 +248,9 @@ export const buildKakaoSatellitePickerHtml = ({
         var activeDragFrame = null;
         var activeDragMarker = null;
         var activeDragPointIndex = -1;
+        var currentLocationOverlay = null;
+        var currentAccuracyCircle = null;
+        var hasCenteredOnCurrentLocation = false;
         var statusEl = document.getElementById('status');
         var undoEl = document.getElementById('undo');
         var resetEl = document.getElementById('reset');
@@ -284,8 +306,14 @@ export const buildKakaoSatellitePickerHtml = ({
             var data = typeof event.data === 'string'
               ? JSON.parse(event.data)
               : event.data;
-            if (!data || data.type !== 'setMapType') return;
-            setMapType(data.payload && data.payload.mapTypeId);
+            if (!data) return;
+            if (data.type === 'setMapType') {
+              setMapType(data.payload && data.payload.mapTypeId);
+              return;
+            }
+            if (data.type === 'currentLocation') {
+              updateCurrentLocation(data.payload);
+            }
           } catch (error) {}
         }
 
@@ -295,6 +323,44 @@ export const buildKakaoSatellitePickerHtml = ({
         function addPoint(latLng) {
           points.push(latLng);
           redraw();
+        }
+
+        function updateCurrentLocation(payload) {
+          if (!payload || !isFinite(payload.latitude) || !isFinite(payload.longitude)) return;
+          var position = new kakao.maps.LatLng(payload.latitude, payload.longitude);
+          var radius = isFinite(payload.accuracy)
+            ? Math.max(4, Math.min(Number(payload.accuracy), 120))
+            : 12;
+          if (!currentLocationOverlay) {
+            currentLocationOverlay = new kakao.maps.CustomOverlay({
+              content: '<div class="current-location-marker" aria-label="current location"><span></span></div>',
+              map: map,
+              position: position,
+              xAnchor: 0.5,
+              yAnchor: 0.5
+            });
+          } else {
+            currentLocationOverlay.setPosition(position);
+          }
+          if (!currentAccuracyCircle) {
+            currentAccuracyCircle = new kakao.maps.Circle({
+              center: position,
+              fillColor: '#38bdf8',
+              fillOpacity: 0.16,
+              map: map,
+              radius: radius,
+              strokeColor: '#0284c7',
+              strokeOpacity: 0.85,
+              strokeWeight: 2
+            });
+          } else {
+            currentAccuracyCircle.setPosition(position);
+            currentAccuracyCircle.setRadius(radius);
+          }
+          if (!hasCenteredOnCurrentLocation && points.length === 0) {
+            map.setCenter(position);
+            hasCenteredOnCurrentLocation = true;
+          }
         }
 
         function undoPoint() {
@@ -578,6 +644,26 @@ export const buildOpenBoundaryPickerHtml = ({
       justify-content: center;
       width: 24px;
     }
+    .current-location-marker span {
+      align-items: center;
+      background: rgba(14, 165, 233, 0.2);
+      border: 2px solid #0284c7;
+      border-radius: 999px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.28);
+      display: flex;
+      height: 26px;
+      justify-content: center;
+      width: 26px;
+    }
+    .current-location-marker span::after {
+      background: #0284c7;
+      border: 2px solid white;
+      border-radius: 999px;
+      content: "";
+      display: block;
+      height: 9px;
+      width: 9px;
+    }
   </style>
 </head>
 <body>
@@ -628,17 +714,23 @@ export const buildOpenBoundaryPickerHtml = ({
       }).setView([${safeLatitude}, ${safeLongitude}], 17);
       var currentMapType = '${safeMapTypeId}';
       var activeLayers = [];
+      var currentLocationMarker = null;
+      var currentAccuracyCircle = null;
+      var hasCenteredOnCurrentLocation = false;
       var roadmapLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
-        maxZoom: 19
+        maxNativeZoom: 19,
+        maxZoom: 22
       });
       var imageryLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri',
-        maxZoom: 19
+        maxNativeZoom: 18,
+        maxZoom: 22
       });
       var labelLayer = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Labels &copy; Esri',
-        maxZoom: 19
+        maxNativeZoom: 18,
+        maxZoom: 22
       });
       var points = [];
       var markersLayer = L.layerGroup().addTo(map);
@@ -682,8 +774,14 @@ export const buildOpenBoundaryPickerHtml = ({
           var data = typeof event.data === 'string'
             ? JSON.parse(event.data)
             : event.data;
-          if (!data || data.type !== 'setMapType') return;
-          setMapType(data.payload && data.payload.mapTypeId);
+          if (!data) return;
+          if (data.type === 'setMapType') {
+            setMapType(data.payload && data.payload.mapTypeId);
+            return;
+          }
+          if (data.type === 'currentLocation') {
+            updateCurrentLocation(data.payload);
+          }
         } catch (error) {}
       }
 
@@ -707,6 +805,41 @@ export const buildOpenBoundaryPickerHtml = ({
       function addPoint(latLng) {
         points.push(latLng);
         redraw();
+      }
+
+      function updateCurrentLocation(payload) {
+        if (!payload || !isFinite(payload.latitude) || !isFinite(payload.longitude)) return;
+        var position = [payload.latitude, payload.longitude];
+        var radius = isFinite(payload.accuracy)
+          ? Math.max(4, Math.min(Number(payload.accuracy), 120))
+          : 12;
+        if (!currentLocationMarker) {
+          currentLocationMarker = L.marker(position, {
+            icon: createCurrentLocationIcon(),
+            interactive: false,
+            keyboard: false,
+            title: '현재 위치'
+          }).addTo(map);
+        } else {
+          currentLocationMarker.setLatLng(position);
+        }
+        if (!currentAccuracyCircle) {
+          currentAccuracyCircle = L.circle(position, {
+            color: '#0284c7',
+            fillColor: '#38bdf8',
+            fillOpacity: 0.16,
+            opacity: 0.85,
+            radius: radius,
+            weight: 2
+          }).addTo(map);
+        } else {
+          currentAccuracyCircle.setLatLng(position);
+          currentAccuracyCircle.setRadius(radius);
+        }
+        if (!hasCenteredOnCurrentLocation && points.length === 0) {
+          map.setView(position, Math.max(map.getZoom(), 17));
+          hasCenteredOnCurrentLocation = true;
+        }
       }
 
       function redraw() {
@@ -785,6 +918,15 @@ export const buildOpenBoundaryPickerHtml = ({
           html: '<span>+</span>',
           iconAnchor: [12, 12],
           iconSize: [24, 24]
+        });
+      }
+
+      function createCurrentLocationIcon() {
+        return L.divIcon({
+          className: 'current-location-marker',
+          html: '<span></span>',
+          iconAnchor: [15, 15],
+          iconSize: [30, 30]
         });
       }
 

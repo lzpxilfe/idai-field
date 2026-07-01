@@ -6,6 +6,7 @@ import {
 } from '@/constants/korean-fieldwork-project';
 import React, { useContext, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -134,11 +135,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setBoundarySummaryTouched(true);
     setIsPreparingBoundaryPicker(true);
 
-    const currentLocation = await getCurrentBoundaryPickerLocation();
-    if (currentLocation) setBoundaryPickerInitialLocation(currentLocation);
+    try {
+      const currentLocation = await getCurrentBoundaryPickerLocation();
+      if (currentLocation) setBoundaryPickerInitialLocation(currentLocation);
 
-    setIsPreparingBoundaryPicker(false);
-    setIsBoundaryPickerOpen(true);
+      setIsBoundaryPickerOpen(true);
+    } finally {
+      setIsPreparingBoundaryPicker(false);
+    }
   };
 
   const onPickBoundary = (boundary: KakaoSatellitePickedBoundary) => {
@@ -328,12 +332,65 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </View>
           </ScrollView>
         </View>
+        {isPreparingBoundaryPicker && (
+          <View
+            style={styles.prepareBoundaryOverlay}
+            testID="project-boundary-prepare-overlay"
+          >
+            <View style={styles.prepareBoundaryPanel}>
+              <ActivityIndicator color="#24495d" size="large" />
+              <Text style={styles.prepareBoundaryTitle}>
+                잠시만 기다려주십시오
+              </Text>
+              <Text style={styles.prepareBoundaryText}>
+                현재 위치를 확인하고 조사 경계 지도를 준비하고 있습니다.
+              </Text>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  prepareBoundaryOverlay: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.42)',
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
+    padding: 24,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 20,
+  },
+  prepareBoundaryPanel: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#cbd5df',
+    borderRadius: 6,
+    borderWidth: 1,
+    maxWidth: 420,
+    padding: 24,
+    width: '100%',
+  },
+  prepareBoundaryText: {
+    color: '#526272',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  prepareBoundaryTitle: {
+    color: '#20313a',
+    fontSize: 18,
+    fontWeight: '900',
+    marginTop: 14,
+    textAlign: 'center',
+  },
   boundaryDrawDetail: {
     color: '#667085',
     fontSize: 12,
