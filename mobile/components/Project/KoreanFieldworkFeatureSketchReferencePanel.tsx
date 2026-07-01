@@ -45,6 +45,9 @@ const PREVIEW_DEFAULT_SIZE = {
   width: 260,
 };
 const BOUNDARY_PADDING = 12;
+const SHAPE_PREVIEW_TOP_PADDING = 24;
+const SHAPE_PREVIEW_SIDE_PADDING = 8;
+const SHAPE_PREVIEW_BOTTOM_PADDING = 10;
 const VALID_SHAPES = new Set<FeatureLocationSketchShape>([
   'point',
   'polygon',
@@ -133,6 +136,7 @@ const KoreanFieldworkFeatureSketchReferencePanel: React.FC<Props> = ({
         </SketchCard>
         <SketchCard
           onLayout={(size) => setShapeCanvasSize(size)}
+          isShapePreview
           testID="featureShapeSketchPreview"
           title={TEXT.shapeTitle}
         >
@@ -152,11 +156,13 @@ const KoreanFieldworkFeatureSketchReferencePanel: React.FC<Props> = ({
 
 const SketchCard: React.FC<{
   children: React.ReactNode;
+  isShapePreview?: boolean;
   onLayout: (size: CanvasSize) => void;
   testID: string;
   title: string;
 }> = ({
   children,
+  isShapePreview = false,
   onLayout,
   testID,
   title,
@@ -172,7 +178,10 @@ const SketchCard: React.FC<{
       <View
         onLayout={handleLayout}
         pointerEvents="none"
-        style={styles.previewCanvas}
+        style={[
+          styles.previewCanvas,
+          isShapePreview && styles.shapePreviewCanvas,
+        ]}
       >
         <View style={styles.northBand}>
           <Text style={styles.northText}>N</Text>
@@ -205,7 +214,7 @@ const renderFeatureSketch = (
           styles.featureShape,
           compact && styles.featureShapeCompact,
           sketch.shape === 'oval' && styles.featureShapeOval,
-          getFeatureShapeFrame(sketch, canvasSize, compact ? 0.84 : 1.12),
+          getFeatureShapeFrame(sketch, canvasSize, compact),
         ]}
         testID={testID}
       >
@@ -217,7 +226,9 @@ const renderFeatureSketch = (
     );
   }
 
-  const points = getVisibleFeatureSketchPoints(sketch);
+  const points = compact
+    ? getVisibleFeatureSketchPoints(sketch)
+    : fitFeatureSketchPoints(getVisibleFeatureSketchPoints(sketch));
 
   return (
     <>
@@ -433,19 +444,33 @@ const SketchLineSegment: React.FC<{
 const getFeatureShapeFrame = (
   sketch: FeatureLocationSketch,
   canvasSize: CanvasSize,
-  scaleMultiplier: number
+  compact: boolean
 ) => {
-  const center = denormalizePoint(sketch.center, canvasSize);
-  const shapeScale = (sketch.scale / 100) * scaleMultiplier;
+  const center = compact
+    ? denormalizePoint(sketch.center, canvasSize)
+    : {
+      x: canvasSize.width / 2,
+      y: SHAPE_PREVIEW_TOP_PADDING
+        + ((canvasSize.height - SHAPE_PREVIEW_TOP_PADDING) / 2),
+    };
+  const shapeScale = sketch.scale / 100;
+  const widthRatio = compact ? 0.22 : 0.36;
+  const heightRatio = compact ? 0.26 : 0.42;
   const width = clamp(
-    canvasSize.width * 0.22 * shapeScale,
+    canvasSize.width * widthRatio * shapeScale * (compact ? 0.84 : 1),
     FEATURE_SKETCH_REFERENCE_SHAPE_MIN_WIDTH,
-    120
+    compact ? 120 : Math.max(
+      FEATURE_SKETCH_REFERENCE_SHAPE_MIN_WIDTH,
+      canvasSize.width - (SHAPE_PREVIEW_SIDE_PADDING * 2)
+    )
   );
   const height = clamp(
-    canvasSize.height * 0.26 * shapeScale,
+    canvasSize.height * heightRatio * shapeScale * (compact ? 0.84 : 1),
     FEATURE_SKETCH_REFERENCE_SHAPE_MIN_HEIGHT,
-    96
+    compact ? 96 : Math.max(
+      FEATURE_SKETCH_REFERENCE_SHAPE_MIN_HEIGHT,
+      canvasSize.height - SHAPE_PREVIEW_TOP_PADDING - SHAPE_PREVIEW_BOTTOM_PADDING
+    )
   );
 
   return {
@@ -455,6 +480,34 @@ const getFeatureShapeFrame = (
     transform: [{ rotateZ: `${sketch.rotation}deg` }],
     width,
   };
+};
+
+const fitFeatureSketchPoints = (points: SketchPoint[]): SketchPoint[] => {
+  if (points.length === 0) return points;
+  if (points.length === 1) return [{ x: 50, y: 56 }];
+
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const xRange = Math.max(maxX - minX, 0.000001);
+  const yRange = Math.max(maxY - minY, 0.000001);
+  const availableWidth = 100 - (SHAPE_PREVIEW_SIDE_PADDING * 2);
+  const availableHeight =
+    100 - SHAPE_PREVIEW_TOP_PADDING - SHAPE_PREVIEW_BOTTOM_PADDING;
+  const scale = Math.min(availableWidth / xRange, availableHeight / yRange);
+  const fittedWidth = xRange * scale;
+  const fittedHeight = yRange * scale;
+  const offsetX = (100 - fittedWidth) / 2;
+  const offsetY =
+    SHAPE_PREVIEW_TOP_PADDING + ((availableHeight - fittedHeight) / 2);
+
+  return points.map((point) => ({
+    x: offsetX + ((point.x - minX) * scale),
+    y: offsetY + ((point.y - minY) * scale),
+  }));
 };
 
 const denormalizePoint = (
@@ -557,6 +610,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
     overflow: 'hidden',
     position: 'relative',
+  },
+  shapePreviewCanvas: {
+    height: 188,
   },
   northBand: {
     alignItems: 'center',

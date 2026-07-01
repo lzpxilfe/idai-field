@@ -135,10 +135,12 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
       </View>
       <View
         onLayout={updateCanvasSize}
+        onMoveShouldSetResponder={() => true}
         onResponderGrant={startStroke}
         onResponderMove={moveStroke}
         onResponderRelease={finishStroke}
         onResponderTerminate={finishStroke}
+        onResponderTerminationRequest={() => false}
         onStartShouldSetResponder={() => true}
         style={styles.canvas}
         testID="fieldworkFreeDrawingCanvas"
@@ -188,7 +190,7 @@ const getNormalizedPoint = (
   event: GestureResponderEvent,
   canvasSize: CanvasSize
 ): KoreanFieldworkHandwritingPoint | undefined => {
-  const { locationX, locationY } = event.nativeEvent;
+  const { locationX, locationY } = getLocalTouchPoint(event);
   if (typeof locationX !== 'number' || typeof locationY !== 'number') {
     return undefined;
   }
@@ -206,6 +208,40 @@ const getNormalizedPoint = (
     y: normalizeCoordinate((locationY / canvasSize.height) * MAX_COORDINATE),
   };
 };
+
+const getLocalTouchPoint = (event: GestureResponderEvent): {
+  locationX?: number;
+  locationY?: number;
+} => {
+  const nativeEvent = event.nativeEvent as unknown as {
+    changedTouches?: Array<TouchPointCandidate>;
+    locationX?: number;
+    locationY?: number;
+    touches?: Array<TouchPointCandidate>;
+  };
+  const localTouch = [
+    ...(nativeEvent.touches ?? []),
+    ...(nativeEvent.changedTouches ?? []),
+  ].find(hasLocalTouchCoordinates);
+
+  return {
+    locationX: localTouch?.locationX ?? localTouch?.x ?? nativeEvent.locationX,
+    locationY: localTouch?.locationY ?? localTouch?.y ?? nativeEvent.locationY,
+  };
+};
+
+interface TouchPointCandidate {
+  locationX?: number;
+  locationY?: number;
+  x?: number;
+  y?: number;
+}
+
+const hasLocalTouchCoordinates = (
+  value: TouchPointCandidate
+): boolean =>
+  Number.isFinite(value.locationX ?? value.x)
+  && Number.isFinite(value.locationY ?? value.y);
 
 const normalizeCoordinate = (value: number): number =>
   Number.isFinite(value)
@@ -240,6 +276,7 @@ const toStrokeSegments = (
     return (
       <View
         key={`${strokeIndex}-dot`}
+        pointerEvents="none"
         style={[
           styles.strokeDot,
           {
@@ -263,6 +300,7 @@ const toStrokeSegments = (
     return (
       <View
         key={`${strokeIndex}-${pointIndex}`}
+        pointerEvents="none"
         style={[
           styles.strokeSegment,
           {

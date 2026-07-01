@@ -45,6 +45,50 @@ describe('KoreanFieldworkFreeDrawingPanel', () => {
     });
   });
 
+  it('uses active touch coordinates instead of a child target origin', () => {
+    const handleUpdateStrokes = jest.fn();
+    const { getByTestId } = render(
+      <KoreanFieldworkFreeDrawingPanel
+        onUpdateStrokes={handleUpdateStrokes}
+      />
+    );
+
+    const canvas = getByTestId('fieldworkFreeDrawingCanvas');
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: {
+        locationX: 0,
+        locationY: 0,
+        touches: [{ locationX: 64, locationY: 56 }],
+      },
+    });
+    fireEvent(canvas, 'responderMove', {
+      nativeEvent: {
+        locationX: 0,
+        locationY: 0,
+        touches: [{ locationX: 160, locationY: 140 }],
+      },
+    });
+    fireEvent(canvas, 'responderRelease', {
+      nativeEvent: {
+        locationX: 0,
+        locationY: 0,
+        changedTouches: [{ locationX: 160, locationY: 140 }],
+      },
+    });
+
+    expect(JSON.parse(handleUpdateStrokes.mock.calls[0][0])).toMatchObject({
+      version: 1,
+      strokes: [
+        {
+          points: [
+            { x: 2000, y: 2000 },
+            { x: 5000, y: 5000 },
+          ],
+        },
+      ],
+    });
+  });
+
   it('loads serialized strokes and can clear them', () => {
     const handleUpdateStrokes = jest.fn();
     const { getByTestId } = render(

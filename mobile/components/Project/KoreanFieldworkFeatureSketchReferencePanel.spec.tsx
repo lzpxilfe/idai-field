@@ -54,6 +54,8 @@ describe('KoreanFieldworkFeatureSketchReferencePanel', () => {
     expect(getByTestId('featureBoundaryFeatureShape')).toBeTruthy();
     expect(getByTestId('featureShapeSketchPreview')).toBeTruthy();
     expect(getByTestId('featureShapeSketchShape')).toBeTruthy();
+    expect(StyleSheet.flatten(getByTestId('featureShapeSketchShape').props.style).width)
+      .toBeGreaterThan(100);
   });
 
   it('stays hidden outside feature edit screens', () => {
@@ -86,11 +88,43 @@ describe('KoreanFieldworkFeatureSketchReferencePanel', () => {
       />
     );
 
-    expect(StyleSheet.flatten(getByTestId('featureShapeSketchShape').props.style))
-      .toEqual(expect.objectContaining({
-        height: 5,
-        width: 6,
-      }));
+    const shapeStyle = StyleSheet.flatten(
+      getByTestId('featureShapeSketchShape').props.style
+    );
+
+    expect(shapeStyle.height).toBeLessThan(8);
+    expect(shapeStyle.width).toBeLessThan(10);
+  });
+
+  it('fits polygon sketches into the shape preview instead of keeping boundary placement', () => {
+    const feature = createDoc('feature-1', C.FEATURE, {
+      featureLocationSketch: JSON.stringify({
+        version: 2,
+        shape: 'polygon',
+        center: { x: 15, y: 12 },
+        points: [
+          { x: 10, y: 10 },
+          { x: 20, y: 10 },
+          { x: 20, y: 14 },
+          { x: 10, y: 14 },
+        ],
+        rotation: 0,
+        scale: 100,
+      }),
+    });
+
+    const { getByTestId } = render(
+      <KoreanFieldworkFeatureSketchReferencePanel
+        document={feature}
+        documents={[feature]}
+      />
+    );
+    const firstPointStyle = StyleSheet.flatten(
+      getByTestId('featureShapeSketchShape_0').props.style
+    );
+
+    expect(firstPointStyle.left).toBe('8%');
+    expect(firstPointStyle.top).toBe('40.2%');
   });
 });
 
