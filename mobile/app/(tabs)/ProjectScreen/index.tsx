@@ -257,7 +257,6 @@ const DocumentsList: React.FC = () => {
     clearHierarchy,
     hierarchyPath,
     onDocumentSelected,
-    pushToHierarchy,
     relationsManager,
     repository,
   } = useContext(ProjectContext);
@@ -1219,7 +1218,6 @@ const DocumentsList: React.FC = () => {
               investigationModeId={investigationModeId}
               selectedDocumentId={selectedWorkbenchDocument?.resource.id}
               onOpenDocument={selectWorkbenchDocument}
-              onDrillDown={pushToHierarchy}
               onAddChild={openAddChildModal}
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
@@ -1241,7 +1239,6 @@ const DocumentsList: React.FC = () => {
               investigationModeId={investigationModeId}
               selectedDocumentId={selectedWorkbenchDocument?.resource.id}
               onOpenDocument={selectWorkbenchDocument}
-              onDrillDown={pushToHierarchy}
               onAddChild={openAddChildModal}
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
@@ -1517,7 +1514,6 @@ const RecordSection: React.FC<{
   investigationModeId?: KoreanFieldworkInvestigationModeId;
   selectedDocumentId?: string;
   onOpenDocument: (document: Document) => void;
-  onDrillDown: (document: Document) => void;
   onAddChild: (document: Document) => void;
   onAddDocumentOfCategory: (parentDoc: Document, categoryName: string) => void;
   onEditDocument: (document: Document) => void;
@@ -1532,7 +1528,6 @@ const RecordSection: React.FC<{
   investigationModeId,
   selectedDocumentId,
   onOpenDocument,
-  onDrillDown,
   onAddChild,
   onAddDocumentOfCategory,
   onEditDocument,
@@ -1562,7 +1557,6 @@ const RecordSection: React.FC<{
           investigationModeId={investigationModeId}
           selected={selectedDocumentId === document.resource.id}
           onOpen={() => onOpenDocument(document)}
-          onDrillDown={() => onDrillDown(document)}
           onAddChild={() => onAddChild(document)}
           onOpenEvidence={onOpenDocument}
           onAddEvidence={onAddDocumentOfCategory}
@@ -1583,7 +1577,6 @@ const RecordRow: React.FC<{
   investigationModeId?: KoreanFieldworkInvestigationModeId;
   selected: boolean;
   onOpen: () => void;
-  onDrillDown: () => void;
   onAddChild: () => void;
   onOpenEvidence: (document: Document) => void;
   onAddEvidence: (parentDoc: Document, categoryName: string) => void;
@@ -1598,7 +1591,6 @@ const RecordRow: React.FC<{
   investigationModeId,
   selected,
   onOpen,
-  onDrillDown,
   onAddChild,
   onOpenEvidence,
   onAddEvidence,
@@ -1743,14 +1735,6 @@ const RecordRow: React.FC<{
           hitSlop={8}
         >
           <MaterialIcons name="add" size={20} color="#475467" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          accessibilityLabel={`${title} 이어진 기록 보기`}
-          style={styles.iconButton}
-          onPress={onDrillDown}
-          hitSlop={8}
-        >
-          <MaterialIcons name="account-tree" size={20} color="#475467" />
         </TouchableOpacity>
         <TouchableOpacity
           accessibilityLabel={`${title} 편집`}
