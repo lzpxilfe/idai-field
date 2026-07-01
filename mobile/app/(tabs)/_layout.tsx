@@ -7,11 +7,16 @@ import { ToastProvider } from '@/components/common/Toast/ToastProvider';
 import { Toast } from '@/components/common/Toast/Toast';
 import LabelsContextProvider from '@/contexts/labels/LabelsContextProvider';
 import {
+  canOpenKoreanFieldworkProject,
   getKoreanFieldworkFieldBoardOverviewRoute,
 } from '@/components/Project/korean-fieldwork-navigation';
 
 export default function TabLayout() {
   const preferences = usePreferences();
+  const canOpenRecordTab = canOpenKoreanFieldworkProject(
+    preferences.preferences
+  );
+
   return (
     <SafeAreaProvider>
       <PreferencesContext.Provider value={preferences}>
@@ -52,6 +57,11 @@ export default function TabLayout() {
                 listeners={{
                   tabPress: (event) => {
                     event.preventDefault();
+                    if (!canOpenRecordTab) {
+                      router.replace('/');
+                      return;
+                    }
+
                     router.replace(getKoreanFieldworkFieldBoardOverviewRoute(
                       Date.now().toString()
                     ));

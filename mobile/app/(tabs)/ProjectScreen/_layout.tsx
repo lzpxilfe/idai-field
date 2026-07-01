@@ -1,22 +1,36 @@
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Drawer } from 'expo-router/drawer';
+import { router, Stack } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
 import { PreferencesContext } from '@/contexts/preferences-context';
 import usePouchDbDatastore from '@/hooks/use-pouchdb-datastore';
 import useConfiguration from '@/hooks/use-configuration';
+import { type Preferences } from '@/models/preferences';
 
 import { ConfigurationContext } from '@/contexts/configuration-context';
 import {
   ActivityIndicator,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { ProjectContextProvider } from '@/contexts/project-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import {
+  canOpenKoreanFieldworkProject,
+} from '@/components/Project/korean-fieldwork-navigation';
 
 export default function Layout() {
   const { preferences } = useContext(PreferencesContext);
+
+  if (!canOpenKoreanFieldworkProject(preferences)) {
+    return <ProjectRequiredState />;
+  }
+
+  return <ProjectLayout preferences={preferences} />;
+}
+
+const ProjectLayout = ({ preferences }: { preferences: Preferences }) => {
   const [isTakingLong, setIsTakingLong] = useState(false);
 
   const pouchdbDatastore = usePouchDbDatastore(preferences.currentProject);
@@ -52,41 +66,57 @@ export default function Layout() {
     <ConfigurationContext.Provider value={config}>
       <ProjectContextProvider>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <Drawer>
-            <Drawer.Screen
+          <Stack>
+            <Stack.Screen
               name="index"
               options={{
-                drawerLabel: '기록 목록',
                 title: '기록 목록',
               }}
             />
-            <Drawer.Screen
+            <Stack.Screen
               name="DocumentAdd"
               options={{
-                drawerLabel: '기록 추가',
                 title: '기록 추가',
               }}
             />
-            <Drawer.Screen
+            <Stack.Screen
               name="DocumentEdit"
               options={{
-                drawerItemStyle: { display: 'none' },
                 title: '기록 편집',
               }}
             />
-            <Drawer.Screen
+            <Stack.Screen
               name="DocumentsMap"
               options={{
-                drawerLabel: '지도',
                 title: '지도',
               }}
             />
-          </Drawer>
+          </Stack>
         </GestureHandlerRootView>
       </ProjectContextProvider>
     </ConfigurationContext.Provider>
   );
-}
+};
+
+const ProjectRequiredState = () => (
+  <View style={styles.loadingContainer}>
+    <View style={styles.logoMark}>
+      <MaterialIcons name="folder-open" size={42} color="#2f5f4a" />
+    </View>
+    <Text style={styles.blockedTitle}>프로젝트를 먼저 선택하세요</Text>
+    <Text style={styles.blockedText}>
+      새 프로젝트를 만들거나 최근 프로젝트를 연 뒤 기록 화면을 사용할 수 있습니다.
+    </Text>
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={() => router.replace('/')}
+      style={styles.blockedButton}
+      testID="project-required-home-button"
+    >
+      <Text style={styles.blockedButtonText}>홈으로 돌아가기</Text>
+    </TouchableOpacity>
+  </View>
+);
 
 const ProjectConfigurationLoadingState = ({
   projectName,
@@ -141,6 +171,34 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     marginTop: 18,
+  },
+  blockedTitle: {
+    color: '#20313a',
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 18,
+    textAlign: 'center',
+  },
+  blockedText: {
+    color: '#526272',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginTop: 12,
+    maxWidth: 420,
+    textAlign: 'center',
+  },
+  blockedButton: {
+    backgroundColor: '#2f8f4f',
+    borderRadius: 8,
+    marginTop: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+  },
+  blockedButtonText: {
+    color: '#ffffff',
+    fontSize: 15,
+    fontWeight: '800',
   },
   loadingSpinner: {
     marginTop: 14,

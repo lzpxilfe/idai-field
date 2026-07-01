@@ -1,4 +1,5 @@
 import {
+  canOpenKoreanFieldworkProject,
   getKoreanFieldworkFieldBoardOverviewRoute,
   getKoreanFieldworkReturnParam,
   getKoreanFieldworkReturnTarget,
@@ -43,6 +44,35 @@ describe('Korean fieldwork navigation helpers', () => {
       pathname: '/ProjectScreen',
       params: { [KOREAN_FIELDWORK_FIELD_BOARD_RESET_PARAM]: 'reset-1' },
     });
+  });
+
+  it('blocks the field board when no project has been created or opened', () => {
+    expect(canOpenKoreanFieldworkProject({
+      currentProject: '',
+      projects: {},
+    })).toBe(false);
+  });
+
+  it('blocks orphaned project ids that do not have saved project settings', () => {
+    expect(canOpenKoreanFieldworkProject({
+      currentProject: 'missing-project',
+      projects: {},
+    })).toBe(false);
+  });
+
+  it('allows the field board when the current project exists in preferences', () => {
+    expect(canOpenKoreanFieldworkProject({
+      currentProject: 'fieldwork',
+      projects: {
+        fieldwork: {
+          connected: false,
+          languages: ['ko'],
+          mapSettings: { pointRadius: 6 },
+          password: '',
+          url: '',
+        },
+      },
+    })).toBe(true);
   });
 
   it('returns to the field board without map highlight params', () => {

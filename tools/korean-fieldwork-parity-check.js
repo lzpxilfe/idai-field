@@ -1488,6 +1488,11 @@ function validateProjectStartSequence() {
   const findings = [];
   const mobileCreateText = readTextFile('mobile/components/Home/CreateProjectModal.tsx');
   const mobileCreateSpecText = readTextFile('mobile/components/Home/CreateProjectModal.spec.tsx');
+  const mobileTabLayoutText = readTextFile('mobile/app/(tabs)/_layout.tsx');
+  const mobileProjectScreenLayoutText = readTextFile('mobile/app/(tabs)/ProjectScreen/_layout.tsx');
+  const mobileNavigationSpecText = readTextFile(
+    'mobile/components/Project/korean-fieldwork-navigation.spec.ts'
+  );
   const desktopCreateText = readTextFile(
     'desktop/src/app/components/project/create-project-modal.component.ts'
   );
@@ -1550,6 +1555,24 @@ function validateProjectStartSequence() {
   }
   if (!desktopCreateSpecText.includes('조사 방식을 선택해야 프로젝트를 만들 수 있습니다.')) {
     findings.push('desktop create-project test must cover missing investigation-mode status');
+  }
+
+  if (mobileProjectScreenLayoutText.includes('expo-router/drawer')
+      || mobileProjectScreenLayoutText.includes('<Drawer')) {
+    findings.push('tablet project screen must use stack navigation so a drawer overlay cannot block field-board touches');
+  }
+  if (!mobileProjectScreenLayoutText.includes("from 'expo-router'")
+      || !mobileProjectScreenLayoutText.includes('Stack')) {
+    findings.push('tablet project screen layout must use Stack navigation');
+  }
+  if (!mobileTabLayoutText.includes('canOpenKoreanFieldworkProject')) {
+    findings.push('tablet record tab must block navigation until a project exists');
+  }
+  if (!mobileProjectScreenLayoutText.includes('ProjectRequiredState')) {
+    findings.push('tablet project screen must show a project-required state when opened without a project');
+  }
+  if (!mobileNavigationSpecText.includes('blocks the field board when no project has been created or opened')) {
+    findings.push('tablet navigation tests must cover blocking field board access without a project');
   }
 
   return findings;

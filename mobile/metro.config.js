@@ -36,9 +36,13 @@ const isCoreTestExport = (context, moduleName) =>
 const customConfig = {
     resolver: {
         blockList: exclusionList([
-            /android[\\\/]\.cxx[\\\/].*/,
-            /android[\\\/]build[\\\/].*/,
-            /android[\\\/]app[\\\/]build[\\\/].*/
+            /android[\\\/]\.cxx(?:[\\\/].*)?$/,
+            /android[\\\/]build(?:[\\\/].*)?$/,
+            /android[\\\/]build\.disabled-for-metro(?:[\\\/].*)?$/,
+            /android[\\\/]app[\\\/]build(?:[\\\/].*)?$/,
+            /node_modules[\\\/].*[\\\/]android[\\\/]\.cxx(?:[\\\/].*)?$/,
+            /node_modules[\\\/].*[\\\/]android[\\\/]build(?:[\\\/].*)?$/,
+            /node_modules[\\\/].*[\\\/]android[\\\/]build\.disabled-for-metro(?:[\\\/].*)?$/
         ]),
         resolveRequest: (context, moduleName, platform) => {
             if (isCoreTestExport(context, moduleName)) {

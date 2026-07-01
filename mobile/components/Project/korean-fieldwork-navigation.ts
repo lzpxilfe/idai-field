@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { type Preferences } from '@/models/preferences';
 
 export const KOREAN_FIELDWORK_RETURN_TARGETS = {
   FIELD_BOARD: 'fieldBoard',
@@ -9,6 +10,15 @@ export const KOREAN_FIELDWORK_FIELD_BOARD_RESET_PARAM = 'fieldBoardReset';
 
 export type KoreanFieldworkReturnTarget =
   typeof KOREAN_FIELDWORK_RETURN_TARGETS[keyof typeof KOREAN_FIELDWORK_RETURN_TARGETS];
+
+export const canOpenKoreanFieldworkProject = (
+  preferences: Pick<Preferences, 'currentProject' | 'projects'>
+): boolean => {
+  const currentProject = preferences.currentProject.trim();
+
+  return currentProject.length > 0
+    && Object.prototype.hasOwnProperty.call(preferences.projects, currentProject);
+};
 
 export const getKoreanFieldworkReturnTarget = (
   value: string | string[] | undefined
