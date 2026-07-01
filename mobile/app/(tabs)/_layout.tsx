@@ -1,6 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { router, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Alert } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PreferencesContext } from '@/contexts/preferences-context';
 import usePreferences from '@/hooks/use-preferences';
@@ -58,21 +58,19 @@ export default function TabLayout() {
                       color={canOpenRecordTab ? color : '#9aa3a7'}
                     />
                   ),
-                  tabBarButton: (props) => (
-                    <Pressable
-                      {...props}
-                      accessibilityState={{
-                        ...(props.accessibilityState ?? {}),
-                        disabled: !canOpenRecordTab,
-                      }}
-                      disabled={!canOpenRecordTab}
-                    />
-                  ),
+                  tabBarAccessibilityLabel: canOpenRecordTab
+                    ? '기록'
+                    : '기록, 먼저 프로젝트를 만들거나 열어야 합니다',
                 }}
                 listeners={{
                   tabPress: (event) => {
                     event.preventDefault();
                     if (!canOpenRecordTab) {
+                      Alert.alert(
+                        '프로젝트가 필요합니다',
+                        '기록을 시작하려면 먼저 새 프로젝트를 만들거나 기존 프로젝트를 열어주세요.',
+                        [{ text: '확인' }]
+                      );
                       router.replace('/');
                       return;
                     }
