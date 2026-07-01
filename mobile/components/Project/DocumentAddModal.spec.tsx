@@ -361,15 +361,17 @@ describe('DocumentAddModal', () => {
 
     expect(getByTestId('featureSketchBoundaryPoint_0')).toBeTruthy();
     expect(getByTestId('featureSketchFlatMapSurface')).toBeTruthy();
+    expect(getByTestId('featureSketchMode_inspect').props.accessibilityState)
+      .toMatchObject({ selected: true });
     expect(getByTestId('featureSketchMode_polygon').props.accessibilityState)
-      .toEqual({ selected: true });
+      .toMatchObject({ selected: false });
     expect(getByTestId('featureSketchBackground_white').props.accessibilityState)
-      .toEqual({ selected: true });
+      .toMatchObject({ selected: true });
 
     fireEvent.press(getByTestId('featureSketchBackground_satellite'));
 
     expect(getByTestId('featureSketchBackground_satellite').props.accessibilityState)
-      .toEqual({ selected: true });
+      .toMatchObject({ selected: true });
 
     const canvas = getByTestId('featureLocationSketchCanvas');
     const touchLayer = getByTestId('featureLocationSketchTouchLayer');
@@ -431,6 +433,18 @@ describe('DocumentAddModal', () => {
     fireEvent(canvas, 'layout', {
       nativeEvent: { layout: { height: 100, width: 200 } },
     });
+    fireEvent.press(getByTestId('featureSketchZoomIn'));
+    expect(StyleSheet.flatten(getByTestId('featureSketchFlatMapSurface').props.style))
+      .toEqual(expect.objectContaining({
+        height: 135,
+        width: 270,
+      }));
+    fireEvent.press(getByTestId('featureSketchMode_polygon'));
+    expect(getByTestId('featureSketchMode_polygon').props.accessibilityState)
+      .toMatchObject({ selected: true });
+    fireEvent.press(getByTestId('featureSketchMode_polygon'));
+    expect(getByTestId('featureSketchMode_inspect').props.accessibilityState)
+      .toMatchObject({ selected: true });
     fireEvent.press(getByTestId('featureSketchMode_polygon'));
     fireEvent(touchLayer, 'responderGrant', {
       nativeEvent: { locationX: 40, locationY: 25 },
@@ -449,8 +463,8 @@ describe('DocumentAddModal', () => {
     expect(getByTestId('featureSketchPoint_1').props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          left: '75%',
-          top: '60%',
+          left: expect.any(Number),
+          top: expect.any(Number),
         }),
       ])
     );
@@ -494,10 +508,12 @@ describe('DocumentAddModal', () => {
     fireEvent(canvas, 'layout', {
       nativeEvent: { layout: { height: 100, width: 200 } },
     });
+    fireEvent.press(getByTestId('featureSketchMode_polygon'));
     [
       { locationX: 40, locationY: 25 },
       { locationX: 120, locationY: 50 },
       { locationX: 150, locationY: 60 },
+      { locationX: 40, locationY: 25 },
     ].forEach((point) => {
       fireEvent(touchLayer, 'responderGrant', { nativeEvent: point });
       fireEvent(touchLayer, 'responderRelease', { nativeEvent: point });
@@ -511,11 +527,152 @@ describe('DocumentAddModal', () => {
       parentDoc,
       expect.objectContaining({
         featureGeometry: expect.stringContaining('"Polygon"'),
-        featureGeometryRevisionNote: '위치 스케치: 점 연결 3점, 마지막 75%, 60%',
+        featureGeometryRevisionNote: '위치 스케치: 점 연결 3점, 닫힘, 마지막 75%, 60%',
         featureType: 'pit',
         geometryConfidence: 'rough',
         geometrySource: 'drawnOnBoundarySketch',
         identifier: '1호 유구',
+      })
+    );
+  });
+
+  it('inserts a polygon point on an existing segment before closing the sketch', () => {
+    const onAddCategory = jest.fn();
+    const parentDoc = {
+      resource: {
+        id: 'operation-1',
+        identifier: 'Operation 1',
+        category: C.TRENCH,
+        relations: {},
+      },
+    } as any;
+
+    const { getByTestId } = render(
+      <LabelsContext.Provider value={{ labels: new Labels(() => ['ko']) }}>
+        <ConfigurationContext.Provider value={createConfig([
+          createCategory(C.TRENCH),
+          createCategory(C.FEATURE),
+        ])}
+        >
+          <DocumentAddModal
+            boundaryDraft={createBoundaryDraft()}
+            initialCategoryName={C.FEATURE}
+            onAddCategory={onAddCategory}
+            onClose={jest.fn()}
+            parentDoc={parentDoc}
+          />
+        </ConfigurationContext.Provider>
+      </LabelsContext.Provider>
+    );
+
+    const canvas = getByTestId('featureLocationSketchCanvas');
+    const touchLayer = getByTestId('featureLocationSketchTouchLayer');
+    fireEvent(canvas, 'layout', {
+      nativeEvent: { layout: { height: 100, width: 200 } },
+    });
+    fireEvent.press(getByTestId('featureSketchMode_polygon'));
+    [
+      { locationX: 40, locationY: 25 },
+      { locationX: 120, locationY: 50 },
+      { locationX: 150, locationY: 60 },
+      { locationX: 80, locationY: 37.5 },
+      { locationX: 40, locationY: 25 },
+    ].forEach((point) => {
+      fireEvent(touchLayer, 'responderGrant', { nativeEvent: point });
+      fireEvent(touchLayer, 'responderRelease', { nativeEvent: point });
+    });
+
+    expect(getByTestId('featureSketchInsertPoint_0')).toBeTruthy();
+    expect(getByTestId('featureSketchPoint_1').props.style).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          left: 80,
+          top: 37.5,
+        }),
+      ])
+    );
+
+    fireEvent.changeText(getByTestId('featureIdentifierInput'), '1호 유구');
+    fireEvent.press(getByTestId('featureType_pit'));
+
+    expect(onAddCategory).toHaveBeenCalledWith(
+      C.FEATURE,
+      parentDoc,
+      expect.objectContaining({
+        featureGeometry: expect.stringContaining('"Polygon"'),
+        featureGeometryRevisionNote:
+          '위치 스케치: 점 연결 4점, 닫힘, 마지막 75%, 60%',
+        geometrySource: 'drawnOnBoundarySketch',
+      })
+    );
+  });
+
+  it('resizes and rotates a shape with a two-finger gesture', () => {
+    const onAddCategory = jest.fn();
+    const parentDoc = {
+      resource: {
+        id: 'operation-1',
+        identifier: 'Operation 1',
+        category: C.TRENCH,
+        relations: {},
+      },
+    } as any;
+
+    const { getByTestId } = render(
+      <LabelsContext.Provider value={{ labels: new Labels(() => ['ko']) }}>
+        <ConfigurationContext.Provider value={createConfig([
+          createCategory(C.TRENCH),
+          createCategory(C.FEATURE),
+        ])}
+        >
+          <DocumentAddModal
+            boundaryDraft={createBoundaryDraft()}
+            initialCategoryName={C.FEATURE}
+            onAddCategory={onAddCategory}
+            onClose={jest.fn()}
+            parentDoc={parentDoc}
+          />
+        </ConfigurationContext.Provider>
+      </LabelsContext.Provider>
+    );
+
+    const canvas = getByTestId('featureLocationSketchCanvas');
+    const touchLayer = getByTestId('featureLocationSketchTouchLayer');
+    fireEvent(canvas, 'layout', {
+      nativeEvent: { layout: { height: 100, width: 200 } },
+    });
+    fireEvent.press(getByTestId('featureSketchMode_rectangle'));
+    fireEvent(touchLayer, 'responderGrant', {
+      nativeEvent: {
+        touches: [
+          { locationX: 80, locationY: 40 },
+          { locationX: 120, locationY: 60 },
+        ],
+      },
+    });
+    fireEvent(touchLayer, 'responderMove', {
+      nativeEvent: {
+        touches: [
+          { locationX: 50, locationY: 30 },
+          { locationX: 150, locationY: 70 },
+        ],
+      },
+    });
+    fireEvent(touchLayer, 'responderRelease', {
+      nativeEvent: { touches: [] },
+    });
+
+    fireEvent.changeText(getByTestId('featureIdentifierInput'), '1호 유구');
+    fireEvent.press(getByTestId('featureType_pit'));
+
+    expect(onAddCategory).toHaveBeenCalledWith(
+      C.FEATURE,
+      parentDoc,
+      expect.objectContaining({
+        featureGeometry: expect.stringContaining('"Polygon"'),
+        featureGeometryRevisionNote:
+          '위치 스케치: 사각형, 중심 50%, 50%, 크기 240%, 회전 -5°',
+        geometrySource: 'drawnOnBoundarySketch',
       })
     );
   });

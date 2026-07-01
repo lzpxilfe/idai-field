@@ -9,7 +9,6 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import type { DimensionValue } from 'react-native';
 import {
   GestureResponderEvent,
   LayoutChangeEvent,
@@ -65,6 +64,16 @@ const FEATURE_SKETCH_BOUNDARY_PADDING = 14;
 const FEATURE_SKETCH_SHAPE_BASE_WIDTH = 18;
 const FEATURE_SKETCH_SHAPE_BASE_HEIGHT = 12;
 const FEATURE_SKETCH_OVAL_SEGMENTS = 16;
+const FEATURE_SKETCH_MAX_POLYGON_POINTS = 64;
+const FEATURE_SKETCH_CLOSE_POINT_DISTANCE = 4.5;
+const FEATURE_SKETCH_INSERT_POINT_DISTANCE = 3.5;
+const FEATURE_SKETCH_VIEWPORT_MIN_SCALE = 1;
+const FEATURE_SKETCH_VIEWPORT_MAX_SCALE = 4;
+const FEATURE_SKETCH_VIEWPORT_DEFAULT = {
+  offsetX: 0,
+  offsetY: 0,
+  scale: 1,
+};
 const FEATURE_LOCATION_SKETCH_SHAPES = [
   { id: 'point', label: '점', icon: 'location-outline' },
   { id: 'polygon', label: '점 연결', icon: 'git-merge-outline' },
@@ -79,6 +88,7 @@ type FeatureLocationSketchShape =
   typeof FEATURE_LOCATION_SKETCH_SHAPES[number]['id'];
 type FeatureSketchBackground =
   typeof FEATURE_SKETCH_BACKGROUND_OPTIONS[number]['id'];
+type FeatureSketchTool = 'inspect' | FeatureLocationSketchShape;
 type FeatureSketchPoint = {
   x: number;
   y: number;
@@ -91,11 +101,28 @@ type FeatureSketchTouchPoint = {
   x: number;
   y: number;
 };
+type FeatureSketchViewport = {
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+};
 type FeatureShapeGestureState = {
   angle: number;
   distance: number;
   rotation: number;
   scale: number;
+};
+type FeatureSketchViewportGestureState = {
+  center: FeatureSketchTouchPoint;
+  distance: number;
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+};
+type FeatureSketchPanGestureState = {
+  offsetX: number;
+  offsetY: number;
+  start: FeatureSketchTouchPoint;
 };
 type FeatureLiveLocation = KoreanFieldworkBoundaryLocation & {
   accuracy?: number;
@@ -159,9 +186,12 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   );
   const [featureLocationShape, setFeatureLocationShape] =
     useState<FeatureLocationSketchShape>('polygon');
+  const [featureSketchActiveTool, setFeatureSketchActiveTool] =
+    useState<FeatureSketchTool>('inspect');
   const [featureSketchPoints, setFeatureSketchPoints] = useState<FeatureSketchPoint[]>([]);
   const [activeFeatureSketchPoint, setActiveFeatureSketchPoint] =
     useState<FeatureSketchPoint>();
+  const [featureSketchPolygonClosed, setFeatureSketchPolygonClosed] = useState(false);
   const [featureSketchCenter, setFeatureSketchCenter] =
     useState<FeatureSketchPoint>({ x: 50, y: 50 });
   const [featureSketchScale, setFeatureSketchScale] = useState(100);
@@ -175,8 +205,12 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     useState<FeatureLiveLocation>();
   const [featureLiveLocationStatus, setFeatureLiveLocationStatus] =
     useState<FeatureLiveLocationStatus>('idle');
+  const [featureSketchViewport, setFeatureSketchViewport] =
+    useState<FeatureSketchViewport>(FEATURE_SKETCH_VIEWPORT_DEFAULT);
   const lastPreviewFeatureSketchPointRef = useRef<FeatureSketchPoint>();
   const featureShapeGestureRef = useRef<FeatureShapeGestureState>();
+  const featureViewportGestureRef = useRef<FeatureSketchViewportGestureState>();
+  const featureViewportPanRef = useRef<FeatureSketchPanGestureState>();
 
   const isAllowedCategory = useCallback(
     (category: CategoryForm) =>
@@ -322,14 +356,19 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
 
   const resetFeatureLocationSketch = () => {
     setFeatureLocationShape('polygon');
+    setFeatureSketchActiveTool('inspect');
     setActiveFeatureSketchPoint(undefined);
     setFeatureSketchPoints([]);
+    setFeatureSketchPolygonClosed(false);
     setFeatureSketchCenter({ x: 50, y: 50 });
     setFeatureSketchScale(100);
     setFeatureSketchRotation(0);
     setFeatureSketchWasEdited(false);
     setFeatureSketchBackground('white');
+    setFeatureSketchViewport(FEATURE_SKETCH_VIEWPORT_DEFAULT);
     featureShapeGestureRef.current = undefined;
+    featureViewportGestureRef.current = undefined;
+    featureViewportPanRef.current = undefined;
   };
 
   const openFeatureCreation = () => {
@@ -350,13 +389,31 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     setIsChoosingFeatureType(false);
   };
 
-  const selectFeatureLocationShape = (shape: FeatureLocationSketchShape) => {
-    setFeatureLocationShape(shape);
+  const enterFeatureSketchInspectMode = () => {
+    setFeatureSketchActiveTool('inspect');
     setActiveFeatureSketchPoint(undefined);
-    setFeatureSketchWasEdited(true);
+    lastPreviewFeatureSketchPointRef.current = undefined;
     featureShapeGestureRef.current = undefined;
+    featureViewportGestureRef.current = undefined;
+    featureViewportPanRef.current = undefined;
+  };
+
+  const selectFeatureLocationShape = (shape: FeatureLocationSketchShape) => {
+    if (featureSketchActiveTool === shape) {
+      enterFeatureSketchInspectMode();
+      return;
+    }
+
+    setFeatureLocationShape(shape);
+    setFeatureSketchActiveTool(shape);
+    setActiveFeatureSketchPoint(undefined);
+    lastPreviewFeatureSketchPointRef.current = undefined;
+    featureShapeGestureRef.current = undefined;
+    featureViewportGestureRef.current = undefined;
+    featureViewportPanRef.current = undefined;
     if (shape !== 'polygon' && featureSketchPoints.length > 1) {
       setFeatureSketchPoints([featureSketchCenter]);
+      setFeatureSketchPolygonClosed(false);
     }
   };
 
@@ -368,9 +425,16 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
   };
 
   const previewFeatureSketchPoint = (event: GestureResponderEvent) => {
+    if (featureSketchActiveTool === 'inspect') {
+      updateFeatureSketchViewport(event);
+      return;
+    }
+
+    const touches = getFeatureSketchTouches(event);
     const shapeGesture = getFeatureShapeGesture(
       event,
-      featureSketchCanvasSize
+      featureSketchCanvasSize,
+      featureSketchViewport
     );
     if (
       isFeatureShapeTransformVisible(featureLocationShape)
@@ -402,10 +466,18 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       return;
     }
 
+    if (touches.length > 1) {
+      updateFeatureSketchViewport(event);
+      return;
+    }
+
     featureShapeGestureRef.current = undefined;
+    featureViewportGestureRef.current = undefined;
+    featureViewportPanRef.current = undefined;
     const point = getSketchPointFromPress(
       event,
-      featureSketchCanvasSize
+      featureSketchCanvasSize,
+      featureSketchViewport
     );
     if (areSketchPointsEqual(point, lastPreviewFeatureSketchPointRef.current)) {
       return;
@@ -418,10 +490,21 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     if (featureLocationShape !== 'polygon') {
       setFeatureSketchCenter(point);
       setFeatureSketchPoints([point]);
+      setFeatureSketchPolygonClosed(false);
     }
   };
 
   const commitFeatureSketchPoint = (event: GestureResponderEvent) => {
+    if (featureSketchActiveTool === 'inspect') {
+      cancelFeatureSketchPoint();
+      return;
+    }
+
+    if (featureViewportGestureRef.current) {
+      cancelFeatureSketchPoint();
+      return;
+    }
+
     if (featureShapeGestureRef.current) {
       featureShapeGestureRef.current = undefined;
       return;
@@ -429,26 +512,91 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
 
     const point = getSketchPointFromPress(
       event,
-      featureSketchCanvasSize
+      featureSketchCanvasSize,
+      featureSketchViewport
     );
     lastPreviewFeatureSketchPointRef.current = undefined;
     setFeatureSketchWasEdited(true);
     setActiveFeatureSketchPoint(undefined);
 
     if (featureLocationShape === 'polygon') {
-      setFeatureSketchPoints((points) => [...points, point].slice(-8));
-      setFeatureSketchCenter(point);
+      const nextPolygonState = getNextFeatureSketchPolygonState({
+        isClosed: featureSketchPolygonClosed,
+        point,
+        points: featureSketchPoints,
+      });
+
+      setFeatureSketchPoints(nextPolygonState.points);
+      setFeatureSketchPolygonClosed(nextPolygonState.isClosed);
+      setFeatureSketchCenter(nextPolygonState.center);
       return;
     }
 
     setFeatureSketchCenter(point);
     setFeatureSketchPoints([point]);
+    setFeatureSketchPolygonClosed(false);
   };
 
   const cancelFeatureSketchPoint = () => {
     lastPreviewFeatureSketchPointRef.current = undefined;
     featureShapeGestureRef.current = undefined;
+    featureViewportGestureRef.current = undefined;
+    featureViewportPanRef.current = undefined;
     setActiveFeatureSketchPoint(undefined);
+  };
+
+  const updateFeatureSketchViewport = (event: GestureResponderEvent) => {
+    const gesture = getFeatureSketchPixelGesture(event);
+    if (gesture) {
+      const initialGesture = featureViewportGestureRef.current ?? {
+        center: gesture.center,
+        distance: Math.max(1, gesture.distance),
+        offsetX: featureSketchViewport.offsetX,
+        offsetY: featureSketchViewport.offsetY,
+        scale: featureSketchViewport.scale,
+      };
+      featureViewportGestureRef.current = initialGesture;
+      featureViewportPanRef.current = undefined;
+
+      const nextScale = clamp(
+        initialGesture.scale
+          * (gesture.distance / Math.max(1, initialGesture.distance)),
+        FEATURE_SKETCH_VIEWPORT_MIN_SCALE,
+        FEATURE_SKETCH_VIEWPORT_MAX_SCALE
+      );
+
+      setFeatureSketchViewport(clampFeatureSketchViewport(
+        getFeatureSketchViewportFromGesture({
+          canvasSize: featureSketchCanvasSize,
+          currentCenter: gesture.center,
+          initialCenter: initialGesture.center,
+          initialViewport: {
+            offsetX: initialGesture.offsetX,
+            offsetY: initialGesture.offsetY,
+            scale: initialGesture.scale,
+          },
+          nextScale,
+        }),
+        featureSketchCanvasSize
+      ));
+      return;
+    }
+
+    if (featureViewportGestureRef.current) return;
+
+    const point = getFeatureSketchPressPixel(event, featureSketchCanvasSize);
+    const panGesture = featureViewportPanRef.current ?? {
+      offsetX: featureSketchViewport.offsetX,
+      offsetY: featureSketchViewport.offsetY,
+      start: point,
+    };
+    featureViewportPanRef.current = panGesture;
+
+    setFeatureSketchViewport(clampFeatureSketchViewport({
+      offsetX: panGesture.offsetX + point.x - panGesture.start.x,
+      offsetY: panGesture.offsetY + point.y - panGesture.start.y,
+      scale: featureSketchViewport.scale,
+    }, featureSketchCanvasSize));
   };
 
   const adjustFeatureSketchScale = (delta: number) => {
@@ -466,15 +614,28 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
     });
   };
 
+  const adjustFeatureSketchViewportScale = (delta: number) => {
+    setFeatureSketchViewport((viewport) => clampFeatureSketchViewport({
+      ...viewport,
+      scale: clamp(
+        viewport.scale + delta,
+        FEATURE_SKETCH_VIEWPORT_MIN_SCALE,
+        FEATURE_SKETCH_VIEWPORT_MAX_SCALE
+      ),
+    }, featureSketchCanvasSize));
+  };
+
   const undoFeatureSketchPoint = () => {
     setFeatureSketchWasEdited(true);
     setActiveFeatureSketchPoint(undefined);
     if (featureLocationShape === 'polygon') {
       setFeatureSketchPoints((points) => points.slice(0, -1));
+      setFeatureSketchPolygonClosed(false);
       return;
     }
 
     setFeatureSketchPoints([]);
+    setFeatureSketchPolygonClosed(false);
   };
 
   const renderFeatureSketchBoundary = () => {
@@ -501,6 +662,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
           keyPrefix: 'boundary',
           points: featureSketchBoundaryPoints,
           testID: 'featureSketchBoundaryLine',
+          viewport: featureSketchViewport,
           width: 2,
         })}
         {featureSketchBoundaryPoints.map((point, index) => (
@@ -509,7 +671,11 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
             pointerEvents="none"
             style={[
               styles.featureSketchBoundaryPoint,
-              getFeatureSketchPointStyle(point),
+              getFeatureSketchPointStyle(
+                point,
+                featureSketchCanvasSize,
+                featureSketchViewport
+              ),
             ]}
             testID={`featureSketchBoundaryPoint_${index}`}
           />
@@ -532,7 +698,9 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
             getFeatureSketchShapeStyle(
               featureSketchCenter,
               featureSketchScale,
-              featureSketchRotation
+              featureSketchRotation,
+              featureSketchCanvasSize,
+              featureSketchViewport
             ),
           ]}
           testID="featureSketchShapePreview"
@@ -542,29 +710,72 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       );
     }
 
+    const previewPoint = (
+      featureLocationShape === 'polygon'
+      && !featureSketchPolygonClosed
+      && activeFeatureSketchPoint
+      && shouldCloseFeatureSketchPolygon(activeFeatureSketchPoint, featureSketchPoints)
+    )
+      ? featureSketchPoints[0]
+      : activeFeatureSketchPoint;
     const points = featureLocationShape === 'polygon'
-      ? getVisibleFeatureSketchPoints(featureSketchPoints, activeFeatureSketchPoint)
+      ? getVisibleFeatureSketchPoints(
+        featureSketchPoints,
+        featureSketchPolygonClosed ? undefined : previewPoint
+      )
       : (featureSketchPoints.length > 0 ? featureSketchPoints : [featureSketchCenter]);
 
     return (
       <>
         {featureLocationShape === 'polygon' && toFeatureSketchLineSegments({
           canvasSize: featureSketchCanvasSize,
-          closePath: points.length > 2 && activeFeatureSketchPoint === undefined,
+          closePath: featureSketchPolygonClosed,
           color: '#f97316',
           keyPrefix: 'feature',
           points,
           testID: 'featureSketchLine',
+          viewport: featureSketchViewport,
           width: 3,
         })}
+        {featureLocationShape === 'polygon'
+          && featureSketchActiveTool === 'polygon'
+          && getFeatureSketchSegmentMidpoints(
+            featureSketchPoints,
+            featureSketchPolygonClosed
+          ).map((point, index) => (
+            <View
+              key={`feature-insert-${index}`}
+              pointerEvents="none"
+              style={[
+                styles.featureSketchInsertPoint,
+                getFeatureSketchPointStyle(
+                  point,
+                  featureSketchCanvasSize,
+                  featureSketchViewport
+                ),
+              ]}
+              testID={`featureSketchInsertPoint_${index}`}
+            >
+              <Ionicons name="add" size={10} color="#c2410c" />
+            </View>
+          ))}
         {points.map((point, index) => (
           <View
             key={`${point.x}-${point.y}-${index}`}
             pointerEvents="none"
             style={[
               styles.featureSketchPoint,
-              activeFeatureSketchPoint === point && styles.featureSketchPointActive,
-              getFeatureSketchPointStyle(point),
+              previewPoint === point && styles.featureSketchPointActive,
+              featureLocationShape === 'polygon'
+                && index === 0
+                && featureSketchPoints.length >= 3
+                && !featureSketchPolygonClosed
+                && styles.featureSketchPointCloseTarget,
+              getFeatureSketchPointStyle(
+                point,
+                featureSketchCanvasSize,
+                featureSketchViewport
+              ),
             ]}
             testID={`featureSketchPoint_${index}`}
           >
@@ -584,7 +795,11 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
           style={[
             styles.featureSketchGridLine,
             styles.featureSketchGridLineVertical,
-            { left: toPercent(percent) },
+            getFeatureSketchVerticalGridLineStyle(
+              percent,
+              featureSketchCanvasSize,
+              featureSketchViewport
+            ),
           ]}
         />
       ))}
@@ -595,7 +810,11 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
           style={[
             styles.featureSketchGridLine,
             styles.featureSketchGridLineHorizontal,
-            { top: toPercent(percent) },
+            getFeatureSketchHorizontalGridLineStyle(
+              percent,
+              featureSketchCanvasSize,
+              featureSketchViewport
+            ),
           ]}
         />
       ))}
@@ -607,6 +826,10 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       pointerEvents="none"
       style={[
         styles.featureSketchMapSurface,
+        getFeatureSketchViewportLayerStyle(
+          featureSketchCanvasSize,
+          featureSketchViewport
+        ),
         featureSketchBackground === 'white'
           ? styles.featureSketchWhiteMapSurface
           : styles.featureSketchSatelliteMapSurface,
@@ -635,7 +858,11 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         pointerEvents="none"
         style={[
           styles.featureSketchLiveLocation,
-          getFeatureSketchPointStyle(featureLiveLocationPoint),
+          getFeatureSketchPointStyle(
+            featureLiveLocationPoint,
+            featureSketchCanvasSize,
+            featureSketchViewport
+          ),
         ]}
         testID="featureSketchLiveLocation"
       >
@@ -652,16 +879,49 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       style={styles.featureSketchToolbar}
       testID="featureSketchToolRail"
     >
-      <TouchableOpacity
-        activeOpacity={0.84}
-        accessibilityLabel="마지막 점 되돌리기"
-        onPress={undoFeatureSketchPoint}
-        style={styles.featureSketchToolButton}
-        testID="featureSketchUndo"
-      >
-        <Ionicons name="arrow-undo-outline" size={18} color="#344054" />
-      </TouchableOpacity>
-      {isFeatureShapeTransformVisible(featureLocationShape) && (
+      {featureSketchActiveTool === 'inspect' ? (
+        <>
+          <TouchableOpacity
+            activeOpacity={0.84}
+            accessibilityLabel="지도 축소"
+            onPress={() => adjustFeatureSketchViewportScale(-0.35)}
+            style={styles.featureSketchToolButton}
+            testID="featureSketchZoomOut"
+          >
+            <Ionicons name="remove-outline" size={18} color="#344054" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.84}
+            accessibilityLabel="지도 확대"
+            onPress={() => adjustFeatureSketchViewportScale(0.35)}
+            style={styles.featureSketchToolButton}
+            testID="featureSketchZoomIn"
+          >
+            <Ionicons name="add-outline" size={18} color="#344054" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.84}
+            accessibilityLabel="지도 위치 초기화"
+            onPress={() => setFeatureSketchViewport(FEATURE_SKETCH_VIEWPORT_DEFAULT)}
+            style={styles.featureSketchToolButton}
+            testID="featureSketchViewReset"
+          >
+            <Ionicons name="expand-outline" size={18} color="#344054" />
+          </TouchableOpacity>
+        </>
+      ) : (
+        <TouchableOpacity
+          activeOpacity={0.84}
+          accessibilityLabel="마지막 점 되돌리기"
+          onPress={undoFeatureSketchPoint}
+          style={styles.featureSketchToolButton}
+          testID="featureSketchUndo"
+        >
+          <Ionicons name="arrow-undo-outline" size={18} color="#344054" />
+        </TouchableOpacity>
+      )}
+      {featureSketchActiveTool !== 'inspect'
+        && isFeatureShapeTransformVisible(featureLocationShape) && (
         <>
           <TouchableOpacity
             activeOpacity={0.84}
@@ -728,6 +988,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
           onResponderMove={previewFeatureSketchPoint}
           onResponderRelease={commitFeatureSketchPoint}
           onResponderTerminate={cancelFeatureSketchPoint}
+          onResponderTerminationRequest={() => false}
           onStartShouldSetResponder={() => true}
           style={styles.featureSketchTouchLayer}
           testID="featureLocationSketchTouchLayer"
@@ -814,8 +1075,33 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
           style={styles.featureSketchModeRow}
           testID="featureSketchModeRail"
         >
+          <TouchableOpacity
+            activeOpacity={0.84}
+            accessibilityRole="button"
+            accessibilityState={{ selected: featureSketchActiveTool === 'inspect' }}
+            onPress={enterFeatureSketchInspectMode}
+            style={[
+              styles.featureSketchModeButton,
+              featureSketchActiveTool === 'inspect'
+                && styles.featureSketchModeButtonSelected,
+            ]}
+            testID="featureSketchMode_inspect"
+          >
+            <Ionicons
+              name="hand-left-outline"
+              size={15}
+              color={featureSketchActiveTool === 'inspect' ? '#c2410c' : '#526272'}
+            />
+            <Text style={[
+              styles.featureSketchModeText,
+              featureSketchActiveTool === 'inspect'
+                && styles.featureSketchModeTextSelected,
+            ]}>
+              보기
+            </Text>
+          </TouchableOpacity>
           {FEATURE_LOCATION_SKETCH_SHAPES.map((shape) => {
-            const isSelected = shape.id === featureLocationShape;
+            const isSelected = featureSketchActiveTool === shape.id;
 
             return (
               <TouchableOpacity
@@ -882,6 +1168,7 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
             boundaryDraft,
             center: featureSketchCenter,
             isEdited: featureSketchWasEdited,
+            isPolygonClosed: featureSketchPolygonClosed,
             points: featureSketchPoints,
             rotation: featureSketchRotation,
             scale: featureSketchScale,
@@ -1194,6 +1481,7 @@ const getFeatureLocationSketchDraftParams = ({
   boundaryDraft,
   center,
   isEdited,
+  isPolygonClosed,
   points,
   rotation,
   scale,
@@ -1203,6 +1491,7 @@ const getFeatureLocationSketchDraftParams = ({
   boundaryDraft?: KoreanFieldworkProjectBoundaryDraft;
   center: FeatureSketchPoint;
   isEdited: boolean;
+  isPolygonClosed: boolean;
   points: FeatureSketchPoint[];
   rotation: number;
   scale: number;
@@ -1221,6 +1510,7 @@ const getFeatureLocationSketchDraftParams = ({
     shape,
     center: roundSketchPoint(center),
     points: roundedSketchPoints,
+    isClosed: shape === 'polygon' ? isPolygonClosed : undefined,
     rotation,
     scale,
     projectBoundaryPointCount: boundaryDraft?.coordinates.length ?? 0,
@@ -1228,6 +1518,7 @@ const getFeatureLocationSketchDraftParams = ({
   const note = getFeatureLocationSketchNote(payload);
   const geometryPoints = getFeatureSketchGeometryPoints({
     center,
+    isPolygonClosed,
     points: sketchPoints,
     rotation,
     scale,
@@ -1255,19 +1546,23 @@ const getFeatureLocationSketchDraftParams = ({
 
 const getFeatureLocationSketchNote = ({
   center,
+  isClosed,
   points,
   rotation,
   scale,
   shape,
 }: {
   center: FeatureSketchPoint;
+  isClosed?: boolean;
   points: FeatureSketchPoint[];
   rotation: number;
   scale: number;
   shape: FeatureLocationSketchShape;
 }): string => {
   if (shape === 'polygon') {
-    return `위치 스케치: 점 연결 ${points.length}점, 마지막 ${formatSketchPoint(
+    const closedLabel = isClosed ? ', 닫힘' : ', 열림';
+
+    return `위치 스케치: 점 연결 ${points.length}점${closedLabel}, 마지막 ${formatSketchPoint(
       points[points.length - 1] ?? center
     )}`;
   }
@@ -1294,18 +1589,22 @@ const getFeatureLocationSketchShapeLabel = (
 
 const getFeatureSketchGeometryPoints = ({
   center,
+  isPolygonClosed,
   points,
   rotation,
   scale,
   shape,
 }: {
   center: FeatureSketchPoint;
+  isPolygonClosed: boolean;
   points: FeatureSketchPoint[];
   rotation: number;
   scale: number;
   shape: FeatureLocationSketchShape;
 }): FeatureSketchPoint[] => {
-  if (shape === 'polygon') return points.length >= 3 ? points : [];
+  if (shape === 'polygon') {
+    return isPolygonClosed && points.length >= 3 ? points : [];
+  }
   if (shape === 'rectangle') {
     return getRotatedRectangleSketchPoints(center, scale, rotation);
   }
@@ -1461,8 +1760,18 @@ const escapeRegExp = (value: string): string =>
 
 const getSketchPointFromPress = (
   event: GestureResponderEvent,
-  canvasSize: { height: number; width: number }
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
 ): FeatureSketchPoint => {
+  const pressPoint = getFeatureSketchPressPixel(event, canvasSize);
+
+  return getSketchPointFromPixel(pressPoint, canvasSize, viewport);
+};
+
+const getFeatureSketchPressPixel = (
+  event: GestureResponderEvent,
+  canvasSize: { height: number; width: number }
+): FeatureSketchTouchPoint => {
   const width = Math.max(1, canvasSize.width);
   const height = Math.max(1, canvasSize.height);
   const locationX = Number.isFinite(event.nativeEvent.locationX)
@@ -1473,14 +1782,15 @@ const getSketchPointFromPress = (
     : (height / 2);
 
   return {
-    x: Math.round(clamp((locationX / width) * 100, 0, 100)),
-    y: Math.round(clamp((locationY / height) * 100, 0, 100)),
+    x: locationX,
+    y: locationY,
   };
 };
 
 const getFeatureShapeGesture = (
   event: GestureResponderEvent,
-  canvasSize: { height: number; width: number }
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
 ): {
   angle: number;
   center: FeatureSketchPoint;
@@ -1502,37 +1812,220 @@ const getFeatureShapeGesture = (
 
   return {
     angle,
-    center: getSketchPointFromPixel(centerPixel, canvasSize),
+    center: getSketchPointFromPixel(centerPixel, canvasSize, viewport),
     distance,
+  };
+};
+
+const getFeatureSketchPixelGesture = (
+  event: GestureResponderEvent
+): {
+  center: FeatureSketchTouchPoint;
+  distance: number;
+} | undefined => {
+  const touches = getFeatureSketchTouches(event);
+  if (touches.length < 2) return undefined;
+
+  const [first, second] = touches;
+
+  return {
+    center: {
+      x: (first.x + second.x) / 2,
+      y: (first.y + second.y) / 2,
+    },
+    distance: Math.sqrt(
+      ((second.x - first.x) ** 2) + ((second.y - first.y) ** 2)
+    ),
   };
 };
 
 const getFeatureSketchTouches = (
   event: GestureResponderEvent
 ): FeatureSketchTouchPoint[] => {
-  const touches = (event.nativeEvent as unknown as {
-    touches?: Array<{ locationX?: number; locationY?: number }>;
-  }).touches ?? [];
+  const nativeEvent = event.nativeEvent as unknown as {
+    changedTouches?: Array<{
+      locationX?: number;
+      locationY?: number;
+      pageX?: number;
+      pageY?: number;
+      x?: number;
+      y?: number;
+    }>;
+    touches?: Array<{
+      locationX?: number;
+      locationY?: number;
+      pageX?: number;
+      pageY?: number;
+      x?: number;
+      y?: number;
+    }>;
+  };
+  const touches = nativeEvent.touches?.length
+    ? nativeEvent.touches
+    : (nativeEvent.changedTouches ?? []);
 
   return touches
     .map((touch) => ({
-      x: Number(touch.locationX),
-      y: Number(touch.locationY),
+      x: Number(touch.locationX ?? touch.x ?? touch.pageX),
+      y: Number(touch.locationY ?? touch.y ?? touch.pageY),
     }))
     .filter((touch) => Number.isFinite(touch.x) && Number.isFinite(touch.y));
 };
 
 const getSketchPointFromPixel = (
   point: FeatureSketchTouchPoint,
-  canvasSize: { height: number; width: number }
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
 ): FeatureSketchPoint => {
   const width = Math.max(1, canvasSize.width);
   const height = Math.max(1, canvasSize.height);
+  const center = getFeatureSketchCanvasCenter(canvasSize);
+  const baseX = center.x + ((point.x - center.x - viewport.offsetX)
+    / Math.max(FEATURE_SKETCH_VIEWPORT_MIN_SCALE, viewport.scale));
+  const baseY = center.y + ((point.y - center.y - viewport.offsetY)
+    / Math.max(FEATURE_SKETCH_VIEWPORT_MIN_SCALE, viewport.scale));
 
   return {
-    x: Math.round(clamp((point.x / width) * 100, 0, 100)),
-    y: Math.round(clamp((point.y / height) * 100, 0, 100)),
+    x: roundSketchCoordinate(clamp((baseX / width) * 100, 0, 100)),
+    y: roundSketchCoordinate(clamp((baseY / height) * 100, 0, 100)),
   };
+};
+
+const getNextFeatureSketchPolygonState = ({
+  isClosed,
+  point,
+  points,
+}: {
+  isClosed: boolean;
+  point: FeatureSketchPoint;
+  points: FeatureSketchPoint[];
+}): {
+  center: FeatureSketchPoint;
+  isClosed: boolean;
+  points: FeatureSketchPoint[];
+} => {
+  if (shouldCloseFeatureSketchPolygon(point, points)) {
+    return {
+      center: points[0],
+      isClosed: true,
+      points,
+    };
+  }
+
+  const insertionIndex = getFeatureSketchSegmentInsertionIndex(
+    point,
+    points,
+    isClosed
+  );
+
+  if (insertionIndex !== undefined) {
+    const nextPoints = points.slice();
+    nextPoints.splice(insertionIndex, 0, point);
+
+    return {
+      center: point,
+      isClosed,
+      points: nextPoints.slice(0, FEATURE_SKETCH_MAX_POLYGON_POINTS),
+    };
+  }
+
+  const nextPoints = points
+    .concat(point)
+    .slice(-FEATURE_SKETCH_MAX_POLYGON_POINTS);
+
+  return {
+    center: point,
+    isClosed: false,
+    points: nextPoints,
+  };
+};
+
+const shouldCloseFeatureSketchPolygon = (
+  point: FeatureSketchPoint,
+  points: FeatureSketchPoint[]
+): boolean => (
+  points.length >= 3
+  && getFeatureSketchPointDistance(point, points[0])
+    <= FEATURE_SKETCH_CLOSE_POINT_DISTANCE
+);
+
+const getFeatureSketchSegmentInsertionIndex = (
+  point: FeatureSketchPoint,
+  points: FeatureSketchPoint[],
+  isClosed: boolean
+): number | undefined => {
+  if (points.length < 2) return undefined;
+
+  const segmentCount = isClosed ? points.length : points.length - 1;
+  let closestDistance = Number.POSITIVE_INFINITY;
+  let closestIndex: number | undefined;
+
+  for (let index = 0; index < segmentCount; index += 1) {
+    const start = points[index];
+    const end = points[(index + 1) % points.length];
+    const distance = getFeatureSketchPointToSegmentDistance(point, start, end);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closestIndex = index + 1;
+    }
+  }
+
+  return closestDistance <= FEATURE_SKETCH_INSERT_POINT_DISTANCE
+    ? closestIndex
+    : undefined;
+};
+
+const getFeatureSketchSegmentMidpoints = (
+  points: FeatureSketchPoint[],
+  isClosed: boolean
+): FeatureSketchPoint[] => {
+  if (points.length < 2) return [];
+
+  const segmentCount = isClosed ? points.length : points.length - 1;
+
+  return Array.from({ length: segmentCount }, (_, index) => {
+    const start = points[index];
+    const end = points[(index + 1) % points.length];
+
+    return {
+      x: roundSketchCoordinate((start.x + end.x) / 2),
+      y: roundSketchCoordinate((start.y + end.y) / 2),
+    };
+  });
+};
+
+const getFeatureSketchPointDistance = (
+  first: FeatureSketchPoint,
+  second: FeatureSketchPoint
+): number => Math.sqrt(
+  ((second.x - first.x) ** 2) + ((second.y - first.y) ** 2)
+);
+
+const getFeatureSketchPointToSegmentDistance = (
+  point: FeatureSketchPoint,
+  start: FeatureSketchPoint,
+  end: FeatureSketchPoint
+): number => {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const segmentLengthSquared = (dx ** 2) + (dy ** 2);
+
+  if (segmentLengthSquared === 0) {
+    return getFeatureSketchPointDistance(point, start);
+  }
+
+  const projection = clamp(
+    (((point.x - start.x) * dx) + ((point.y - start.y) * dy))
+      / segmentLengthSquared,
+    0,
+    1
+  );
+  const projectedPoint = {
+    x: start.x + (projection * dx),
+    y: start.y + (projection * dy),
+  };
+
+  return getFeatureSketchPointDistance(point, projectedPoint);
 };
 
 const getFeatureLiveLocationFromCoords = (
@@ -1731,6 +2224,149 @@ const denormalizeFeatureSketchPoint = (
   y: (point.y / 100) * canvasSize.height,
 });
 
+const getFeatureSketchCanvasCenter = (
+  canvasSize: { height: number; width: number }
+): FeatureSketchPixelPoint => ({
+  x: canvasSize.width / 2,
+  y: canvasSize.height / 2,
+});
+
+const getFeatureSketchViewportPoint = (
+  point: FeatureSketchPoint,
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+): FeatureSketchPixelPoint => {
+  const basePoint = denormalizeFeatureSketchPoint(point, canvasSize);
+  const center = getFeatureSketchCanvasCenter(canvasSize);
+
+  return {
+    x: center.x + ((basePoint.x - center.x) * viewport.scale)
+      + viewport.offsetX,
+    y: center.y + ((basePoint.y - center.y) * viewport.scale)
+      + viewport.offsetY,
+  };
+};
+
+const getFeatureSketchBasePixelFromViewportPixel = (
+  point: FeatureSketchTouchPoint,
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+): FeatureSketchPixelPoint => {
+  const center = getFeatureSketchCanvasCenter(canvasSize);
+  const scale = Math.max(FEATURE_SKETCH_VIEWPORT_MIN_SCALE, viewport.scale);
+
+  return {
+    x: center.x + ((point.x - center.x - viewport.offsetX) / scale),
+    y: center.y + ((point.y - center.y - viewport.offsetY) / scale),
+  };
+};
+
+const getFeatureSketchViewportFromGesture = ({
+  canvasSize,
+  currentCenter,
+  initialCenter,
+  initialViewport,
+  nextScale,
+}: {
+  canvasSize: { height: number; width: number };
+  currentCenter: FeatureSketchTouchPoint;
+  initialCenter: FeatureSketchTouchPoint;
+  initialViewport: FeatureSketchViewport;
+  nextScale: number;
+}): FeatureSketchViewport => {
+  const canvasCenter = getFeatureSketchCanvasCenter(canvasSize);
+  const anchoredBasePoint = getFeatureSketchBasePixelFromViewportPixel(
+    initialCenter,
+    canvasSize,
+    initialViewport
+  );
+
+  return {
+    offsetX: currentCenter.x - canvasCenter.x
+      - ((anchoredBasePoint.x - canvasCenter.x) * nextScale),
+    offsetY: currentCenter.y - canvasCenter.y
+      - ((anchoredBasePoint.y - canvasCenter.y) * nextScale),
+    scale: nextScale,
+  };
+};
+
+const clampFeatureSketchViewport = (
+  viewport: FeatureSketchViewport,
+  canvasSize: { height: number; width: number }
+): FeatureSketchViewport => {
+  const scale = clamp(
+    viewport.scale,
+    FEATURE_SKETCH_VIEWPORT_MIN_SCALE,
+    FEATURE_SKETCH_VIEWPORT_MAX_SCALE
+  );
+  if (scale <= FEATURE_SKETCH_VIEWPORT_MIN_SCALE) {
+    return FEATURE_SKETCH_VIEWPORT_DEFAULT;
+  }
+
+  const maxOffsetX = (canvasSize.width * (scale - 1)) / 2;
+  const maxOffsetY = (canvasSize.height * (scale - 1)) / 2;
+
+  return {
+    offsetX: clamp(viewport.offsetX, -maxOffsetX, maxOffsetX),
+    offsetY: clamp(viewport.offsetY, -maxOffsetY, maxOffsetY),
+    scale,
+  };
+};
+
+const getFeatureSketchViewportLayerStyle = (
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+) => {
+  const topLeft = getFeatureSketchViewportPoint(
+    { x: 0, y: 0 },
+    canvasSize,
+    viewport
+  );
+
+  return {
+    height: canvasSize.height * viewport.scale,
+    left: topLeft.x,
+    top: topLeft.y,
+    width: canvasSize.width * viewport.scale,
+  };
+};
+
+const getFeatureSketchVerticalGridLineStyle = (
+  percent: number,
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+) => {
+  const top = getFeatureSketchViewportPoint(
+    { x: percent, y: 0 },
+    canvasSize,
+    viewport
+  );
+
+  return {
+    height: canvasSize.height * viewport.scale,
+    left: top.x,
+    top: top.y,
+  };
+};
+
+const getFeatureSketchHorizontalGridLineStyle = (
+  percent: number,
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+) => {
+  const left = getFeatureSketchViewportPoint(
+    { x: 0, y: percent },
+    canvasSize,
+    viewport
+  );
+
+  return {
+    left: left.x,
+    top: left.y,
+    width: canvasSize.width * viewport.scale,
+  };
+};
+
 const toFeatureSketchLineSegments = ({
   canvasSize,
   closePath,
@@ -1738,6 +2374,7 @@ const toFeatureSketchLineSegments = ({
   keyPrefix,
   points,
   testID,
+  viewport,
   width,
 }: {
   canvasSize: { height: number; width: number };
@@ -1746,6 +2383,7 @@ const toFeatureSketchLineSegments = ({
   keyPrefix: string;
   points: FeatureSketchPoint[];
   testID: string;
+  viewport: FeatureSketchViewport;
   width: number;
 }) => {
   if (points.length < 2) return [];
@@ -1755,12 +2393,13 @@ const toFeatureSketchLineSegments = ({
   return segmentStartPoints.map((point, index) => (
     <FeatureSketchLineSegment
       color={color}
-      end={denormalizeFeatureSketchPoint(
+      end={getFeatureSketchViewportPoint(
         points[(index + 1) % points.length],
-        canvasSize
+        canvasSize,
+        viewport
       )}
       key={`${keyPrefix}-${index}`}
-      start={denormalizeFeatureSketchPoint(point, canvasSize)}
+      start={getFeatureSketchViewportPoint(point, canvasSize, viewport)}
       testID={testID}
       width={width}
     />
@@ -1796,38 +2435,65 @@ const FeatureSketchLineSegment: React.FC<{
   );
 };
 
-const getFeatureSketchPointStyle = (point: FeatureSketchPoint) => ({
-  left: toPercent(point.x),
-  top: toPercent(point.y),
-});
+const getFeatureSketchPointStyle = (
+  point: FeatureSketchPoint,
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+) => {
+  const viewportPoint = getFeatureSketchViewportPoint(
+    point,
+    canvasSize,
+    viewport
+  );
+
+  return {
+    left: viewportPoint.x,
+    top: viewportPoint.y,
+  };
+};
 
 const getFeatureSketchShapeStyle = (
   center: FeatureSketchPoint,
   scale: number,
-  rotation: number
-) => ({
-  left: toPercent(center.x),
-  top: toPercent(center.y),
-  transform: [
-    { scale: scale / 100 },
-    { rotate: `${rotation}deg` },
-  ],
-});
+  rotation: number,
+  canvasSize: { height: number; width: number },
+  viewport: FeatureSketchViewport
+) => {
+  const viewportPoint = getFeatureSketchViewportPoint(
+    center,
+    canvasSize,
+    viewport
+  );
+
+  return {
+    left: viewportPoint.x,
+    top: viewportPoint.y,
+    transform: [
+      { scale: (scale / 100) * viewport.scale },
+      { rotate: `${rotation}deg` },
+    ],
+  };
+};
 
 const isFeatureShapeTransformVisible = (
   shape: FeatureLocationSketchShape
 ): boolean => shape === 'rectangle' || shape === 'oval';
 
 const roundSketchPoint = (point: FeatureSketchPoint): FeatureSketchPoint => ({
-  x: Math.round(point.x),
-  y: Math.round(point.y),
+  x: roundSketchCoordinate(point.x),
+  y: roundSketchCoordinate(point.y),
 });
 
 const formatSketchPoint = (point: FeatureSketchPoint): string =>
-  `${Math.round(point.x)}%, ${Math.round(point.y)}%`;
+  `${formatSketchCoordinate(point.x)}%, ${formatSketchCoordinate(point.y)}%`;
 
-const toPercent = (value: number): DimensionValue =>
-  `${value}%` as DimensionValue;
+const roundSketchCoordinate = (value: number): number =>
+  Math.round(value * 10) / 10;
+
+const formatSketchCoordinate = (value: number): string =>
+  Number.isInteger(roundSketchCoordinate(value))
+    ? String(roundSketchCoordinate(value))
+    : roundSketchCoordinate(value).toFixed(1);
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(max, Math.max(min, value));
@@ -2077,7 +2743,8 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   featureSketchMapSurface: {
-    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    position: 'absolute',
   },
   featureSketchWhiteMapSurface: {
     backgroundColor: '#ffffff',
@@ -2160,14 +2827,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   featureSketchGridLineVertical: {
-    bottom: 0,
-    top: 0,
     width: 1,
   },
   featureSketchGridLineHorizontal: {
     height: 1,
-    left: 0,
-    right: 0,
   },
   featureSketchPlaneBadge: {
     alignItems: 'center',
@@ -2334,10 +2997,28 @@ const styles = StyleSheet.create({
   featureSketchPointActive: {
     backgroundColor: '#c2410c',
   },
+  featureSketchPointCloseTarget: {
+    borderColor: '#7c2d12',
+    borderWidth: 3,
+  },
   featureSketchPointText: {
     color: 'white',
     fontSize: 9,
     fontWeight: '900',
+  },
+  featureSketchInsertPoint: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 247, 237, 0.96)',
+    borderColor: '#fdba74',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 16,
+    justifyContent: 'center',
+    marginLeft: -8,
+    marginTop: -8,
+    position: 'absolute',
+    width: 16,
+    zIndex: 3,
   },
   featureSketchShapePreview: {
     alignItems: 'center',
