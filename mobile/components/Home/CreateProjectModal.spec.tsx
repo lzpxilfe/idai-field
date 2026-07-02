@@ -429,7 +429,35 @@ describe('CreateProjectModal', () => {
     });
   });
 
-  it('prevents creating a project with an unsafe database name', async () => {
+  it('creates a local project with a Korean field site name', async () => {
+    const handleProjectCreated = jest.fn();
+    const projectName = '서울 종로구 반다비 유적 1구역';
+    const { getByTestId } = render(
+      <SafeAreaInsetsContext.Provider value={safeAreaInsets}>
+        <CreateProjectModal
+          onProjectCreated={handleProjectCreated}
+          onClose={jest.fn()}
+        />
+      </SafeAreaInsetsContext.Provider>
+    );
+
+    fireEvent.changeText(getByTestId('project-input'), `  ${projectName}  `);
+    fireEvent.press(getByTestId('project-investigation-mode_excavation'));
+    await drawBoundary(getByTestId);
+    fireEvent.press(getByTestId('create-project-submit'));
+
+    await waitFor(() => {
+      expect(handleProjectCreated).toHaveBeenCalledWith(
+        projectName,
+        KOREAN_FIELDWORK_PROJECT_LANGUAGES
+      );
+    });
+    await expect(AsyncStorage.getItem(
+      createKoreanFieldworkBoundarySummaryStorageKey(projectName)
+    )).resolves.toBe('지도에서 그린 조사 경계 (3점)');
+  });
+
+  it('prevents creating a local project with path-like characters', async () => {
     const handleProjectCreated = jest.fn();
     const { getAllByText, getByTestId } = render(
       <SafeAreaInsetsContext.Provider value={safeAreaInsets}>
@@ -446,7 +474,7 @@ describe('CreateProjectModal', () => {
     fireEvent.press(getByTestId('create-project-submit'));
 
     expect(getAllByText(
-      '프로젝트 이름은 소문자로 시작하고 소문자, 숫자, 밑줄(_), 하이픈(-)만 사용할 수 있으며 30자 이하여야 합니다.'
+      '프로젝트 이름에는 / \\ : * ? " < > | 문자나 줄바꿈을 사용할 수 없습니다. 한글, 숫자, 영문, 띄어쓰기는 사용할 수 있습니다.'
     ))
       .toHaveLength(2);
     expect(handleProjectCreated).not.toHaveBeenCalled();

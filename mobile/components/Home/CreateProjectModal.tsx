@@ -45,7 +45,7 @@ import type {
 import { PreferencesContext } from '@/contexts/preferences-context';
 import { colors } from '@/utils/colors';
 import {
-  getProjectNameInvalidText,
+  getLocalProjectNameInvalidText,
   validateProjectName,
 } from './project-name-validation';
 
@@ -85,7 +85,9 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [boundaryPickerInitialLocation, setBoundaryPickerInitialLocation] =
     useState<KakaoSatellitePickedBoundary['center']>();
   const insets = useSafeAreaInsets();
-  const projectNameValidation = validateProjectName(project, existingProjects);
+  const projectNameValidation = validateProjectName(project, existingProjects, {
+    mode: 'local',
+  });
   const { projectId } = projectNameValidation;
   const hasBoundaryGeometry = (pickedBoundary?.coordinates.length ?? 0) >= 3;
   const canCreateProject =
@@ -252,7 +254,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               autoCorrect={false}
               autoFocus
               helpText="한국어 현장 기록 설정을 사용합니다. 다른 기기와 동기화하려면 같은 이름을 정확히 사용하세요."
-              invalidText={getProjectNameInvalidText(projectNameValidation)}
+              invalidText={getLocalProjectNameInvalidText(projectNameValidation)}
               isValid={showProjectNameError ? false : undefined}
               style={styles.input}
             />
@@ -605,7 +607,7 @@ const getCreateProjectSetupStatusText = (
 ): string => {
   if (!projectNameValidation.isAvailable) {
     return projectNameValidation.isPresent
-      ? getProjectNameInvalidText(projectNameValidation)
+      ? getLocalProjectNameInvalidText(projectNameValidation)
       : '프로젝트 이름을 적고, 조사 방식을 고른 뒤 경계를 직접 그리거나 파일에서 가져오면 만들 수 있습니다.';
   }
 

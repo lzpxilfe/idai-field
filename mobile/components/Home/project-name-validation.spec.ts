@@ -1,5 +1,7 @@
 import {
+  getLocalProjectNameInvalidText,
   getProjectNameInvalidText,
+  LOCAL_PROJECT_NAME_MAX_LENGTH,
   PROJECT_IDENTIFIER_MAX_LENGTH,
   validateProjectName,
 } from './project-name-validation';
@@ -66,6 +68,41 @@ describe('project name validation', () => {
       expect(validation.isAvailable).toBe(false);
       expect(getProjectNameInvalidText(validation)).toBe(invalidFormatText);
     }
+  });
+
+  it('accepts Korean field site names for local project creation', () => {
+    for (const projectName of [
+      '반다비 유적',
+      '서울 종로구 반다비 유적 1구역',
+      'Bandabi 발굴조사 2026',
+      '반다비 유적(시굴)',
+    ]) {
+      const validation = validateProjectName(projectName, [], { mode: 'local' });
+
+      expect(validation.hasUnsafeCharacters).toBe(false);
+      expect(validation.isAvailable).toBe(true);
+      expect(validation.projectId).toBe(projectName);
+    }
+  });
+
+  it('keeps path-like characters out of local project names', () => {
+    const validation = validateProjectName('반다비/1구역', [], { mode: 'local' });
+
+    expect(validation.hasUnsafeCharacters).toBe(true);
+    expect(validation.isAvailable).toBe(false);
+    expect(getLocalProjectNameInvalidText(validation)).toBe(
+      '프로젝트 이름에는 / \\ : * ? " < > | 문자나 줄바꿈을 사용할 수 없습니다. 한글, 숫자, 영문, 띄어쓰기는 사용할 수 있습니다.'
+    );
+  });
+
+  it('allows longer local names than server database names', () => {
+    const projectName = '반다비 유적 '.repeat(6).trim();
+
+    expect(projectName.length).toBeGreaterThan(PROJECT_IDENTIFIER_MAX_LENGTH);
+    expect(projectName.length).toBeLessThanOrEqual(LOCAL_PROJECT_NAME_MAX_LENGTH);
+    expect(validateProjectName(projectName, [], { mode: 'local' }).isAvailable)
+      .toBe(true);
+    expect(validateProjectName(projectName).isAvailable).toBe(false);
   });
 
   it('rejects names exceeding the server maximum length', () => {
