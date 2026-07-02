@@ -49,6 +49,11 @@ import {
 } from '@/components/Project/korean-fieldwork-investigation-mode';
 import { createSoilColorAssistUpdatesFromPhotoBase64AtPoint } from '@/components/Project/soil-color-photo-assist';
 
+interface SoilProfileLayerSampleRequest {
+  key: number;
+  layerNumber: number;
+}
+
 const DocumentAdd: React.FC = () => {
   const config = useContext(ConfigurationContext);
   const { labels } = useContext(LabelsContext);
@@ -74,6 +79,8 @@ const DocumentAdd: React.FC = () => {
   const [saveBtnEnabled, setSaveBtnEnabled] = useState<boolean>(false);
   const [investigationModeId, setInvestigationModeId] =
     useState<KoreanFieldworkInvestigationModeId>();
+  const [soilProfileSampleRequest, setSoilProfileSampleRequest] =
+    useState<SoilProfileLayerSampleRequest>();
   const projectId = preferencesContext.preferences.currentProject;
 
   const setResourceToDefault = useCallback(
@@ -151,6 +158,13 @@ const DocumentAdd: React.FC = () => {
     setNewResource(
       (oldResource) => oldResource && { ...oldResource, ...updates }
     );
+  const requestSoilProfileLayerSample = (layerNumber: number) => {
+    applyResourceUpdates({ soilProfileActiveLayerNumber: layerNumber });
+    setSoilProfileSampleRequest((currentRequest) => ({
+      key: (currentRequest?.key ?? 0) + 1,
+      layerNumber,
+    }));
+  };
 
   const updateSoilProfileCapture = (data: SoilProfileCaptureData) => {
     setNewResource((oldResource) => oldResource && { ...oldResource, ...data });
@@ -246,7 +260,15 @@ const DocumentAdd: React.FC = () => {
           />
           <KoreanFieldworkSoilColorPanel
             category={category}
+            isLayerPhotoSamplingAvailable={
+              !!getStringValue(newResource.soilProfilePhotoUri)
+            }
             resource={newResource}
+            onSampleLayerColor={
+              newResource.category === 'SoilProfilePhoto'
+                ? requestSoilProfileLayerSample
+                : undefined
+            }
             onUpdateResourceField={updateResource}
             onUpdateResourceFields={applyResourceUpdates}
           />
@@ -260,6 +282,8 @@ const DocumentAdd: React.FC = () => {
         updatePhotoCapture,
         updateSoilProfileCapture,
         applyResourceUpdates,
+        soilProfileSampleRequest,
+        () => setSoilProfileSampleRequest(undefined),
         preferencesContext.preferences.username
       )}
     />
@@ -279,6 +303,8 @@ const renderPhotoResourceActions = (
   updatePhotoCapture: (data: FieldworkPhotoCaptureData) => void,
   updateSoilProfileCapture: (data: SoilProfileCaptureData) => void,
   updateResourceFields: (updates: Record<string, unknown>) => void,
+  soilProfileSampleRequest?: SoilProfileLayerSampleRequest,
+  onSoilProfileSampleComplete?: () => void,
   username?: string
 ) => {
   if (categoryName === 'Photo') {
@@ -316,10 +342,22 @@ const renderPhotoResourceActions = (
         <FieldworkPhotoAnnotationPanel
           imageUri={imageUri}
           title="토층사진 위 펜표시"
+          sampleRequestKey={soilProfileSampleRequest?.key}
+          sampleRequestLabel={soilProfileSampleRequest
+            ? `${soilProfileSampleRequest.layerNumber}층`
+            : undefined}
           sampleButtonLabel="토색 찍기"
           strokesValue={resource[FIELDWORK_PHOTO_ANNOTATION_FIELDS.soilProfileStrokes]}
-          onSamplePoint={(point) =>
-            sampleSoilProfileColor(imageUri, point, resource, updateResourceFields)}
+          onSamplePoint={async (point) => {
+            await sampleSoilProfileColor(
+              imageUri,
+              point,
+              resource,
+              updateResourceFields,
+              soilProfileSampleRequest?.layerNumber
+            );
+            onSoilProfileSampleComplete?.();
+          }}
           onUpdateStrokes={(serializedStrokes) => updateResourceFields({
             [FIELDWORK_PHOTO_ANNOTATION_FIELDS.soilProfileStrokes]: serializedStrokes,
             [FIELDWORK_PHOTO_ANNOTATION_FIELDS.soilProfileUpdatedAt]: new Date().toISOString(),
@@ -341,7 +379,8 @@ const sampleSoilProfileColor = async (
   imageUri: string | undefined,
   point: FieldworkPhotoSamplePoint,
   resource: NewResource,
-  updateResourceFields: (updates: Record<string, unknown>) => void
+  updateResourceFields: (updates: Record<string, unknown>) => void,
+  targetLayerNumber?: number
 ) => {
   if (!imageUri) return;
 
@@ -351,7 +390,8 @@ const sampleSoilProfileColor = async (
 
   updateResourceFields(getSoilProfileColorSampleUpdates(
     resource,
-    createSoilColorAssistUpdatesFromPhotoBase64AtPoint(base64, point)
+    createSoilColorAssistUpdatesFromPhotoBase64AtPoint(base64, point),
+    targetLayerNumber
   ));
 };
 

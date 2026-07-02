@@ -194,6 +194,33 @@ describe('KoreanFieldworkSoilColorPanel', () => {
     );
   });
 
+  it('starts photo sampling from an individual soil layer row', () => {
+    const handleUpdateResourceField = jest.fn();
+    const handleSampleLayerColor = jest.fn();
+    const { getByTestId } = render(
+      <KoreanFieldworkSoilColorPanel
+        category={createCategoryForm([
+          'soilProfileColorSwatches',
+        ])}
+        isLayerPhotoSamplingAvailable={true}
+        resource={createResource(C.SOIL_PROFILE_PHOTO, {
+          soilProfileColorSwatches: '1: 10YR 4/3\n2: ',
+        })}
+        onSampleLayerColor={handleSampleLayerColor}
+        onUpdateResourceField={handleUpdateResourceField}
+        onUpdateResourceFields={jest.fn()}
+      />
+    );
+
+    fireEvent.press(getByTestId('soilColorLayerSampleButton_2'));
+
+    expect(handleUpdateResourceField).toHaveBeenCalledWith(
+      'soilProfileActiveLayerNumber',
+      2
+    );
+    expect(handleSampleLayerColor).toHaveBeenCalledWith(2);
+  });
+
   it('writes expanded, neutral, and gley Munsell builder output to the selected soil layer row', () => {
     const handleUpdateResourceFields = jest.fn();
     const { getByTestId } = render(
@@ -235,9 +262,8 @@ describe('KoreanFieldworkSoilColorPanel', () => {
     });
   });
 
-  it('lets users accept photo-derived Munsell candidates into the selected layer', () => {
-    const handleUpdateResourceFields = jest.fn();
-    const { getByTestId, getByText, queryByText, queryByTestId } = render(
+  it('keeps photo-derived candidates hidden from soil layer rows', () => {
+    const { queryByText, queryByTestId } = render(
       <KoreanFieldworkSoilColorPanel
         category={createCategoryForm([
           'soilProfileColorSwatches',
@@ -251,22 +277,14 @@ describe('KoreanFieldworkSoilColorPanel', () => {
           soilColorAssistStatus: 'candidatesAvailable',
         })}
         onUpdateResourceField={jest.fn()}
-        onUpdateResourceFields={handleUpdateResourceFields}
+        onUpdateResourceFields={jest.fn()}
       />
     );
 
     expect(queryByText('사진에서 찍은 토색')).toBeNull();
-    expect(getByText('1층 사진 판독 후보')).toBeTruthy();
+    expect(queryByTestId('soilColorLayerSamplePanel')).toBeNull();
     expect(queryByTestId('soilColorInput_assistCandidates')).toBeNull();
-    fireEvent.press(getByTestId('soilColorLayerSelect_2'));
-    expect(getByText('2층 사진 판독 후보')).toBeTruthy();
-    fireEvent.press(getByTestId('soilColorCandidateOption_10YR 4/3'));
-
-    expect(handleUpdateResourceFields).toHaveBeenCalledWith({
-      soilProfileColorSwatches: '1: \n2: 10YR 4/3',
-      soilProfileActiveLayerNumber: 2,
-      soilColorAssistStatus: 'reviewed',
-    });
+    expect(queryByTestId('soilColorCandidateOption_10YR 4/3')).toBeNull();
   });
 
   it('writes the first photo-sampled Munsell candidate into the active layer row', () => {
@@ -280,6 +298,27 @@ describe('KoreanFieldworkSoilColorPanel', () => {
           '사진 선택 지점 80%/50% 평균 RGB 139/128/88\n1: 2.5Y 5/3 (높음, 차이 0.0)',
         soilColorAssistStatus: 'candidatesAvailable',
       }
+    )).toEqual({
+      soilColorAssistCandidates:
+        '사진 선택 지점 80%/50% 평균 RGB 139/128/88\n1: 2.5Y 5/3 (높음, 차이 0.0)',
+      soilColorAssistStatus: 'reviewed',
+      soilProfileActiveLayerNumber: 2,
+      soilProfileColorSwatches: '1: 10YR 4/3\n2: 2.5Y 5/3',
+    });
+  });
+
+  it('writes a photo-sampled Munsell value into the explicitly requested layer', () => {
+    expect(getSoilProfileColorSampleUpdates(
+      createResource(C.SOIL_PROFILE_PHOTO, {
+        soilProfileActiveLayerNumber: 1,
+        soilProfileColorSwatches: '1: 10YR 4/3\n2: ',
+      }),
+      {
+        soilColorAssistCandidates:
+          '사진 선택 지점 80%/50% 평균 RGB 139/128/88\n1: 2.5Y 5/3 (높음, 차이 0.0)',
+        soilColorAssistStatus: 'candidatesAvailable',
+      },
+      2
     )).toEqual({
       soilColorAssistCandidates:
         '사진 선택 지점 80%/50% 평균 RGB 139/128/88\n1: 2.5Y 5/3 (높음, 차이 0.0)',

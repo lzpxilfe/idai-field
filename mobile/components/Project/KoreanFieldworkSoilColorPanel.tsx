@@ -20,7 +20,9 @@ import { extractMunsellCandidateOptions } from './soil-color-photo-assist';
 
 interface KoreanFieldworkSoilColorPanelProps {
   category: CategoryForm;
+  isLayerPhotoSamplingAvailable?: boolean;
   resource: NewResource;
+  onSampleLayerColor?: (layerNumber: number) => void;
   onUpdateResourceField: (fieldName: string, value: unknown) => void;
   onUpdateResourceFields?: (updates: Record<string, unknown>) => void;
 }
@@ -98,7 +100,9 @@ const MOISTURE_OPTIONS: readonly SoilColorOption[] = [
 
 const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps> = ({
   category,
+  isLayerPhotoSamplingAvailable = false,
   resource,
+  onSampleLayerColor,
   onUpdateResourceField,
   onUpdateResourceFields,
 }) => {
@@ -162,6 +166,11 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
   const selectLayerRow = (rowNumber: number) => {
     setSelectedRowNumber(rowNumber);
     onUpdateResourceField(SOIL_COLOR_FIELDS.activeLayerNumber, rowNumber);
+  };
+
+  const sampleLayerColor = (rowNumber: number) => {
+    selectLayerRow(rowNumber);
+    onSampleLayerColor?.(rowNumber);
   };
 
   const openLayerNumberEditor = (rowNumber: number) => {
@@ -332,6 +341,34 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
                 testID={`soilColorLayerInput_${row.number}`}
                     value={row.munsell}
               />
+                  {!!onSampleLayerColor && (
+                    <TouchableOpacity
+                      activeOpacity={0.84}
+                      disabled={!isLayerPhotoSamplingAvailable}
+                      onPress={() => sampleLayerColor(row.number)}
+                      style={[
+                        styles.layerSampleButton,
+                        !isLayerPhotoSamplingAvailable
+                          && styles.layerSampleButtonDisabled,
+                      ]}
+                      testID={`soilColorLayerSampleButton_${row.number}`}
+                    >
+                      <MaterialIcons
+                        name="colorize"
+                        size={16}
+                        color={isLayerPhotoSamplingAvailable ? '#175cd3' : '#98a2b3'}
+                      />
+                      <Text
+                        style={[
+                          styles.layerSampleButtonText,
+                          !isLayerPhotoSamplingAvailable
+                            && styles.layerSampleButtonTextDisabled,
+                        ]}
+                      >
+                        스포이드
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <TextInput
                   autoCapitalize="none"
@@ -368,16 +405,6 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
             <MaterialIcons name="add" size={16} color="#175cd3" />
             <Text style={styles.addNumberButtonText}>층 추가</Text>
           </TouchableOpacity>
-          {hasAssistCandidates && (
-            <LayerSampleCandidatePanel
-              activeRowNumber={activeRowNumber}
-              assistCandidateOptions={assistCandidateOptions}
-              assistCandidateText={assistCandidateText}
-              activeValue={soilColorRows.find((row) =>
-                row.number === activeRowNumber)?.munsell}
-              onPressCandidate={applyAssistCandidate}
-            />
-          )}
         </QuickSection>
       )}
 
@@ -487,48 +514,6 @@ const KoreanFieldworkSoilColorPanel: React.FC<KoreanFieldworkSoilColorPanelProps
           )}
         />
       </QuickSection>
-    </View>
-  );
-};
-
-const LayerSampleCandidatePanel: React.FC<{
-  activeRowNumber: number;
-  activeValue?: string;
-  assistCandidateOptions: SoilColorOption[];
-  assistCandidateText: string;
-  onPressCandidate: (value: string) => void;
-}> = ({
-  activeRowNumber,
-  activeValue,
-  assistCandidateOptions,
-  assistCandidateText,
-  onPressCandidate,
-}) => {
-  if (
-    assistCandidateOptions.length === 0
-    && assistCandidateText.trim().length === 0
-  ) {
-    return null;
-  }
-
-  return (
-    <View style={styles.layerSamplePanel} testID="soilColorLayerSamplePanel">
-      <View style={styles.layerSampleHeader}>
-        <MaterialIcons name="colorize" size={16} color="#175cd3" />
-        <Text style={styles.layerSampleTitle}>
-          {`${activeRowNumber}층 사진 판독 후보`}
-        </Text>
-      </View>
-      {assistCandidateOptions.length > 0 ? (
-        <PresetRow
-          options={assistCandidateOptions}
-          activeValue={activeValue}
-          onPress={onPressCandidate}
-          testIDPrefix="soilColorCandidateOption"
-        />
-      ) : (
-        <Text style={styles.layerSampleStatus}>{assistCandidateText}</Text>
-      )}
     </View>
   );
 };
@@ -874,14 +859,16 @@ export const getSoilProfileColorSampleUpdates = (
   assistUpdates: {
     soilColorAssistCandidates?: unknown;
     soilColorAssistStatus?: unknown;
-  }
+  },
+  targetLayerNumber?: number
 ): Record<string, unknown> => {
   const sampledMunsell = extractMunsellCandidateOptions(
     getTextFromUnknown(assistUpdates.soilColorAssistCandidates)
   )[0];
   if (!sampledMunsell) return { ...assistUpdates };
 
-  const activeRowNumber = getActiveLayerNumber(resource)
+  const activeRowNumber = normalizeLayerNumber(targetLayerNumber)
+    ?? getActiveLayerNumber(resource)
     ?? getSoilColorRows(getTextValue(
       resource,
       SOIL_COLOR_FIELDS.profileColorSwatches
@@ -922,6 +909,11 @@ const getTextValue = (
 
 const getTextFromUnknown = (value: unknown): string =>
   typeof value === 'string' ? value : '';
+
+const normalizeLayerNumber = (value: number | undefined): number | undefined =>
+  value && Number.isFinite(value) && value > 0
+    ? Math.round(value)
+    : undefined;
 
 const styles = StyleSheet.create({
   container: {
@@ -1012,6 +1004,31 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 10,
     paddingVertical: 8,
+  },
+  layerSampleButton: {
+    alignItems: 'center',
+    backgroundColor: '#eff8ff',
+    borderColor: '#b2ddff',
+    borderRadius: 6,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginLeft: 6,
+    minHeight: 38,
+    paddingHorizontal: 8,
+  },
+  layerSampleButtonDisabled: {
+    backgroundColor: '#f8fafc',
+    borderColor: '#d0d5dd',
+  },
+  layerSampleButtonText: {
+    color: '#175cd3',
+    fontSize: 11,
+    fontWeight: '900',
+    marginLeft: 4,
+  },
+  layerSampleButtonTextDisabled: {
+    color: '#98a2b3',
   },
   layerNoteInput: {
     fontWeight: '700',

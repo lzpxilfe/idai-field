@@ -73,6 +73,33 @@ describe('FieldworkPhotoAnnotationPanel', () => {
     expect(queryByTestId('fieldworkPhotoAnnotationFullscreenCanvas')).toBeNull();
   });
 
+  it('opens full-screen sample mode from a soil layer eyedropper request', async () => {
+    const handleSamplePoint = jest.fn();
+    const { getByTestId } = render(
+      <FieldworkPhotoAnnotationPanel
+        imageUri="file:///tablet/profile.jpg"
+        onSamplePoint={handleSamplePoint}
+        onUpdateStrokes={jest.fn()}
+        sampleRequestKey={1}
+        sampleRequestLabel="2층"
+      />
+    );
+
+    await waitFor(() =>
+      expect(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas')).toBeTruthy()
+    );
+    expect(getByTestId('fieldworkPhotoAnnotationStatus').props.children)
+      .toBe('2층 토색을 찍을 지점을 사진에서 누르세요.');
+
+    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'responderGrant', {
+      nativeEvent: { locationX: 160, locationY: 120 },
+    });
+
+    await waitFor(() =>
+      expect(handleSamplePoint).toHaveBeenCalledWith({ x: 5000, y: 5000 })
+    );
+  });
+
   it('clears and samples selected points when used for soil profile photos', async () => {
     const handleUpdateStrokes = jest.fn();
     const handleSamplePoint = jest.fn();

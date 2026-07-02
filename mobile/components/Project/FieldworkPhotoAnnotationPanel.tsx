@@ -39,6 +39,8 @@ interface FieldworkPhotoAnnotationPanelProps {
   imageUri?: string;
   strokesValue?: unknown;
   title?: string;
+  sampleRequestKey?: number | string;
+  sampleRequestLabel?: string;
   sampleButtonLabel?: string;
   onSamplePoint?: (point: FieldworkPhotoSamplePoint) => Promise<void> | void;
   onUpdateStrokes: (serializedStrokes: string) => void;
@@ -66,6 +68,8 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
   imageUri,
   strokesValue,
   title = '사진 위 펜표시',
+  sampleRequestKey,
+  sampleRequestLabel,
   sampleButtonLabel,
   onSamplePoint,
   onUpdateStrokes,
@@ -86,6 +90,7 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
   const activeStrokeRef = useRef<KoreanFieldworkHandwritingStroke>();
   const touchStartPointRef = useRef<KoreanFieldworkHandwritingPoint>();
   const activeCanvasRef = useRef<'fullscreen' | 'preview'>();
+  const handledSampleRequestKeyRef = useRef<number | string>();
   const visibleStrokes = activeStroke ? strokes.concat(activeStroke) : strokes;
   const strokeCount = strokes.length;
   const pointCount = countKoreanFieldworkHandwritingPoints(strokes);
@@ -118,6 +123,22 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
     };
   }, [imageUri]);
 
+  useEffect(() => {
+    if (
+      !imageUri
+      || !onSamplePoint
+      || sampleRequestKey === undefined
+      || handledSampleRequestKeyRef.current === sampleRequestKey
+    ) {
+      return;
+    }
+
+    handledSampleRequestKeyRef.current = sampleRequestKey;
+    setSampleStatus(getSamplePrompt(sampleRequestLabel));
+    setIsSampleMode(true);
+    setIsFullscreenOpen(true);
+  }, [imageUri, onSamplePoint, sampleRequestKey, sampleRequestLabel]);
+
   if (!imageUri) return null;
 
   const updateCanvasSize = (event: LayoutChangeEvent) => {
@@ -137,10 +158,13 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
     if (!point) return;
 
     if (isSampleMode && onSamplePoint) {
-      setSampleStatus('선택 지점 토색을 읽는 중');
+      setSampleStatus(getSampleReadingMessage(sampleRequestLabel));
       setIsSampleMode(false);
       Promise.resolve(onSamplePoint(point))
-        .then(() => setSampleStatus('선택 지점 먼셀 후보를 반영했습니다.'))
+        .then(() => {
+          setSampleStatus(getSampleSuccessMessage(sampleRequestLabel));
+          setIsFullscreenOpen(false);
+        })
         .catch(() => setSampleStatus('선택 지점 토색을 읽지 못했습니다.'));
       return;
     }
@@ -243,7 +267,7 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
             <TouchableOpacity
               activeOpacity={0.86}
               onPress={() => {
-                setSampleStatus('사진에서 토색을 찍을 지점을 누르세요.');
+                setSampleStatus(getSamplePrompt(sampleRequestLabel));
                 setIsSampleMode(true);
               }}
               style={[
@@ -456,6 +480,21 @@ const hasLocalTouchCoordinates = (
 ): boolean =>
   Number.isFinite(value.locationX ?? value.x)
   && Number.isFinite(value.locationY ?? value.y);
+
+const getSamplePrompt = (sampleRequestLabel?: string): string =>
+  sampleRequestLabel
+    ? `${sampleRequestLabel} 토색을 찍을 지점을 사진에서 누르세요.`
+    : '사진에서 토색을 찍을 지점을 누르세요.';
+
+const getSampleReadingMessage = (sampleRequestLabel?: string): string =>
+  sampleRequestLabel
+    ? `${sampleRequestLabel} 토색을 읽는 중`
+    : '선택 지점 토색을 읽는 중';
+
+const getSampleSuccessMessage = (sampleRequestLabel?: string): string =>
+  sampleRequestLabel
+    ? `${sampleRequestLabel} 먼셀 값을 입력했습니다.`
+    : '선택 지점 먼셀 값을 입력했습니다.';
 
 const normalizeCoordinate = (value: number): number =>
   Number.isFinite(value)
