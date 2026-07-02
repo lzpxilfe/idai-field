@@ -437,6 +437,24 @@ describe('DocumentAddModal', () => {
     fireEvent(canvas, 'layout', {
       nativeEvent: { layout: { height: 100, width: 200 } },
     });
+    fireEvent(touchLayer, 'responderGrant', {
+      nativeEvent: { locationX: 100, locationY: 50 },
+    });
+    fireEvent(touchLayer, 'responderMove', {
+      nativeEvent: { locationX: 100, locationY: 20 },
+    });
+    fireEvent(touchLayer, 'responderRelease', {
+      nativeEvent: { locationX: 100, locationY: 20 },
+    });
+    expect(StyleSheet.flatten(getByTestId('featureSketchFlatMapSurface').props.style))
+      .toEqual(expect.objectContaining({
+        top: -22,
+      }));
+    fireEvent.press(getByTestId('featureSketchViewReset'));
+    expect(StyleSheet.flatten(getByTestId('featureSketchFlatMapSurface').props.style))
+      .toEqual(expect.objectContaining({
+        top: 0,
+      }));
     fireEvent.press(getByTestId('featureSketchZoomIn'));
     expect(StyleSheet.flatten(getByTestId('featureSketchFlatMapSurface').props.style))
       .toEqual(expect.objectContaining({

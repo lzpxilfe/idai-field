@@ -71,6 +71,7 @@ const FEATURE_SKETCH_CLOSE_POINT_DISTANCE = 4.5;
 const FEATURE_SKETCH_INSERT_POINT_DISTANCE = 3.5;
 const FEATURE_SKETCH_VIEWPORT_MIN_SCALE = 1;
 const FEATURE_SKETCH_VIEWPORT_MAX_SCALE = 4;
+const FEATURE_SKETCH_VIEWPORT_BASE_PAN_RATIO = 0.22;
 const FEATURE_SKETCH_VIEWPORT_DEFAULT = {
   offsetX: 0,
   offsetY: 0,
@@ -2335,12 +2336,10 @@ const clampFeatureSketchViewport = (
     FEATURE_SKETCH_VIEWPORT_MIN_SCALE,
     FEATURE_SKETCH_VIEWPORT_MAX_SCALE
   );
-  if (scale <= FEATURE_SKETCH_VIEWPORT_MIN_SCALE) {
-    return FEATURE_SKETCH_VIEWPORT_DEFAULT;
-  }
-
-  const maxOffsetX = (canvasSize.width * (scale - 1)) / 2;
-  const maxOffsetY = (canvasSize.height * (scale - 1)) / 2;
+  const baseOffsetX = canvasSize.width * FEATURE_SKETCH_VIEWPORT_BASE_PAN_RATIO;
+  const baseOffsetY = canvasSize.height * FEATURE_SKETCH_VIEWPORT_BASE_PAN_RATIO;
+  const maxOffsetX = baseOffsetX + ((canvasSize.width * (scale - 1)) / 2);
+  const maxOffsetY = baseOffsetY + ((canvasSize.height * (scale - 1)) / 2);
 
   return {
     offsetX: clamp(viewport.offsetX, -maxOffsetX, maxOffsetX),
