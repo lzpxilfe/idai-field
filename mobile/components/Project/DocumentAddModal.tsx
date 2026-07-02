@@ -752,12 +752,13 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
       );
     }
 
-    const previewPoint = (
+    const isPreviewClosingPolygon = (
       featureLocationShape === 'polygon'
       && !featureSketchPolygonClosed
       && activeFeatureSketchPoint
       && shouldCloseFeatureSketchPolygon(activeFeatureSketchPoint, featureSketchPoints)
-    )
+    );
+    const previewPoint = isPreviewClosingPolygon
       ? featureSketchPoints[0]
       : activeFeatureSketchPoint;
     const visiblePoints = featureLocationShape === 'polygon'
@@ -766,15 +767,14 @@ const DocumentAddModal: React.FC<AddModalProps> = ({
         featureSketchPolygonClosed ? undefined : previewPoint
       )
       : (featureSketchPoints.length > 0 ? featureSketchPoints : [featureSketchCenter]);
-    const linePoints = featureLocationShape === 'polygon'
-      ? featureSketchPoints
-      : visiblePoints;
+    const linePoints = visiblePoints;
+    const shouldCloseLinePath = featureSketchPolygonClosed || !!isPreviewClosingPolygon;
 
     return (
       <>
         {featureLocationShape === 'polygon' && toFeatureSketchLineSegments({
           canvasSize: featureSketchCanvasSize,
-          closePath: featureSketchPolygonClosed,
+          closePath: shouldCloseLinePath,
           color: '#f97316',
           keyPrefix: 'feature',
           points: linePoints,

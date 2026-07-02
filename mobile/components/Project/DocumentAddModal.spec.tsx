@@ -331,7 +331,7 @@ describe('DocumentAddModal', () => {
     expect(onAddCategory.mock.calls[0][2]).not.toHaveProperty('shortDescription');
   });
 
-  it('shows the project boundary and keeps committed polygon lines in a map-first tablet layout', async () => {
+  it('shows the project boundary and previews polygon lines in a map-first tablet layout', async () => {
     const parentDoc = {
       resource: {
         id: 'trench-1',
@@ -341,7 +341,7 @@ describe('DocumentAddModal', () => {
       },
     } as any;
 
-    const { getByTestId, queryByTestId } = render(
+    const { getByTestId } = render(
       <LabelsContext.Provider value={{ labels: new Labels(() => ['ko']) }}>
         <ConfigurationContext.Provider value={createConfig([
           createCategory(C.TRENCH),
@@ -463,7 +463,7 @@ describe('DocumentAddModal', () => {
       nativeEvent: { locationX: 150, locationY: 60 },
     });
 
-    expect(queryByTestId('featureSketchLine')).toBeNull();
+    expect(getByTestId('featureSketchLine')).toBeTruthy();
     expect(getByTestId('featureSketchPoint_1').props.style).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
