@@ -5,6 +5,8 @@ const { mergeConfig } = require('metro-config');
 const path = require('path');
 
 const defaultConfig = getDefaultConfig(__dirname);
+const resolveFromMobileRoot = (moduleName) =>
+    path.resolve(__dirname, moduleName.replace(/^@\//, ''));
 const resolveFromMobileNodeModules = (moduleName) =>
     path.resolve(__dirname, 'node_modules', moduleName);
 const corePackageDir = path.resolve(__dirname, '../core');
@@ -44,6 +46,14 @@ const customConfig = {
             /node_modules[\\\/].*[\\\/]android[\\\/]build(?:\.[^\\\/]+)?(?:[\\\/].*)?$/
         ]),
         resolveRequest: (context, moduleName, platform) => {
+            if (moduleName.startsWith('@/')) {
+                return context.resolveRequest(
+                    context,
+                    resolveFromMobileRoot(moduleName),
+                    platform
+                );
+            }
+
             if (isCoreTestExport(context, moduleName)) {
                 return context.resolveRequest(
                     context,
