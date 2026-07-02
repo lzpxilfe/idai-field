@@ -32,17 +32,15 @@ describe('KoreanFieldworkFreeDrawingPanel', () => {
       nativeEvent: { locationX: 160, locationY: 140 },
     });
 
-    expect(JSON.parse(handleUpdateStrokes.mock.calls[0][0])).toMatchObject({
+    const payload = JSON.parse(handleUpdateStrokes.mock.calls[0][0]);
+    const [stroke] = payload.strokes;
+
+    expect(payload).toMatchObject({
       version: 1,
-      strokes: [
-        {
-          points: [
-            { x: 1000, y: 1000 },
-            { x: 5000, y: 5000 },
-          ],
-        },
-      ],
     });
+    expect(stroke.points[0]).toEqual({ x: 1000, y: 1000 });
+    expect(stroke.points[stroke.points.length - 1]).toEqual({ x: 5000, y: 5000 });
+    expect(stroke.points.length).toBeGreaterThan(2);
   });
 
   it('uses active touch coordinates instead of a child target origin', () => {
@@ -76,17 +74,15 @@ describe('KoreanFieldworkFreeDrawingPanel', () => {
       },
     });
 
-    expect(JSON.parse(handleUpdateStrokes.mock.calls[0][0])).toMatchObject({
+    const payload = JSON.parse(handleUpdateStrokes.mock.calls[0][0]);
+    const [stroke] = payload.strokes;
+
+    expect(payload).toMatchObject({
       version: 1,
-      strokes: [
-        {
-          points: [
-            { x: 2000, y: 2000 },
-            { x: 5000, y: 5000 },
-          ],
-        },
-      ],
     });
+    expect(stroke.points[0]).toEqual({ x: 2000, y: 2000 });
+    expect(stroke.points[stroke.points.length - 1]).toEqual({ x: 5000, y: 5000 });
+    expect(stroke.points.length).toBeGreaterThan(2);
   });
 
   it('loads serialized strokes and can clear them', () => {
@@ -124,5 +120,19 @@ describe('KoreanFieldworkFreeDrawingPanel', () => {
 
     expect(getAllByTestId('fieldworkFreeDrawingStrokeSegment').length)
       .toBeGreaterThan(2);
+    expect(getAllByTestId('fieldworkFreeDrawingStrokeJoint').length)
+      .toBeGreaterThan(2);
+  });
+
+  it('does not show technical stroke and point counts in the sketch header', () => {
+    const { queryByText } = render(
+      <KoreanFieldworkFreeDrawingPanel
+        onUpdateStrokes={jest.fn()}
+        strokesValue={'{"version":1,"strokes":[{"points":[{"x":1000,"y":1000}]}]}'}
+      />
+    );
+
+    expect(queryByText(/획\s*\d/)).toBeNull();
+    expect(queryByText(/점\s*\d/)).toBeNull();
   });
 });

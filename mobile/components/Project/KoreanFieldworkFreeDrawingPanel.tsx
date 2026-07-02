@@ -13,7 +13,6 @@ import {
   View,
 } from 'react-native';
 import {
-  countKoreanFieldworkHandwritingPoints,
   KoreanFieldworkHandwritingPoint,
   KoreanFieldworkHandwritingStroke,
   normalizeKoreanFieldworkHandwritingStrokes,
@@ -46,16 +45,16 @@ const DEFAULT_CANVAS_SIZE = {
   width: 320,
 };
 const MAX_COORDINATE = 10000;
-const BRUSH_STROKE_WIDTH = 4;
-const MIN_POINT_DISTANCE = 45;
+const BRUSH_STROKE_WIDTH = 5;
+const MIN_POINT_DISTANCE = 18;
 const RELEASE_POINT_MIN_DISTANCE = 1;
+const INTERPOLATED_POINT_SPACING = 90;
+const MAX_INTERPOLATED_POINTS_PER_MOVE = 18;
 const SMOOTHING_SEGMENT_LENGTH = 7;
 const MIN_SMOOTHING_STEPS = 3;
 const MAX_SMOOTHING_STEPS = 12;
 const TEXT = {
   title: '\uc790\uc720 \uc2a4\ucf00\uce58',
-  countPrefix: '\ud68d',
-  pointPrefix: '\uc810',
 };
 
 const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
@@ -73,7 +72,6 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
   const activeStrokeRef = useRef<KoreanFieldworkHandwritingStroke>();
   const visibleStrokes = activeStroke ? strokes.concat(activeStroke) : strokes;
   const strokeCount = strokes.length;
-  const pointCount = countKoreanFieldworkHandwritingPoints(strokes);
 
   const updateCanvasSize = (event: LayoutChangeEvent) => {
     const { height, width } = event.nativeEvent.layout;
@@ -127,8 +125,13 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
       return;
     }
 
+    const interpolatedPoints = previousPoint
+      ? getInterpolatedStrokePoints(previousPoint, point)
+      : [point];
+    if (interpolatedPoints.length === 0) return;
+
     activeStrokeRef.current = {
-      points: currentStroke.points.concat(point),
+      points: currentStroke.points.concat(interpolatedPoints),
     };
     setActiveStroke(activeStrokeRef.current);
   };
@@ -139,9 +142,6 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
         <View style={styles.titleRow}>
           <MaterialIcons name="gesture" size={17} color="#344054" />
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.countText}>
-            {TEXT.countPrefix} {strokeCount} · {TEXT.pointPrefix} {pointCount}
-          </Text>
         </View>
         <View style={styles.actionRow}>
           <IconButton
@@ -161,12 +161,14 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
       </View>
       <View
         onLayout={updateCanvasSize}
+        onMoveShouldSetResponderCapture={() => true}
         onMoveShouldSetResponder={() => true}
         onResponderGrant={startStroke}
         onResponderMove={moveStroke}
         onResponderRelease={finishStroke}
         onResponderTerminate={finishStroke}
         onResponderTerminationRequest={() => false}
+        onStartShouldSetResponderCapture={() => true}
         onStartShouldSetResponder={() => true}
         style={styles.canvas}
         testID="fieldworkFreeDrawingCanvas"
@@ -238,10 +240,10 @@ const getLocalTouchPoint = (event: GestureResponderEvent): {
   locationY?: number;
 } => {
   const nativeEvent = event.nativeEvent as unknown as {
-    changedTouches?: Array<TouchPointCandidate>;
+    changedTouches?: TouchPointCandidate[];
     locationX?: number;
     locationY?: number;
-    touches?: Array<TouchPointCandidate>;
+    touches?: TouchPointCandidate[];
   };
   const localTouch = [
     ...(nativeEvent.touches ?? []),
@@ -287,6 +289,29 @@ const getPointDistance = (
   ((pointB.x - pointA.x) ** 2) + ((pointB.y - pointA.y) ** 2)
 );
 
+const getInterpolatedStrokePoints = (
+  start: KoreanFieldworkHandwritingPoint,
+  end: KoreanFieldworkHandwritingPoint
+): KoreanFieldworkHandwritingPoint[] => {
+  const distance = getPointDistance(start, end);
+  if (distance === 0) return [];
+
+  const steps = clamp(
+    Math.ceil(distance / INTERPOLATED_POINT_SPACING),
+    1,
+    MAX_INTERPOLATED_POINTS_PER_MOVE
+  );
+
+  return Array.from({ length: steps }, (_, index) => {
+    const t = (index + 1) / steps;
+
+    return {
+      x: normalizeCoordinate(start.x + ((end.x - start.x) * t)),
+      y: normalizeCoordinate(start.y + ((end.y - start.y) * t)),
+    };
+  });
+};
+
 const toStrokeSegments = (
   stroke: KoreanFieldworkHandwritingStroke,
   strokeIndex: number,
@@ -317,7 +342,7 @@ const toStrokeSegments = (
 
   const smoothedPoints = getSmoothedPixelStrokePoints(stroke, canvasSize);
 
-  return smoothedPoints.slice(1).map((point, pointIndex) => {
+  const segments = smoothedPoints.slice(1).map((point, pointIndex) => {
     const previousPoint = smoothedPoints[pointIndex];
     const start = previousPoint;
     const end = point;
@@ -342,6 +367,25 @@ const toStrokeSegments = (
       />
     );
   });
+
+  const joints = smoothedPoints.map((point, pointIndex) => (
+    <View
+      key={`${strokeIndex}-joint-${pointIndex}`}
+      pointerEvents="none"
+      style={[
+        styles.strokeJoint,
+        {
+          height: strokeWidth,
+          left: point.x - (strokeWidth / 2),
+          top: point.y - (strokeWidth / 2),
+          width: strokeWidth,
+        },
+      ]}
+      testID="fieldworkFreeDrawingStrokeJoint"
+    />
+  ));
+
+  return segments.concat(joints);
 };
 
 const getSmoothedPixelStrokePoints = (
@@ -468,12 +512,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     marginLeft: 5,
   },
-  countText: {
-    color: '#667085',
-    fontSize: 11,
-    fontWeight: '800',
-    marginLeft: 7,
-  },
   actionRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -502,6 +540,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   strokeSegment: {
+    backgroundColor: '#111827',
+    borderRadius: BRUSH_STROKE_WIDTH / 2,
+    position: 'absolute',
+  },
+  strokeJoint: {
     backgroundColor: '#111827',
     borderRadius: BRUSH_STROKE_WIDTH / 2,
     position: 'absolute',
