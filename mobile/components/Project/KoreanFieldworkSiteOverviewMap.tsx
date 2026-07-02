@@ -535,17 +535,18 @@ const getSiteOverviewFeatures = (
   documents
     .filter((document) =>
       document.resource.category === KOREAN_FIELDWORK_CATEGORIES.FEATURE)
-    .map((document) => {
+    .map((document): SiteOverviewFeature | undefined => {
       const resource = document.resource as Record<string, unknown>;
       const sketch = normalizeFeatureLocationSketch(resource.featureLocationSketch);
       if (!sketch) return undefined;
+      const typeLabel = getKoreanFieldworkFeatureTypeLabel(resource.featureType);
 
       return {
         document,
         label: getKoreanFieldworkDisplayIdentifier(document.resource.identifier)
           || document.resource.id,
         sketch,
-        typeLabel: getKoreanFieldworkFeatureTypeLabel(resource.featureType),
+        ...(typeLabel ? { typeLabel } : {}),
       };
     })
     .filter((feature): feature is SiteOverviewFeature => !!feature);

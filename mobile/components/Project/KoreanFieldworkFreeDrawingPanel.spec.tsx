@@ -192,6 +192,51 @@ describe('KoreanFieldworkFreeDrawingPanel', () => {
     expect(payload.strokes[0].width).toBe(8);
   });
 
+  it('stores selected color and eraser tool with free sketch strokes', () => {
+    const handleUpdateStrokes = jest.fn();
+    const { getByTestId } = render(
+      <KoreanFieldworkFreeDrawingPanel
+        onUpdateStrokes={handleUpdateStrokes}
+      />
+    );
+
+    fireEvent.press(getByTestId('fieldworkFreeDrawingBrushColor_1'));
+
+    const canvas = getByTestId('fieldworkFreeDrawingCanvas');
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 32, locationY: 28 },
+    });
+    fireEvent(canvas, 'responderMove', {
+      nativeEvent: { locationX: 160, locationY: 140 },
+    });
+    fireEvent(canvas, 'responderRelease', {
+      nativeEvent: { locationX: 160, locationY: 140 },
+    });
+
+    fireEvent.press(getByTestId('fieldworkFreeDrawingBrushTool_eraser'));
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 48, locationY: 42 },
+    });
+    fireEvent(canvas, 'responderMove', {
+      nativeEvent: { locationX: 190, locationY: 160 },
+    });
+    fireEvent(canvas, 'responderRelease', {
+      nativeEvent: { locationX: 190, locationY: 160 },
+    });
+
+    const firstPayload = JSON.parse(handleUpdateStrokes.mock.calls[0][0]);
+    const secondPayload = JSON.parse(handleUpdateStrokes.mock.calls[1][0]);
+
+    expect(firstPayload.strokes[0]).toMatchObject({
+      color: '#dc2626',
+      tool: 'pen',
+    });
+    expect(secondPayload.strokes[1]).toMatchObject({
+      color: '#dc2626',
+      tool: 'eraser',
+    });
+  });
+
   it('opens a full-screen free sketch canvas from the expand button', () => {
     const { getByTestId } = render(
       <KoreanFieldworkFreeDrawingPanel

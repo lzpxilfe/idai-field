@@ -211,6 +211,42 @@ describe('FieldworkPhotoAnnotationPanel', () => {
       .toBe(8);
   });
 
+  it('stores selected photo annotation color and opens full-screen for erasing', () => {
+    const handleUpdateStrokes = jest.fn();
+    const { getByTestId } = render(
+      <FieldworkPhotoAnnotationPanel
+        imageUri="file:///tablet/photo.jpg"
+        onUpdateStrokes={handleUpdateStrokes}
+      />
+    );
+
+    fireEvent.press(getByTestId('fieldworkPhotoAnnotationBrushColor_1'));
+
+    const canvas = getByTestId('fieldworkPhotoAnnotationCanvas');
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 32, locationY: 24 },
+    });
+    fireEvent(canvas, 'responderMove', {
+      nativeEvent: { locationX: 160, locationY: 120 },
+    });
+    fireEvent(canvas, 'responderRelease', {
+      nativeEvent: { locationX: 160, locationY: 120 },
+    });
+
+    expect(JSON.parse(handleUpdateStrokes.mock.calls[0][0]).strokes[0])
+      .toMatchObject({
+        color: '#dc2626',
+        tool: 'pen',
+      });
+
+    fireEvent.press(getByTestId('fieldworkPhotoAnnotationBrushTool_eraser'));
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 40, locationY: 32 },
+    });
+
+    expect(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas')).toBeTruthy();
+  });
+
   it('samples against the displayed image frame when the photo is letterboxed', async () => {
     jest.spyOn(Image, 'getSize').mockImplementation((_uri, success) => {
       success(100, 200);

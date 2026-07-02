@@ -64,4 +64,36 @@ describe('Korean fieldwork handwriting', () => {
       { points: [{ x: 20, y: 30 }], width: 24 },
     ]);
   });
+
+  it('preserves valid stroke colors and drawing tools', () => {
+    expect(normalizeKoreanFieldworkHandwritingStrokes({
+      version: 1,
+      strokes: [
+        {
+          color: '#DC2626',
+          points: [{ x: 10, y: 20 }],
+          tool: 'pen',
+          width: 5,
+        },
+        {
+          color: 'red',
+          points: [{ x: 20, y: 30 }],
+          tool: 'eraser',
+          width: 12,
+        },
+      ],
+    })).toEqual([
+      {
+        color: '#dc2626',
+        points: [{ x: 10, y: 20 }],
+        tool: 'pen',
+        width: 5,
+      },
+      {
+        points: [{ x: 20, y: 30 }],
+        tool: 'eraser',
+        width: 12,
+      },
+    ]);
+  });
 });

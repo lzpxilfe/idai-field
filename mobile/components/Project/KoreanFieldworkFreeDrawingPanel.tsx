@@ -17,11 +17,14 @@ import {
 import {
   KoreanFieldworkHandwritingPoint,
   KoreanFieldworkHandwritingStroke,
+  KoreanFieldworkHandwritingTool,
   normalizeKoreanFieldworkHandwritingStrokes,
   serializeKoreanFieldworkHandwriting,
 } from './korean-fieldwork-handwriting';
 import KoreanFieldworkFullscreenDrawingModal, {
+  DEFAULT_FIELDWORK_BRUSH_COLOR,
   DEFAULT_FIELDWORK_BRUSH_WIDTH,
+  DEFAULT_FIELDWORK_DRAWING_TOOL,
   KoreanFieldworkBrushControls,
 } from './KoreanFieldworkFullscreenDrawingModal';
 
@@ -54,6 +57,9 @@ const DEFAULT_CANVAS_SIZE = {
 };
 const MAX_COORDINATE = 10000;
 const DEFAULT_BRUSH_STROKE_WIDTH = DEFAULT_FIELDWORK_BRUSH_WIDTH;
+const DEFAULT_BRUSH_COLOR = DEFAULT_FIELDWORK_BRUSH_COLOR;
+const DEFAULT_DRAWING_TOOL = DEFAULT_FIELDWORK_DRAWING_TOOL;
+const CANVAS_BACKGROUND_COLOR = '#fffefa';
 const MIN_POINT_DISTANCE = 55;
 const RELEASE_POINT_MIN_DISTANCE = 1;
 const INTERPOLATED_POINT_SPACING = 140;
@@ -79,7 +85,10 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
     [strokesValue]
   );
   const [canvasSize, setCanvasSize] = useState(DEFAULT_CANVAS_SIZE);
+  const [brushColor, setBrushColor] = useState(DEFAULT_BRUSH_COLOR);
   const [brushWidth, setBrushWidth] = useState(DEFAULT_BRUSH_STROKE_WIDTH);
+  const [drawingTool, setDrawingTool] =
+    useState<KoreanFieldworkHandwritingTool>(DEFAULT_DRAWING_TOOL);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeStroke, setActiveStroke] =
     useState<KoreanFieldworkHandwritingStroke>();
@@ -145,7 +154,12 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
     flushPendingTapStroke();
     setDrawingInteractionActive(true);
     hasActiveStrokeMovedRef.current = false;
-    activeStrokeRef.current = { points: [point], width: brushWidth };
+    activeStrokeRef.current = {
+      color: brushColor,
+      points: [point],
+      tool: drawingTool,
+      width: brushWidth,
+    };
     setActiveStroke(activeStrokeRef.current);
   };
   const moveStroke = (event: GestureResponderEvent) => {
@@ -219,7 +233,9 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
     if (interpolatedPoints.length === 0) return;
 
     activeStrokeRef.current = {
+      color: currentStroke.color,
       points: currentStroke.points.concat(interpolatedPoints),
+      tool: currentStroke.tool,
       width: currentStroke.width,
     };
     hasActiveStrokeMovedRef.current = true;
@@ -336,8 +352,15 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
         </View>
       </View>
       <KoreanFieldworkBrushControls
+        brushColor={brushColor}
         brushWidth={brushWidth}
+        drawingTool={drawingTool}
+        onSelectBrushColor={(color) => {
+          setBrushColor(color);
+          setDrawingTool('pen');
+        }}
         onSelectBrushWidth={selectBrushWidth}
+        onSelectDrawingTool={setDrawingTool}
         testIDPrefix="fieldworkFreeDrawingBrush"
       />
       <View
@@ -362,11 +385,18 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
         )}
       </View>
       <KoreanFieldworkFullscreenDrawingModal
+        brushColor={brushColor}
         brushWidth={brushWidth}
+        drawingTool={drawingTool}
         isVisible={isFullscreen}
+        onBrushColorChange={(color) => {
+          setBrushColor(color);
+          setDrawingTool('pen');
+        }}
         onBrushWidthChange={selectBrushWidth}
         onClose={closeFullscreen}
         onDrawingActiveChange={setDrawingInteractionActive}
+        onDrawingToolChange={setDrawingTool}
         onUpdateStrokes={updateFullscreenStrokes}
         strokes={latestStrokesRef.current}
         testIDPrefix="fieldworkFreeDrawing"
@@ -513,6 +543,7 @@ const toStrokeSegments = (
   canvasSize: CanvasSize
 ) => {
   const strokeWidth = getStrokeWidth(stroke);
+  const strokeColor = getStrokePreviewColor(stroke);
 
   if (stroke.points.length === 1) {
     const point = denormalizePoint(stroke.points[0], canvasSize);
@@ -524,6 +555,7 @@ const toStrokeSegments = (
         style={[
           styles.strokeDot,
           {
+            backgroundColor: strokeColor,
             height: strokeWidth + 4,
             left: point.x - ((strokeWidth + 4) / 2),
             borderRadius: (strokeWidth + 4) / 2,
@@ -552,6 +584,7 @@ const toStrokeSegments = (
         style={[
           styles.strokeSegment,
           {
+            backgroundColor: strokeColor,
             height: strokeWidth,
             left: ((start.x + end.x) / 2) - (distance / 2),
             borderRadius: strokeWidth / 2,
@@ -572,6 +605,7 @@ const toStrokeSegments = (
       style={[
         styles.strokeJoint,
         {
+          backgroundColor: strokeColor,
           height: strokeWidth,
           left: point.x - (strokeWidth / 2),
           borderRadius: strokeWidth / 2,
@@ -588,6 +622,12 @@ const toStrokeSegments = (
 
 const getStrokeWidth = (stroke: KoreanFieldworkHandwritingStroke): number =>
   clamp(stroke.width ?? DEFAULT_BRUSH_STROKE_WIDTH, 1, 24);
+
+const getStrokePreviewColor = (
+  stroke: KoreanFieldworkHandwritingStroke
+): string => stroke.tool === 'eraser'
+  ? CANVAS_BACKGROUND_COLOR
+  : stroke.color ?? DEFAULT_BRUSH_COLOR;
 
 const getSmoothedPixelStrokePoints = (
   stroke: KoreanFieldworkHandwritingStroke,
@@ -731,7 +771,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   canvas: {
-    backgroundColor: '#fffefa',
+    backgroundColor: CANVAS_BACKGROUND_COLOR,
     height: DEFAULT_CANVAS_SIZE.height,
     position: 'relative',
   },

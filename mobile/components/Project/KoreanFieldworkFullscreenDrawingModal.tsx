@@ -16,11 +16,21 @@ import {
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import {
   KoreanFieldworkHandwritingStroke,
+  KoreanFieldworkHandwritingTool,
   normalizeKoreanFieldworkHandwritingStrokes,
 } from './korean-fieldwork-handwriting';
 
 export const DEFAULT_FIELDWORK_BRUSH_WIDTH = 5;
 export const FIELDWORK_BRUSH_WIDTH_OPTIONS = [3, 5, 8, 12] as const;
+export const DEFAULT_FIELDWORK_BRUSH_COLOR = '#111827';
+export const FIELDWORK_BRUSH_COLOR_OPTIONS = [
+  '#111827',
+  '#dc2626',
+  '#f59e0b',
+  '#16a34a',
+  '#2563eb',
+] as const;
+export const DEFAULT_FIELDWORK_DRAWING_TOOL: KoreanFieldworkHandwritingTool = 'pen';
 
 export interface FieldworkFullscreenDrawingBackground {
   aspectRatio?: number;
@@ -30,7 +40,7 @@ export interface FieldworkFullscreenDrawingBackground {
 
 interface FullscreenDrawingCommand {
   payload?: unknown;
-  type: 'setBrushWidth' | 'setStrokes';
+  type: 'setBrushStyle' | 'setBrushWidth' | 'setStrokes';
 }
 
 interface FullscreenDrawingMessage {
@@ -40,11 +50,15 @@ interface FullscreenDrawingMessage {
 
 interface Props {
   background?: FieldworkFullscreenDrawingBackground;
+  brushColor?: string;
   brushWidth: number;
+  drawingTool?: KoreanFieldworkHandwritingTool;
   isVisible: boolean;
+  onBrushColorChange?: (color: string) => void;
   onBrushWidthChange: (width: number) => void;
   onClose: () => void;
   onDrawingActiveChange?: (isActive: boolean) => void;
+  onDrawingToolChange?: (tool: KoreanFieldworkHandwritingTool) => void;
   onUpdateStrokes: (strokes: KoreanFieldworkHandwritingStroke[]) => void;
   strokes: KoreanFieldworkHandwritingStroke[];
   testIDPrefix: string;
@@ -59,11 +73,15 @@ const WEBVIEW_BASE_URL = 'https://idai-field.local/fullscreen-drawing/';
 
 const KoreanFieldworkFullscreenDrawingModal: React.FC<Props> = ({
   background,
+  brushColor = DEFAULT_FIELDWORK_BRUSH_COLOR,
   brushWidth,
+  drawingTool = DEFAULT_FIELDWORK_DRAWING_TOOL,
   isVisible,
+  onBrushColorChange,
   onBrushWidthChange,
   onClose,
   onDrawingActiveChange,
+  onDrawingToolChange,
   onUpdateStrokes,
   strokes,
   testIDPrefix,
@@ -84,7 +102,9 @@ const KoreanFieldworkFullscreenDrawingModal: React.FC<Props> = ({
       setCurrentStrokes(normalizedStrokes);
       setHtml(buildFullscreenDrawingHtml({
         background,
+        brushColor,
         brushWidth,
+        drawingTool,
         strokes: normalizedStrokes,
       }));
     }
@@ -96,7 +116,9 @@ const KoreanFieldworkFullscreenDrawingModal: React.FC<Props> = ({
     wasVisibleRef.current = isVisible;
   }, [
     background,
+    brushColor,
     brushWidth,
+    drawingTool,
     isVisible,
     normalizedStrokes,
     onDrawingActiveChange,
@@ -108,8 +130,15 @@ const KoreanFieldworkFullscreenDrawingModal: React.FC<Props> = ({
       return;
     }
 
-    postCommand({ type: 'setBrushWidth', payload: { width: brushWidth } });
-  }, [brushWidth, isVisible, normalizedStrokes]);
+    postCommand({
+      type: 'setBrushStyle',
+      payload: {
+        color: brushColor,
+        tool: drawingTool,
+        width: brushWidth,
+      },
+    });
+  }, [brushColor, brushWidth, drawingTool, isVisible, normalizedStrokes]);
 
   const postCommand = (command: FullscreenDrawingCommand) => {
     webViewRef.current?.postMessage(JSON.stringify(command));
@@ -179,8 +208,12 @@ const KoreanFieldworkFullscreenDrawingModal: React.FC<Props> = ({
           </View>
         </View>
         <KoreanFieldworkBrushControls
+          brushColor={brushColor}
           brushWidth={brushWidth}
+          drawingTool={drawingTool}
+          onSelectBrushColor={onBrushColorChange}
           onSelectBrushWidth={onBrushWidthChange}
+          onSelectDrawingTool={onDrawingToolChange}
           testIDPrefix={`${testIDPrefix}FullscreenBrush`}
         />
         {html && (
@@ -203,17 +236,86 @@ const KoreanFieldworkFullscreenDrawingModal: React.FC<Props> = ({
 };
 
 export const KoreanFieldworkBrushControls: React.FC<{
+  brushColor?: string;
   brushWidth: number;
+  drawingTool?: KoreanFieldworkHandwritingTool;
   isDisabled?: boolean;
+  onSelectBrushColor?: (color: string) => void;
   onSelectBrushWidth: (width: number) => void;
+  onSelectDrawingTool?: (tool: KoreanFieldworkHandwritingTool) => void;
   testIDPrefix: string;
 }> = ({
+  brushColor = DEFAULT_FIELDWORK_BRUSH_COLOR,
   brushWidth,
+  drawingTool = DEFAULT_FIELDWORK_DRAWING_TOOL,
   isDisabled = false,
+  onSelectBrushColor,
   onSelectBrushWidth,
+  onSelectDrawingTool,
   testIDPrefix,
 }) => (
   <View style={styles.brushRow}>
+    {!!onSelectDrawingTool && (
+      <View style={styles.toolGroup}>
+        {(['pen', 'eraser'] as const).map((tool) => {
+          const isSelected = drawingTool === tool;
+
+          return (
+            <TouchableOpacity
+              accessibilityState={{ selected: isSelected }}
+              activeOpacity={0.86}
+              disabled={isDisabled}
+              key={tool}
+              onPress={() => onSelectDrawingTool(tool)}
+              style={[
+                styles.toolOption,
+                isSelected && styles.toolOptionSelected,
+                isDisabled && styles.brushOptionDisabled,
+              ]}
+              testID={`${testIDPrefix}Tool_${tool}`}
+            >
+              <MaterialIcons
+                name={tool === 'pen' ? 'edit' : 'backspace'}
+                size={16}
+                color={isDisabled ? '#98a2b3' : isSelected ? '#027a48' : '#475467'}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    )}
+    {!!onSelectBrushColor && (
+      <View style={styles.colorGroup}>
+        {FIELDWORK_BRUSH_COLOR_OPTIONS.map((color, index) => {
+          const isSelected =
+            drawingTool !== 'eraser'
+            && brushColor.toLowerCase() === color.toLowerCase();
+
+          return (
+            <TouchableOpacity
+              accessibilityState={{ selected: isSelected }}
+              activeOpacity={0.86}
+              disabled={isDisabled}
+              key={color}
+              onPress={() => onSelectBrushColor(color)}
+              style={[
+                styles.colorOption,
+                isSelected && styles.colorOptionSelected,
+                isDisabled && styles.brushOptionDisabled,
+              ]}
+              testID={`${testIDPrefix}Color_${index}`}
+            >
+              <View
+                style={[
+                  styles.colorSwatch,
+                  { backgroundColor: color },
+                ]}
+              />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    )}
     <Text style={styles.brushLabel}>{TEXT.brush}</Text>
     {FIELDWORK_BRUSH_WIDTH_OPTIONS.map((width) => {
       const isSelected = brushWidth === width;
@@ -310,16 +412,22 @@ const parseFullscreenDrawingMessage = (
 
 const buildFullscreenDrawingHtml = ({
   background,
+  brushColor,
   brushWidth,
+  drawingTool,
   strokes,
 }: {
   background?: FieldworkFullscreenDrawingBackground;
+  brushColor: string;
   brushWidth: number;
+  drawingTool: KoreanFieldworkHandwritingTool;
   strokes: KoreanFieldworkHandwritingStroke[];
 }): string => {
   const initialState = toHtmlJson({
     background,
+    brushColor,
     brushWidth,
+    drawingTool,
     maxCoordinate: MAX_COORDINATE,
     strokes: normalizeKoreanFieldworkHandwritingStrokes(strokes),
   });
@@ -340,12 +448,17 @@ html,body{height:100%;margin:0;overflow:hidden;background:#f8fafc;font-family:-a
 const state=${initialState};
 const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d');
+const strokeCanvas=document.createElement('canvas');
+const strokeCtx=strokeCanvas.getContext('2d');
 let strokes=Array.isArray(state.strokes)?state.strokes:[];
 let brushWidth=state.brushWidth||5;
+let brushColor=isHexColor(state.brushColor)?state.brushColor:'#111827';
+let drawingTool=state.drawingTool==='eraser'?'eraser':'pen';
 let activeStroke=null;
 let gesture=null;
 let isDrawing=false;
 let renderQueued=false;
+let pixelRatio=1;
 const maxCoordinate=state.maxCoordinate||10000;
 const background=state.background||{};
 let viewport={offsetX:0,offsetY:0,scale:1};
@@ -357,6 +470,7 @@ function post(type,payload){
 function resize(){
   const rect=canvas.getBoundingClientRect();
   const ratio=window.devicePixelRatio||1;
+  pixelRatio=ratio;
   canvas.width=Math.max(1,Math.round(rect.width*ratio));
   canvas.height=Math.max(1,Math.round(rect.height*ratio));
   ctx.setTransform(ratio,0,0,ratio,0,0);
@@ -467,7 +581,7 @@ function start(event){
   }
   const point=screenToNormalized(getEventPoint(event));
   if(!point) return;
-  activeStroke={points:[point],width:brushWidth};
+  activeStroke={color:brushColor,points:[point],tool:drawingTool,width:brushWidth};
   isDrawing=true;
   post('drawingActive',true);
   requestRender();
@@ -505,34 +619,41 @@ function end(event){
   post('strokes',strokes);
   requestRender();
 }
-function drawStroke(stroke,color){
+function drawStroke(stroke,fallbackColor,drawingContext){
   if(!stroke||!Array.isArray(stroke.points)||stroke.points.length===0) return;
+  const target=drawingContext||ctx;
+  const isEraser=stroke.tool==='eraser';
   const width=Math.max(1,Math.min(24,stroke.width||5))*Math.sqrt(viewport.scale);
-  ctx.strokeStyle=color||'#111827';
-  ctx.fillStyle=color||'#111827';
-  ctx.lineCap='round';
-  ctx.lineJoin='round';
-  ctx.lineWidth=width;
+  const color=isEraser?'rgba(0,0,0,1)':isHexColor(stroke.color)?stroke.color:(fallbackColor||'#111827');
+  target.save();
+  target.globalCompositeOperation=isEraser?'destination-out':'source-over';
+  target.strokeStyle=color;
+  target.fillStyle=color;
+  target.lineCap='round';
+  target.lineJoin='round';
+  target.lineWidth=width;
   if(stroke.points.length===1){
     const dot=toScreenPoint(stroke.points[0]);
-    ctx.beginPath();
-    ctx.arc(dot.x,dot.y,(width+2)/2,0,Math.PI*2);
-    ctx.fill();
+    target.beginPath();
+    target.arc(dot.x,dot.y,(width+2)/2,0,Math.PI*2);
+    target.fill();
+    target.restore();
     return;
   }
   const points=stroke.points.map(toScreenPoint);
-  ctx.beginPath();
-  ctx.moveTo(points[0].x,points[0].y);
+  target.beginPath();
+  target.moveTo(points[0].x,points[0].y);
   for(let index=1;index<points.length-1;index+=1){
     const midpoint={
       x:(points[index].x+points[index+1].x)/2,
       y:(points[index].y+points[index+1].y)/2
     };
-    ctx.quadraticCurveTo(points[index].x,points[index].y,midpoint.x,midpoint.y);
+    target.quadraticCurveTo(points[index].x,points[index].y,midpoint.x,midpoint.y);
   }
   const lastPoint=points[points.length-1];
-  ctx.lineTo(lastPoint.x,lastPoint.y);
-  ctx.stroke();
+  target.lineTo(lastPoint.x,lastPoint.y);
+  target.stroke();
+  target.restore();
 }
 function drawBackground(){
   const points=Array.isArray(background.boundaryPoints)
@@ -566,8 +687,13 @@ function render(){
   const size=getCssSize();
   ctx.clearRect(0,0,size.width,size.height);
   drawBackground();
-  strokes.forEach((stroke)=>drawStroke(stroke,'#111827'));
-  if(activeStroke) drawStroke(activeStroke,'#111827');
+  strokeCanvas.width=canvas.width;
+  strokeCanvas.height=canvas.height;
+  strokeCtx.setTransform(pixelRatio,0,0,pixelRatio,0,0);
+  strokeCtx.clearRect(0,0,size.width,size.height);
+  strokes.forEach((stroke)=>drawStroke(stroke,'#111827',strokeCtx));
+  if(activeStroke) drawStroke(activeStroke,'#111827',strokeCtx);
+  ctx.drawImage(strokeCanvas,0,0,size.width,size.height);
 }
 function requestRender(){
   if(renderQueued) return;
@@ -579,6 +705,13 @@ function handleCommand(event){
   try{command=JSON.parse(event.data);}catch{return;}
   if(command.type==='setBrushWidth'){
     brushWidth=Math.max(1,Math.min(24,Number(command.payload&&command.payload.width)||brushWidth));
+    return;
+  }
+  if(command.type==='setBrushStyle'){
+    const payload=command.payload||{};
+    brushWidth=Math.max(1,Math.min(24,Number(payload.width)||brushWidth));
+    brushColor=isHexColor(payload.color)?payload.color:brushColor;
+    drawingTool=payload.tool==='eraser'?'eraser':'pen';
     return;
   }
   if(command.type==='setStrokes'){
@@ -598,6 +731,9 @@ function getPixelDistance(a,b){
 }
 function clamp(value,min,max){
   return Math.max(min,Math.min(max,value));
+}
+function isHexColor(value){
+  return typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
 }
 canvas.addEventListener('touchstart',start,{passive:false});
 canvas.addEventListener('touchmove',move,{passive:false});
@@ -671,8 +807,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eaecf0',
     borderBottomWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     minHeight: 44,
     paddingHorizontal: 10,
+    paddingVertical: 5,
   },
   brushLabel: {
     color: '#344054',
@@ -711,6 +849,51 @@ const styles = StyleSheet.create({
   },
   brushOptionTextSelected: {
     color: '#027a48',
+  },
+  colorGroup: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginRight: 8,
+  },
+  colorOption: {
+    alignItems: 'center',
+    borderColor: '#d0d5dd',
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    marginRight: 5,
+    width: 32,
+  },
+  colorOptionSelected: {
+    borderColor: '#039855',
+    borderWidth: 2,
+  },
+  colorSwatch: {
+    borderColor: 'rgba(17, 24, 39, 0.18)',
+    borderRadius: 10,
+    borderWidth: 1,
+    height: 18,
+    width: 18,
+  },
+  toolGroup: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginRight: 8,
+  },
+  toolOption: {
+    alignItems: 'center',
+    borderColor: '#d0d5dd',
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    marginRight: 5,
+    width: 36,
+  },
+  toolOptionSelected: {
+    backgroundColor: '#ecfdf3',
+    borderColor: '#039855',
   },
 });
 

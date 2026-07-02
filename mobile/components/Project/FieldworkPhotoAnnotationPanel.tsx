@@ -21,11 +21,13 @@ import {
   countKoreanFieldworkHandwritingPoints,
   KoreanFieldworkHandwritingPoint,
   KoreanFieldworkHandwritingStroke,
+  KoreanFieldworkHandwritingTool,
   normalizeKoreanFieldworkHandwritingStrokes,
   serializeKoreanFieldworkHandwriting,
 } from './korean-fieldwork-handwriting';
 import {
   DEFAULT_FIELDWORK_BRUSH_WIDTH,
+  DEFAULT_FIELDWORK_DRAWING_TOOL,
   KoreanFieldworkBrushControls,
 } from './KoreanFieldworkFullscreenDrawingModal';
 import { SOIL_COLOR_MUNSELL_REFERENCES } from './soil-color-photo-assist';
@@ -55,7 +57,7 @@ interface FieldworkPhotoAnnotationPanelProps {
 
 interface PhotoAnnotationFullscreenCommand {
   payload?: unknown;
-  type: 'setBrushWidth' | 'setMode' | 'setStrokes';
+  type: 'setBrushStyle' | 'setBrushWidth' | 'setMode' | 'setStrokes';
 }
 
 interface PhotoAnnotationFullscreenMessage {
@@ -79,6 +81,8 @@ const DEFAULT_CANVAS_SIZE = {
 };
 const MAX_COORDINATE = 10000;
 const DEFAULT_BRUSH_STROKE_WIDTH = DEFAULT_FIELDWORK_BRUSH_WIDTH;
+const DEFAULT_PHOTO_BRUSH_COLOR = '#ffea00';
+const DEFAULT_DRAWING_TOOL = DEFAULT_FIELDWORK_DRAWING_TOOL;
 const MIN_POINT_DISTANCE = 18;
 const RELEASE_POINT_MIN_DISTANCE = 1;
 const TAP_OPEN_FULLSCREEN_DISTANCE = 35;
@@ -109,7 +113,10 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
   );
   const [canvasSize, setCanvasSize] = useState(DEFAULT_CANVAS_SIZE);
   const [imageSize, setImageSize] = useState(DEFAULT_CANVAS_SIZE);
+  const [brushColor, setBrushColor] = useState(DEFAULT_PHOTO_BRUSH_COLOR);
   const [brushWidth, setBrushWidth] = useState(DEFAULT_BRUSH_STROKE_WIDTH);
+  const [drawingTool, setDrawingTool] =
+    useState<KoreanFieldworkHandwritingTool>(DEFAULT_DRAWING_TOOL);
   const [activeStroke, setActiveStroke] =
     useState<KoreanFieldworkHandwritingStroke>();
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
@@ -141,14 +148,16 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
 
     setIsSampleMode(nextSampleMode);
     setFullscreenHtml(buildPhotoAnnotationFullscreenHtml({
+      brushColor,
       brushWidth,
+      drawingTool,
       imageUri,
       isSampleMode: nextSampleMode,
       munsellReferences: SOIL_COLOR_MUNSELL_REFERENCES,
       strokes: latestStrokesRef.current,
     }));
     setIsFullscreenOpen(true);
-  }, [brushWidth, imageUri]);
+  }, [brushColor, brushWidth, drawingTool, imageUri]);
 
   const closeFullscreen = useCallback(() => {
     setIsFullscreenOpen(false);
@@ -166,6 +175,17 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
       type: 'setBrushWidth',
     });
   }, [brushWidth, postFullscreenCommand]);
+
+  useEffect(() => {
+    postFullscreenCommand({
+      payload: {
+        color: brushColor,
+        tool: drawingTool,
+        width: brushWidth,
+      },
+      type: 'setBrushStyle',
+    });
+  }, [brushColor, brushWidth, drawingTool, postFullscreenCommand]);
 
   useEffect(() => {
     postFullscreenCommand({
@@ -241,9 +261,19 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
       return;
     }
 
+    if (canvasMode === 'preview' && drawingTool === 'eraser') {
+      openFullscreen(false);
+      return;
+    }
+
     touchStartPointRef.current = point;
     activeCanvasRef.current = canvasMode;
-    activeStrokeRef.current = { points: [point], width: brushWidth };
+    activeStrokeRef.current = {
+      color: brushColor,
+      points: [point],
+      tool: drawingTool,
+      width: brushWidth,
+    };
     setActiveStroke(activeStrokeRef.current);
   };
   const moveStroke = (
@@ -315,7 +345,9 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
     if (interpolatedPoints.length === 0) return;
 
     activeStrokeRef.current = {
+      color: currentStroke.color,
       points: currentStroke.points.concat(interpolatedPoints),
+      tool: currentStroke.tool,
       width: currentStroke.width,
     };
     setActiveStroke(activeStrokeRef.current);
@@ -425,8 +457,15 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
         </View>
       </View>
       <KoreanFieldworkBrushControls
+        brushColor={brushColor}
         brushWidth={brushWidth}
+        drawingTool={drawingTool}
+        onSelectBrushColor={(color) => {
+          setBrushColor(color);
+          setDrawingTool('pen');
+        }}
         onSelectBrushWidth={setBrushWidth}
+        onSelectDrawingTool={setDrawingTool}
         testIDPrefix="fieldworkPhotoAnnotationBrush"
       />
       {!!sampleStatus && (
@@ -448,12 +487,13 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
         style={styles.canvas}
         testID="fieldworkPhotoAnnotationCanvas"
       >
-        <Image
-          pointerEvents="none"
-          resizeMode="contain"
-          source={{ uri: imageUri }}
-          style={StyleSheet.absoluteFillObject}
-        />
+        <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+          <Image
+            resizeMode="contain"
+            source={{ uri: imageUri }}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </View>
         {visibleStrokes.flatMap((stroke, strokeIndex) =>
           toStrokeSegments(stroke, strokeIndex, imageFrame)
         )}
@@ -510,6 +550,20 @@ const FieldworkPhotoAnnotationPanel: React.FC<FieldworkPhotoAnnotationPanelProps
             >
               {sampleStatus}
             </Text>
+          )}
+          {!isSampleMode && (
+            <KoreanFieldworkBrushControls
+              brushColor={brushColor}
+              brushWidth={brushWidth}
+              drawingTool={drawingTool}
+              onSelectBrushColor={(color) => {
+                setBrushColor(color);
+                setDrawingTool('pen');
+              }}
+              onSelectBrushWidth={setBrushWidth}
+              onSelectDrawingTool={setDrawingTool}
+              testIDPrefix="fieldworkPhotoAnnotationFullscreenBrush"
+            />
           )}
           {fullscreenHtml && (
             <WebView
@@ -810,7 +864,10 @@ const toStrokeSegments = (
   strokeIndex: number,
   imageFrame: Rect
 ) => {
+  if (stroke.tool === 'eraser') return [];
+
   const strokeWidth = getStrokeWidth(stroke);
+  const strokeColor = getPhotoAnnotationStrokeColor(stroke);
 
   if (stroke.points.length === 1) {
     const point = denormalizePoint(stroke.points[0], imageFrame);
@@ -822,6 +879,7 @@ const toStrokeSegments = (
         style={[
           styles.strokeDot,
           {
+            backgroundColor: strokeColor,
             height: strokeWidth + 3,
             left: point.x - ((strokeWidth + 3) / 2),
             borderRadius: (strokeWidth + 3) / 2,
@@ -847,6 +905,7 @@ const toStrokeSegments = (
         style={[
           styles.strokeSegment,
           {
+            backgroundColor: strokeColor,
             height: strokeWidth,
             left: ((start.x + end.x) / 2) - (distance / 2),
             borderRadius: strokeWidth / 2,
@@ -869,6 +928,7 @@ const toStrokeSegments = (
         style={[
           styles.strokeJoint,
           {
+            backgroundColor: strokeColor,
             height: strokeWidth,
             left: pixelPoint.x - (strokeWidth / 2),
             borderRadius: strokeWidth / 2,
@@ -886,21 +946,31 @@ const toStrokeSegments = (
 const getStrokeWidth = (stroke: KoreanFieldworkHandwritingStroke): number =>
   clamp(stroke.width ?? 3, 1, 24);
 
+const getPhotoAnnotationStrokeColor = (
+  stroke: KoreanFieldworkHandwritingStroke
+): string => stroke.color ?? DEFAULT_PHOTO_BRUSH_COLOR;
+
 const buildPhotoAnnotationFullscreenHtml = ({
+  brushColor,
   brushWidth,
+  drawingTool,
   imageUri,
   isSampleMode,
   munsellReferences,
   strokes,
 }: {
+  brushColor: string;
   brushWidth: number;
+  drawingTool: KoreanFieldworkHandwritingTool;
   imageUri: string;
   isSampleMode: boolean;
   munsellReferences: typeof SOIL_COLOR_MUNSELL_REFERENCES;
   strokes: KoreanFieldworkHandwritingStroke[];
 }): string => {
   const initialState = toHtmlJson({
+    brushColor,
     brushWidth,
+    drawingTool,
     imageUri,
     maxCoordinate: MAX_COORDINATE,
     mode: isSampleMode ? 'sample' : 'draw',
@@ -925,17 +995,22 @@ const canvas=document.getElementById('canvas');
 const ctx=canvas.getContext('2d',{willReadFrequently:true});
 const sampleCanvas=document.createElement('canvas');
 const sampleCtx=sampleCanvas.getContext('2d',{willReadFrequently:true});
+const strokeCanvas=document.createElement('canvas');
+const strokeCtx=strokeCanvas.getContext('2d');
 const image=new Image();
 let imageReady=false;
 let imageSamplingReady=false;
 let strokes=Array.isArray(state.strokes)?state.strokes:[];
 let brushWidth=state.brushWidth||5;
+let brushColor=isHexColor(state.brushColor)?state.brushColor:'#ffea00';
+let drawingTool=state.drawingTool==='eraser'?'eraser':'pen';
 let mode=state.mode==='sample'?'sample':'draw';
 let activeStroke=null;
 let activeSample=null;
 let isDrawing=false;
 let renderQueued=false;
 let gesture=null;
+let pixelRatio=1;
 let viewport={offsetX:0,offsetY:0,scale:1};
 const maxCoordinate=state.maxCoordinate||10000;
 const references=Array.isArray(state.munsellReferences)?state.munsellReferences:[];
@@ -947,6 +1022,7 @@ function post(type,payload){
 function resize(){
   const rect=canvas.getBoundingClientRect();
   const ratio=window.devicePixelRatio||1;
+  pixelRatio=ratio;
   canvas.width=Math.max(1,Math.round(rect.width*ratio));
   canvas.height=Math.max(1,Math.round(rect.height*ratio));
   ctx.setTransform(ratio,0,0,ratio,0,0);
@@ -1045,7 +1121,7 @@ function startTouch(event){
   }
   const normalized=screenToNormalized(point);
   if(!normalized) return;
-  activeStroke={points:[normalized],width:brushWidth};
+  activeStroke={color:brushColor,points:[normalized],tool:drawingTool,width:brushWidth};
   isDrawing=true;
   requestRender();
 }
@@ -1131,8 +1207,13 @@ function draw(){
   const size=getCssSize();
   ctx.clearRect(0,0,size.width,size.height);
   drawPhoto();
-  strokes.forEach((stroke)=>drawStroke(stroke,'#ffea00'));
-  if(activeStroke) drawStroke(activeStroke,'#ffea00');
+  strokeCanvas.width=canvas.width;
+  strokeCanvas.height=canvas.height;
+  strokeCtx.setTransform(pixelRatio,0,0,pixelRatio,0,0);
+  strokeCtx.clearRect(0,0,size.width,size.height);
+  strokes.forEach((stroke)=>drawStroke(stroke,'#ffea00',strokeCtx));
+  if(activeStroke) drawStroke(activeStroke,'#ffea00',strokeCtx);
+  ctx.drawImage(strokeCanvas,0,0,size.width,size.height);
   if(activeSample) drawSampleOverlay(activeSample);
 }
 function drawPhoto(){
@@ -1153,34 +1234,41 @@ function transformFrame(frame){
     width:frame.width*viewport.scale
   };
 }
-function drawStroke(stroke,color){
+function drawStroke(stroke,fallbackColor,drawingContext){
   if(!stroke||!Array.isArray(stroke.points)||stroke.points.length===0) return;
+  const target=drawingContext||ctx;
+  const isEraser=stroke.tool==='eraser';
   const width=Math.max(1,Math.min(24,stroke.width||5))*Math.sqrt(viewport.scale);
-  ctx.strokeStyle=color;
-  ctx.fillStyle=color;
-  ctx.lineCap='round';
-  ctx.lineJoin='round';
-  ctx.lineWidth=width;
+  const color=isEraser?'rgba(0,0,0,1)':isHexColor(stroke.color)?stroke.color:fallbackColor;
+  target.save();
+  target.globalCompositeOperation=isEraser?'destination-out':'source-over';
+  target.strokeStyle=color;
+  target.fillStyle=color;
+  target.lineCap='round';
+  target.lineJoin='round';
+  target.lineWidth=width;
   if(stroke.points.length===1){
     const dot=toScreenPoint(stroke.points[0]);
-    ctx.beginPath();
-    ctx.arc(dot.x,dot.y,(width+2)/2,0,Math.PI*2);
-    ctx.fill();
+    target.beginPath();
+    target.arc(dot.x,dot.y,(width+2)/2,0,Math.PI*2);
+    target.fill();
+    target.restore();
     return;
   }
   const points=stroke.points.map(toScreenPoint);
-  ctx.beginPath();
-  ctx.moveTo(points[0].x,points[0].y);
+  target.beginPath();
+  target.moveTo(points[0].x,points[0].y);
   for(let index=1;index<points.length-1;index+=1){
     const midpoint={
       x:(points[index].x+points[index+1].x)/2,
       y:(points[index].y+points[index+1].y)/2
     };
-    ctx.quadraticCurveTo(points[index].x,points[index].y,midpoint.x,midpoint.y);
+    target.quadraticCurveTo(points[index].x,points[index].y,midpoint.x,midpoint.y);
   }
   const lastPoint=points[points.length-1];
-  ctx.lineTo(lastPoint.x,lastPoint.y);
-  ctx.stroke();
+  target.lineTo(lastPoint.x,lastPoint.y);
+  target.stroke();
+  target.restore();
 }
 function drawSampleOverlay(sample){
   const screen=toScreenPoint(sample.point);
@@ -1222,6 +1310,13 @@ function handleCommand(event){
   try{command=JSON.parse(event.data);}catch{return;}
   if(command.type==='setBrushWidth'){
     brushWidth=Math.max(1,Math.min(24,Number(command.payload&&command.payload.width)||brushWidth));
+    return;
+  }
+  if(command.type==='setBrushStyle'){
+    const payload=command.payload||{};
+    brushWidth=Math.max(1,Math.min(24,Number(payload.width)||brushWidth));
+    brushColor=isHexColor(payload.color)?payload.color:brushColor;
+    drawingTool=payload.tool==='eraser'?'eraser':'pen';
     return;
   }
   if(command.type==='setMode'){
@@ -1278,6 +1373,9 @@ function distance(a,b){
 }
 function clamp(value,min,max){
   return Math.max(min,Math.min(max,value));
+}
+function isHexColor(value){
+  return typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
 }
 function roundRect(x,y,width,height,radius){
   ctx.beginPath();

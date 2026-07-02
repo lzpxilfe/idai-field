@@ -22,11 +22,14 @@ import {
   countKoreanFieldworkHandwritingPoints,
   KoreanFieldworkHandwritingPoint,
   KoreanFieldworkHandwritingStroke,
+  KoreanFieldworkHandwritingTool,
   normalizeKoreanFieldworkHandwritingStrokes,
   serializeKoreanFieldworkHandwriting,
 } from './korean-fieldwork-handwriting';
 import KoreanFieldworkFullscreenDrawingModal, {
+  DEFAULT_FIELDWORK_BRUSH_COLOR,
   DEFAULT_FIELDWORK_BRUSH_WIDTH,
+  DEFAULT_FIELDWORK_DRAWING_TOOL,
   FieldworkFullscreenDrawingBackground,
   KoreanFieldworkBrushControls,
 } from './KoreanFieldworkFullscreenDrawingModal';
@@ -68,6 +71,8 @@ const RELEASE_POINT_MIN_DISTANCE = 1;
 const INTERPOLATED_POINT_SPACING = 90;
 const MAX_INTERPOLATED_POINTS_PER_MOVE = 18;
 const PLAN_PADDING_RATIO = 0.08;
+const BOUNDARY_MEMO_STROKE_COLOR = '#f97316';
+const BOUNDARY_MEMO_ERASER_COLOR = '#ffffff';
 const FIELD = KOREAN_FIELDWORK_DAILY_JOURNAL_FIELDS;
 const WORK_MEMO_PLACEHOLDER =
   '\uc624\ub298 \uc870\uc0ac \ub0b4\uc6a9, \ubc1c\uacac \uc704\uce58, '
@@ -448,7 +453,10 @@ const BoundaryMemoCanvas: React.FC<{
   strokes,
 }) => {
   const [canvasSize, setCanvasSize] = useState(DEFAULT_CANVAS_SIZE);
+  const [brushColor, setBrushColor] = useState(DEFAULT_FIELDWORK_BRUSH_COLOR);
   const [brushWidth, setBrushWidth] = useState(DEFAULT_FIELDWORK_BRUSH_WIDTH);
+  const [drawingTool, setDrawingTool] =
+    useState<KoreanFieldworkHandwritingTool>(DEFAULT_FIELDWORK_DRAWING_TOOL);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeStroke, setActiveStroke] =
     useState<KoreanFieldworkHandwritingStroke>();
@@ -469,12 +477,22 @@ const BoundaryMemoCanvas: React.FC<{
     [boundaryAspectRatio, boundaryPlan, canvasSize]
   );
   const fullscreenBackground = useMemo(
-    () => boundaryPlan && boundaryPlan.boundaryPoints.length >= 3
-      ? {
-        ...boundaryPlan,
-        label: '\uc870\uc0ac \uacbd\uacc4',
+    () => {
+      const fullscreenBoundaryPoints = boundaryPlan?.boundaryPoints;
+      if (
+        !boundaryPlan
+        || !fullscreenBoundaryPoints
+        || fullscreenBoundaryPoints.length < 3
+      ) {
+        return undefined;
       }
-      : undefined,
+
+      return {
+        ...boundaryPlan,
+        boundaryPoints: fullscreenBoundaryPoints,
+        label: '\uc870\uc0ac \uacbd\uacc4',
+      };
+    },
     [boundaryPlan]
   );
   const strokePointCount = countKoreanFieldworkHandwritingPoints(strokes);
@@ -493,7 +511,12 @@ const BoundaryMemoCanvas: React.FC<{
     const point = getNormalizedPoint(event, canvasSize, boundaryAspectRatio);
     if (!point) return;
 
-    activeStrokeRef.current = { points: [point], width: brushWidth };
+    activeStrokeRef.current = {
+      color: brushColor,
+      points: [point],
+      tool: drawingTool,
+      width: brushWidth,
+    };
     setActiveStroke(activeStrokeRef.current);
   };
   const moveStroke = (event: GestureResponderEvent) => {
@@ -556,7 +579,9 @@ const BoundaryMemoCanvas: React.FC<{
     if (interpolatedPoints.length === 0) return;
 
     activeStrokeRef.current = {
+      color: currentStroke.color,
       points: currentStroke.points.concat(interpolatedPoints),
+      tool: currentStroke.tool,
       width: currentStroke.width,
     };
     setActiveStroke(activeStrokeRef.current);
@@ -596,9 +621,16 @@ const BoundaryMemoCanvas: React.FC<{
         </View>
       </View>
       <KoreanFieldworkBrushControls
+        brushColor={brushColor}
         brushWidth={brushWidth}
+        drawingTool={drawingTool}
         isDisabled={!canEdit}
+        onSelectBrushColor={(color) => {
+          setBrushColor(color);
+          setDrawingTool('pen');
+        }}
         onSelectBrushWidth={setBrushWidth}
+        onSelectDrawingTool={setDrawingTool}
         testIDPrefix="dailyJournalBoundaryBrush"
       />
       <View
@@ -651,10 +683,17 @@ const BoundaryMemoCanvas: React.FC<{
       </View>
       <KoreanFieldworkFullscreenDrawingModal
         background={fullscreenBackground}
+        brushColor={brushColor}
         brushWidth={brushWidth}
+        drawingTool={drawingTool}
         isVisible={isFullscreen}
+        onBrushColorChange={(color) => {
+          setBrushColor(color);
+          setDrawingTool('pen');
+        }}
         onBrushWidthChange={setBrushWidth}
         onClose={() => setIsFullscreen(false)}
+        onDrawingToolChange={setDrawingTool}
         onUpdateStrokes={commitStrokes}
         strokes={latestStrokesRef.current}
         testIDPrefix="dailyJournalBoundary"
@@ -1171,6 +1210,7 @@ const toStrokeSegments = (
   aspectRatio = 1
 ) => {
   const strokeWidth = getStrokeWidth(stroke);
+  const strokeColor = getBoundaryMemoStrokeColor(stroke);
 
   if (stroke.points.length === 1) {
     const point = denormalizePoint(stroke.points[0], canvasSize, aspectRatio);
@@ -1181,6 +1221,7 @@ const toStrokeSegments = (
         style={[
           styles.strokeDot,
           {
+            backgroundColor: strokeColor,
             height: strokeWidth + 3,
             left: point.x - ((strokeWidth + 3) / 2),
             borderRadius: (strokeWidth + 3) / 2,
@@ -1197,7 +1238,7 @@ const toStrokeSegments = (
 
     return (
       <LineSegment
-        color="#f97316"
+        color={strokeColor}
         end={denormalizePoint(point, canvasSize, aspectRatio)}
         key={`${strokeIndex}-${pointIndex}`}
         start={denormalizePoint(previousPoint, canvasSize, aspectRatio)}
@@ -1209,6 +1250,12 @@ const toStrokeSegments = (
 
 const getStrokeWidth = (stroke: KoreanFieldworkHandwritingStroke): number =>
   clamp(stroke.width ?? 3, 1, 24);
+
+const getBoundaryMemoStrokeColor = (
+  stroke: KoreanFieldworkHandwritingStroke
+): string => stroke.tool === 'eraser'
+  ? BOUNDARY_MEMO_ERASER_COLOR
+  : stroke.color ?? BOUNDARY_MEMO_STROKE_COLOR;
 
 const LineSegment: React.FC<{
   color: string;

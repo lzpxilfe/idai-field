@@ -3,8 +3,12 @@ export interface KoreanFieldworkHandwritingPoint {
   y: number;
 }
 
+export type KoreanFieldworkHandwritingTool = 'pen' | 'eraser';
+
 export interface KoreanFieldworkHandwritingStroke {
+  color?: string;
   points: KoreanFieldworkHandwritingPoint[];
+  tool?: KoreanFieldworkHandwritingTool;
   width?: number;
 }
 
@@ -16,6 +20,7 @@ export interface KoreanFieldworkHandwritingPayload {
 const MAX_COORDINATE = 10000;
 const MIN_STROKE_WIDTH = 1;
 const MAX_STROKE_WIDTH = 24;
+const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 export const normalizeKoreanFieldworkHandwritingStrokes = (
   value: unknown
@@ -127,9 +132,13 @@ const normalizeStroke = (
   if (points.length === 0) return undefined;
 
   const width = isRecord(value) ? normalizeStrokeWidth(value.width) : undefined;
+  const color = isRecord(value) ? normalizeStrokeColor(value.color) : undefined;
+  const tool = isRecord(value) ? normalizeStrokeTool(value.tool) : undefined;
 
   return {
+    ...(color !== undefined ? { color } : {}),
     points,
+    ...(tool !== undefined ? { tool } : {}),
     ...(width !== undefined ? { width } : {}),
   };
 };
@@ -158,6 +167,22 @@ const normalizeStrokeWidth = (value: unknown): number | undefined => {
     MIN_STROKE_WIDTH,
     Math.min(MAX_STROKE_WIDTH, Math.round(value))
   );
+};
+
+const normalizeStrokeColor = (value: unknown): string | undefined => {
+  if (typeof value !== 'string' || !HEX_COLOR_PATTERN.test(value)) {
+    return undefined;
+  }
+
+  return value.toLowerCase();
+};
+
+const normalizeStrokeTool = (
+  value: unknown
+): KoreanFieldworkHandwritingTool | undefined => {
+  if (value === 'pen' || value === 'eraser') return value;
+
+  return undefined;
 };
 
 const parseKoreanFieldworkHandwritingPayload = (value: string): unknown => {
