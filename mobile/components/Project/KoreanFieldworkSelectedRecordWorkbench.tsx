@@ -38,6 +38,7 @@ interface KoreanFieldworkSelectedRecordWorkbenchProps {
   onAddDocumentOfCategory: (parentDoc: Document, categoryName: string) => void;
   onClearSelection: () => void;
   onEditDocument: (document: Document) => void;
+  onOpenFeatureSketch?: (document: Document) => void;
   onOpenDocument: (document: Document) => void;
   onOpenMapDocument: (document: Document) => void;
   onToggleExpanded?: () => void;
@@ -59,6 +60,7 @@ const KoreanFieldworkSelectedRecordWorkbench: React.FC<
   onAddDocumentOfCategory,
   onClearSelection,
   onEditDocument,
+  onOpenFeatureSketch,
   onOpenDocument,
   onOpenMapDocument,
   onToggleExpanded,
@@ -81,6 +83,9 @@ const KoreanFieldworkSelectedRecordWorkbench: React.FC<
   const canAddSoilProfilePhoto = allowedAddCategoryNames.includes(
     KOREAN_FIELDWORK_CATEGORIES.SOIL_PROFILE_PHOTO
   );
+  const canOpenFeatureSketch =
+    document.resource.category === KOREAN_FIELDWORK_CATEGORIES.FEATURE
+    && !!onOpenFeatureSketch;
 
   return (
     <View style={styles.container} testID="selectedRecordWorkbench">
@@ -133,6 +138,14 @@ const KoreanFieldworkSelectedRecordWorkbench: React.FC<
           onPress={() => onEditDocument(document)}
           testID="selectedRecordEdit"
         />
+        {canOpenFeatureSketch && (
+          <CommandButton
+            icon="draw"
+            label="약도"
+            onPress={() => onOpenFeatureSketch?.(document)}
+            testID="selectedRecordOpenFeatureSketch"
+          />
+        )}
         <CommandButton
           icon="add"
           label="이어 만들기"

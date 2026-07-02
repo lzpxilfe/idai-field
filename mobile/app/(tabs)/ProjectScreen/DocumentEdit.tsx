@@ -71,6 +71,7 @@ const DocumentEdit: React.FC = () => {
   const params = useGlobalSearchParams();
   const docId = getParam(params.docId);
   const categoryName = getParam(params.categoryName);
+  const shouldOpenFreeSketch = getParam(params.openFreeSketch) === '1';
   const returnTarget = getKoreanFieldworkReturnTarget(params.returnTo);
 
   const config = useContext(ConfigurationContext);
@@ -289,6 +290,7 @@ const DocumentEdit: React.FC = () => {
       }
       formFooter={isFeatureRecord ? (
         <KoreanFieldworkFreeDrawingPanel
+          initiallyFullscreen={shouldOpenFreeSketch}
           onDrawingActiveChange={setIsFreeDrawingActive}
           strokesValue={resource[KOREAN_FIELDWORK_FREE_DRAWING_FIELDS.featureStrokes]}
           onUpdateStrokes={(serializedStrokes) => applyResourceUpdates({

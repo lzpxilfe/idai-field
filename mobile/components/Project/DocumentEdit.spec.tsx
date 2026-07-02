@@ -53,6 +53,20 @@ jest.mock('@/contexts/project-context', () => {
 });
 jest.mock('dateformat', () => jest.fn(() => '2026-01-01'));
 jest.mock('expo-barcode-scanner');
+jest.mock('react-native-webview', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const MockWebView = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({
+      postMessage: jest.fn(),
+    }));
+
+    return <View {...props} />;
+  });
+  MockWebView.displayName = 'MockWebView';
+
+  return { WebView: MockWebView };
+});
 jest.mock('expo-router', () => ({
   router: { navigate: (...args: any[]) => mockNavigate(...args) },
   useGlobalSearchParams: () => mockUseGlobalSearchParams(),
@@ -230,7 +244,56 @@ describe('DocumentEdit', () => {
       params: { highlightedDocId: t2.resource.id },
     });
   });
+
+  it('opens feature rough sketch directly as a full-screen blank drawing canvas', async () => {
+    cleanup();
+    mockUseGlobalSearchParams.mockReturnValue({
+      docId: 'si1',
+      categoryName: 'Feature',
+      openFreeSketch: '1',
+    });
+    renderAPI = renderDocumentEditScreen(
+      preferences,
+      config,
+      repository
+    );
+
+    await waitFor(() =>
+      expect(renderAPI.getByTestId('fieldworkFreeDrawingFullscreenCanvas'))
+        .toBeTruthy()
+    );
+  });
 });
+
+const renderDocumentEditScreen = (
+  preferences: Preferences,
+  config: ProjectConfiguration,
+  repository: DocumentRepository
+): RenderAPI => render(
+  <ToastProvider>
+    <PreferencesContext.Provider
+      value={{
+        preferences,
+        setCurrentProject,
+        setUsername,
+        setProjectSettings,
+        setLanguages,
+        removeProject,
+        getMapSettings,
+        setMapSettings,
+        setMapProviderSettings,
+      }}
+    >
+      <LabelsContext.Provider value={{ labels: new Labels(() => ['en']) }}>
+        <ConfigurationContext.Provider value={config}>
+          <ProjectContext.Provider value={{ repository } as any}>
+            <DocumentEdit />
+          </ProjectContext.Provider>
+        </ConfigurationContext.Provider>
+      </LabelsContext.Provider>
+    </PreferencesContext.Provider>
+  </ToastProvider>
+);
 
 const createProjectConfiguration = (
   forms: Forest<CategoryForm>

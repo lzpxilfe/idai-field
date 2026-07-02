@@ -41,6 +41,7 @@ interface PixelPoint {
 }
 
 interface Props {
+  initiallyFullscreen?: boolean;
   onDrawingActiveChange?: (isActive: boolean) => void;
   onUpdateStrokes: (serializedStrokes: string) => void;
   strokesValue?: unknown;
@@ -63,10 +64,11 @@ const MAX_SMOOTHING_STEPS = 4;
 const DOUBLE_TAP_DELAY_MS = 260;
 const DOUBLE_TAP_DISTANCE = 520;
 const TEXT = {
-  title: '\uc790\uc720 \uc2a4\ucf00\uce58',
+  title: '\uc57d\ub3c4 \uc2a4\ucf00\uce58',
 };
 
 const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
+  initiallyFullscreen = false,
   onDrawingActiveChange,
   onUpdateStrokes,
   strokesValue,
@@ -92,6 +94,7 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
   const latestStrokesRef = useRef<KoreanFieldworkHandwritingStroke[]>(strokes);
   const pendingTapCommitRef = useRef<ReturnType<typeof setTimeout>>();
   const pendingTapStrokeRef = useRef<KoreanFieldworkHandwritingStroke>();
+  const hasAppliedInitialFullscreenRef = useRef(false);
   const visibleStrokes = activeStroke ? strokes.concat(activeStroke) : strokes;
   const strokeCount = strokes.length;
   const setDrawingInteractionActive = useCallback((isActive: boolean) => {
@@ -112,6 +115,19 @@ const KoreanFieldworkFreeDrawingPanel: React.FC<Props> = ({
     }
     setDrawingInteractionActive(false);
   }, [setDrawingInteractionActive]);
+
+  useEffect(() => {
+    if (!initiallyFullscreen || hasAppliedInitialFullscreenRef.current) return;
+
+    hasAppliedInitialFullscreenRef.current = true;
+    if (pendingTapCommitRef.current !== undefined) {
+      clearTimeout(pendingTapCommitRef.current);
+      pendingTapCommitRef.current = undefined;
+    }
+    pendingTapStrokeRef.current = undefined;
+    setIsFullscreen(true);
+    setDrawingInteractionActive(true);
+  }, [initiallyFullscreen, setDrawingInteractionActive]);
 
   const updateCanvasSize = (event: LayoutChangeEvent) => {
     const { height, width } = event.nativeEvent.layout;

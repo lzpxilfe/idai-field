@@ -29,6 +29,7 @@ describe('KoreanFieldworkSelectedRecordWorkbench', () => {
     const handleAddDocumentOfCategory = jest.fn();
     const handleClearSelection = jest.fn();
     const handleEditDocument = jest.fn();
+    const handleOpenFeatureSketch = jest.fn();
     const handleOpenMapDocument = jest.fn();
 
     const { getByTestId, getByText, queryByText } = renderWorkbench(feature, {
@@ -37,6 +38,7 @@ describe('KoreanFieldworkSelectedRecordWorkbench', () => {
       onAddDocumentOfCategory: handleAddDocumentOfCategory,
       onClearSelection: handleClearSelection,
       onEditDocument: handleEditDocument,
+      onOpenFeatureSketch: handleOpenFeatureSketch,
       onOpenMapDocument: handleOpenMapDocument,
     });
 
@@ -47,6 +49,7 @@ describe('KoreanFieldworkSelectedRecordWorkbench', () => {
 
     fireEvent.press(getByTestId('selectedRecordOpenMap'));
     fireEvent.press(getByTestId('selectedRecordEdit'));
+    fireEvent.press(getByTestId('selectedRecordOpenFeatureSketch'));
     fireEvent.press(getByTestId('selectedRecordAddChild'));
     fireEvent.press(getByTestId('selectedRecordAddPhoto'));
     fireEvent.press(getByTestId('selectedRecordAddSoilProfilePhoto'));
@@ -54,6 +57,7 @@ describe('KoreanFieldworkSelectedRecordWorkbench', () => {
 
     expect(handleOpenMapDocument).toHaveBeenCalledWith(feature);
     expect(handleEditDocument).toHaveBeenCalledWith(feature);
+    expect(handleOpenFeatureSketch).toHaveBeenCalledWith(feature);
     expect(handleAddChild).toHaveBeenCalledWith(feature);
     expect(handleAddDocumentOfCategory).toHaveBeenCalledWith(feature, C.PHOTO);
     expect(handleAddDocumentOfCategory).toHaveBeenCalledWith(

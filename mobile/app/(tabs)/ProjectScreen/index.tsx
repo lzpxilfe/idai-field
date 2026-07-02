@@ -499,12 +499,17 @@ const DocumentsList: React.FC = () => {
     };
   }, [projectId]);
   const openMap = () => router.navigate(getKoreanFieldworkSiteOverviewMapRoute());
-  const editDocumentById = (docId: string, categoryName: string) => {
+  const editDocumentById = (
+    docId: string,
+    categoryName: string,
+    extraParams: Record<string, string> = {}
+  ) => {
     router.navigate({
       pathname: '/ProjectScreen/DocumentEdit',
       params: {
         docId,
         categoryName,
+        ...extraParams,
         ...getKoreanFieldworkReturnParam(
           KOREAN_FIELDWORK_RETURN_TARGETS.FIELD_BOARD
         ),
@@ -513,6 +518,11 @@ const DocumentsList: React.FC = () => {
   };
   const editDocument = (document: Document) => {
     editDocumentById(document.resource.id, document.resource.category);
+  };
+  const openFeatureSketch = (document: Document) => {
+    editDocumentById(document.resource.id, document.resource.category, {
+      openFreeSketch: '1',
+    });
   };
   const confirmRemoveDocument = useCallback((document: Document) => {
     if (!relationsManager) {
@@ -1104,6 +1114,7 @@ const DocumentsList: React.FC = () => {
                 setIsSelectedWorkbenchExpanded(false);
               }}
               onEditDocument={editDocument}
+              onOpenFeatureSketch={openFeatureSketch}
               onOpenDocument={(document) =>
                 selectWorkbenchDocument(document, {
                   expand: isSelectedWorkbenchExpanded,

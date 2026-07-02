@@ -204,6 +204,17 @@ describe('KoreanFieldworkFreeDrawingPanel', () => {
     expect(getByTestId('fieldworkFreeDrawingFullscreenCanvas')).toBeTruthy();
   });
 
+  it('can start directly in the full-screen sketch canvas', () => {
+    const { getByTestId } = render(
+      <KoreanFieldworkFreeDrawingPanel
+        initiallyFullscreen
+        onUpdateStrokes={jest.fn()}
+      />
+    );
+
+    expect(getByTestId('fieldworkFreeDrawingFullscreenCanvas')).toBeTruthy();
+  });
+
   it('does not show technical stroke and point counts in the sketch header', () => {
     const { queryByText } = render(
       <KoreanFieldworkFreeDrawingPanel
