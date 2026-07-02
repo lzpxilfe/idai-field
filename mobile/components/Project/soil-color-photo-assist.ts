@@ -19,7 +19,7 @@ export type SoilColorAssistStatus =
   | 'lowConfidence'
   | 'notRun';
 
-interface MunsellReference {
+export interface MunsellReference {
   munsell: string;
   rgb: RgbSample;
 }
@@ -52,7 +52,7 @@ const MAX_DECODE_MEMORY_MB = 96;
 const LOW_CONFIDENCE_DELTA_E = 22;
 const CANDIDATE_COUNT = 3;
 
-const MUNSELL_REFERENCES: readonly MunsellReference[] = [
+export const SOIL_COLOR_MUNSELL_REFERENCES: readonly MunsellReference[] = [
   { munsell: '10YR 2/1', rgb: { red: 43, green: 39, blue: 35 } },
   { munsell: '10YR 3/1', rgb: { red: 64, green: 59, blue: 52 } },
   { munsell: '10YR 3/2', rgb: { red: 79, green: 65, blue: 50 } },
@@ -80,6 +80,7 @@ const MUNSELL_REFERENCES: readonly MunsellReference[] = [
   { munsell: 'GLEY 1 4/N', rgb: { red: 84, green: 88, blue: 86 } },
   { munsell: 'GLEY 1 5/N', rgb: { red: 112, green: 116, blue: 114 } },
 ];
+const MUNSELL_REFERENCES = SOIL_COLOR_MUNSELL_REFERENCES;
 
 export const createSoilColorAssistUpdatesFromPhotoBase64 = (
   base64?: string

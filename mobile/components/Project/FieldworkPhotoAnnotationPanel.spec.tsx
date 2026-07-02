@@ -12,6 +12,21 @@ jest.mock('@expo/vector-icons', () => {
   };
 });
 
+jest.mock('react-native-webview', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const MockWebView = React.forwardRef((props: Record<string, unknown>, ref: unknown) => {
+    React.useImperativeHandle(ref, () => ({
+      postMessage: jest.fn(),
+    }));
+
+    return <View {...props} />;
+  });
+  MockWebView.displayName = 'MockWebView';
+
+  return { WebView: MockWebView };
+});
+
 describe('FieldworkPhotoAnnotationPanel', () => {
   afterEach(() => {
     jest.restoreAllMocks();
@@ -91,8 +106,13 @@ describe('FieldworkPhotoAnnotationPanel', () => {
     expect(getByTestId('fieldworkPhotoAnnotationStatus').props.children)
       .toBe('2층 토색을 찍을 지점을 사진에서 누르세요.');
 
-    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'responderGrant', {
-      nativeEvent: { locationX: 160, locationY: 120 },
+    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'message', {
+      nativeEvent: {
+        data: JSON.stringify({
+          payload: { x: 5000, y: 5000 },
+          type: 'samplePoint',
+        }),
+      },
     });
 
     await waitFor(() =>
@@ -118,14 +138,77 @@ describe('FieldworkPhotoAnnotationPanel', () => {
 
     fireEvent.press(getByTestId('fieldworkPhotoAnnotationClear'));
     fireEvent.press(getByTestId('fieldworkPhotoSamplePointButton'));
-    fireEvent(getByTestId('fieldworkPhotoAnnotationCanvas'), 'responderGrant', {
-      nativeEvent: { locationX: 256, locationY: 120 },
+    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'message', {
+      nativeEvent: {
+        data: JSON.stringify({
+          payload: { x: 8000, y: 5000 },
+          type: 'samplePoint',
+        }),
+      },
     });
 
     expect(handleUpdateStrokes).toHaveBeenCalledWith('{"version":1,"strokes":[]}');
     await waitFor(() =>
       expect(handleSamplePoint).toHaveBeenCalledWith({ x: 8000, y: 5000 })
     );
+  });
+
+  it('shows a live Munsell preview while the eyedropper moves', () => {
+    const { getByTestId } = render(
+      <FieldworkPhotoAnnotationPanel
+        imageUri="file:///tablet/profile.jpg"
+        onSamplePoint={jest.fn()}
+        onUpdateStrokes={jest.fn()}
+        sampleButtonLabel="토색 찍기"
+        sampleRequestLabel="3층"
+      />
+    );
+
+    fireEvent.press(getByTestId('fieldworkPhotoSamplePointButton'));
+    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'message', {
+      nativeEvent: {
+        data: JSON.stringify({
+          payload: {
+            munsell: '10YR 4/3',
+            point: { x: 5000, y: 5000 },
+            rgb: { red: 111, green: 87, blue: 61 },
+          },
+          type: 'samplePreview',
+        }),
+      },
+    });
+
+    expect(getByTestId('fieldworkPhotoAnnotationFullscreenStatus').props.children)
+      .toBe('3층 10YR 4/3 · RGB 111/87/61');
+  });
+
+  it('stores full-screen photo drawing strokes with brush width', () => {
+    const handleUpdateStrokes = jest.fn();
+    const { getByTestId } = render(
+      <FieldworkPhotoAnnotationPanel
+        imageUri="file:///tablet/photo.jpg"
+        onUpdateStrokes={handleUpdateStrokes}
+      />
+    );
+
+    fireEvent.press(getByTestId('fieldworkPhotoAnnotationBrush_8'));
+    fireEvent.press(getByTestId('fieldworkPhotoAnnotationFullscreen'));
+    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'message', {
+      nativeEvent: {
+        data: JSON.stringify({
+          payload: [
+            {
+              points: [{ x: 1000, y: 1000 }, { x: 5000, y: 5000 }],
+              width: 8,
+            },
+          ],
+          type: 'strokes',
+        }),
+      },
+    });
+
+    expect(JSON.parse(handleUpdateStrokes.mock.calls[0][0]).strokes[0].width)
+      .toBe(8);
   });
 
   it('samples against the displayed image frame when the photo is letterboxed', async () => {
@@ -142,8 +225,13 @@ describe('FieldworkPhotoAnnotationPanel', () => {
     );
 
     fireEvent.press(getByTestId('fieldworkPhotoSamplePointButton'));
-    fireEvent(getByTestId('fieldworkPhotoAnnotationCanvas'), 'responderGrant', {
-      nativeEvent: { locationX: 160, locationY: 120 },
+    fireEvent(getByTestId('fieldworkPhotoAnnotationFullscreenCanvas'), 'message', {
+      nativeEvent: {
+        data: JSON.stringify({
+          payload: { x: 5000, y: 5000 },
+          type: 'samplePoint',
+        }),
+      },
     });
 
     await waitFor(() =>
