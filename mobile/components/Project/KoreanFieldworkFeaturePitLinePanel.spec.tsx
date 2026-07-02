@@ -18,7 +18,7 @@ jest.mock('@expo/vector-icons', () => {
 const C = KOREAN_FIELDWORK_CATEGORIES;
 
 describe('KoreanFieldworkFeaturePitLinePanel', () => {
-  it('stores a straight soil pit line on the feature sketch', () => {
+  it('stores a straight soil pit line from two tapped points', () => {
     const onUpdateResourceFields = jest.fn();
     const { getByTestId } = render(
       <KoreanFieldworkFeaturePitLinePanel
@@ -51,21 +51,66 @@ describe('KoreanFieldworkFeaturePitLinePanel', () => {
     fireEvent(canvas, 'responderGrant', {
       nativeEvent: { locationX: 80, locationY: 50 },
     });
-    fireEvent(canvas, 'responderMove', {
-      nativeEvent: { locationX: 320, locationY: 150 },
-    });
-    fireEvent(canvas, 'responderRelease', {
+
+    expect(onUpdateResourceFields).not.toHaveBeenCalled();
+    expect(getByTestId('featurePitLinePendingStart')).toBeTruthy();
+
+    fireEvent(canvas, 'responderGrant', {
       nativeEvent: { locationX: 320, locationY: 150 },
     });
 
     expect(onUpdateResourceFields).toHaveBeenCalledTimes(1);
     const updates = onUpdateResourceFields.mock.calls[0][0];
-    const pitLine = JSON.parse(updates[KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.line]);
+    const pitLines = JSON.parse(updates[KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.lines]);
+    const pitLine = pitLines[0];
 
+    expect(pitLines).toHaveLength(1);
+    expect(pitLine.label).toBe('1');
     expect(pitLine.start).toEqual({ x: 20, y: 25 });
     expect(pitLine.end).toEqual({ x: 80, y: 75 });
     expect(updates[KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.updatedAt])
       .toEqual(pitLine.updatedAt);
+  });
+
+  it('adds another soil pit line to an existing feature line set', () => {
+    const onUpdateResourceFields = jest.fn();
+    const { getByTestId } = render(
+      <KoreanFieldworkFeaturePitLinePanel
+        document={createDoc('feature-1', C.FEATURE, {
+          featureSoilPitLines: JSON.stringify([
+            {
+              version: 1,
+              id: 'soil-pit-line-1',
+              label: '1',
+              start: { x: 25, y: 30 },
+              end: { x: 75, y: 65 },
+            },
+          ]),
+        })}
+        documents={[]}
+        onUpdateResourceFields={onUpdateResourceFields}
+      />
+    );
+    const canvas = getByTestId('featurePitLineCanvas');
+
+    fireEvent(canvas, 'layout', {
+      nativeEvent: { layout: { height: 200, width: 400 } },
+    });
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 40, locationY: 40 },
+    });
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 360, locationY: 160 },
+    });
+
+    const updates = onUpdateResourceFields.mock.calls[0][0];
+    const pitLines = JSON.parse(updates[KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.lines]);
+
+    expect(pitLines).toHaveLength(2);
+    expect(pitLines[0].label).toBe('1');
+    expect(pitLines[1].label).toBe('2');
+    expect(pitLines[1].start).toEqual({ x: 10, y: 20 });
+    expect(pitLines[1].end).toEqual({ x: 90, y: 80 });
   });
 
   it('connects the feature pit line panel to soil profile photo creation', () => {
@@ -122,7 +167,88 @@ describe('KoreanFieldworkFeaturePitLinePanel', () => {
 
     expect(onUpdateResourceFields).toHaveBeenCalledWith(expect.objectContaining({
       [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.line]: '',
+      [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.lines]: '[]',
     }));
+  });
+
+  it('undoes the last saved soil pit line before clearing the others', () => {
+    const onUpdateResourceFields = jest.fn();
+    const { getByTestId } = render(
+      <KoreanFieldworkFeaturePitLinePanel
+        document={createDoc('feature-1', C.FEATURE, {
+          featureSoilPitLines: JSON.stringify([
+            {
+              version: 1,
+              id: 'soil-pit-line-1',
+              label: '1',
+              start: { x: 20, y: 30 },
+              end: { x: 40, y: 50 },
+            },
+            {
+              version: 1,
+              id: 'soil-pit-line-2',
+              label: '2',
+              start: { x: 60, y: 30 },
+              end: { x: 80, y: 50 },
+            },
+          ]),
+        })}
+        documents={[]}
+        onUpdateResourceFields={onUpdateResourceFields}
+      />
+    );
+
+    fireEvent.press(getByTestId('featurePitLineUndoLast'));
+
+    const updates = onUpdateResourceFields.mock.calls[0][0];
+    const pitLines = JSON.parse(updates[KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.lines]);
+
+    expect(pitLines).toHaveLength(1);
+    expect(pitLines[0].label).toBe('1');
+  });
+
+  it('cancels a pending start point without updating the document', () => {
+    const onUpdateResourceFields = jest.fn();
+    const { getByTestId, queryByTestId } = render(
+      <KoreanFieldworkFeaturePitLinePanel
+        document={createDoc('feature-1', C.FEATURE)}
+        documents={[]}
+        onUpdateResourceFields={onUpdateResourceFields}
+      />
+    );
+    const canvas = getByTestId('featurePitLineCanvas');
+
+    fireEvent(canvas, 'layout', {
+      nativeEvent: { layout: { height: 200, width: 400 } },
+    });
+    fireEvent(canvas, 'responderGrant', {
+      nativeEvent: { locationX: 80, locationY: 50 },
+    });
+    expect(getByTestId('featurePitLinePendingStart')).toBeTruthy();
+
+    fireEvent.press(getByTestId('featurePitLineUndoLast'));
+
+    expect(queryByTestId('featurePitLinePendingStart')).toBeNull();
+    expect(onUpdateResourceFields).not.toHaveBeenCalled();
+  });
+
+  it('reads a legacy single soil pit line as the first line', () => {
+    const { getByTestId } = render(
+      <KoreanFieldworkFeaturePitLinePanel
+        document={createDoc('feature-1', C.FEATURE, {
+          featureSoilPitLine: JSON.stringify({
+            version: 1,
+            start: { x: 25, y: 30 },
+            end: { x: 75, y: 65 },
+          }),
+        })}
+        documents={[]}
+        onUpdateResourceFields={jest.fn()}
+      />
+    );
+
+    expect(getByTestId('featurePitLineSegment')).toBeTruthy();
+    expect(getByTestId('featurePitLineLabel_0')).toBeTruthy();
   });
 });
 

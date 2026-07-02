@@ -2,7 +2,6 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { Document } from 'idai-field-core';
 import React, {
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import type { DimensionValue } from 'react-native';
@@ -45,6 +44,8 @@ interface FeatureLocationSketch {
 
 interface FeatureSoilPitLine {
   end: SketchPoint;
+  id: string;
+  label: string;
   start: SketchPoint;
   updatedAt?: string;
   version: 1;
@@ -60,6 +61,7 @@ interface Props {
 
 export const KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS = {
   line: 'featureSoilPitLine',
+  lines: 'featureSoilPitLines',
   updatedAt: 'featureSoilPitLineUpdatedAt',
 } as const;
 
@@ -86,10 +88,13 @@ const TEXT = {
   clear: '\uc9c0\uc6b0\uae30',
   connectedCount: '\uc5f0\uacb0\ub41c \ud1a0\uce35\uc0ac\uc9c4',
   drawHint:
-    '\uc720\uad6c\ub97c \ucd5c\ub300\ud55c \ub35c \ud6fc\uc190\ud558\ub294 \ud53c\ud2b8/\uc808\ub2e8\uc120\uc744 \uc9c1\uc120\uc73c\ub85c \ud45c\uc2dc\ud569\ub2c8\ub2e4.',
+    '\uc2dc\uc791\uc810\uacfc \ub05d\uc810\uc744 \ucc28\ub840\ub85c \ucc0d\uc5b4 \ud53c\ud2b8/\uc808\ub2e8\uc120\uc744 \ud45c\uc2dc\ud569\ub2c8\ub2e4.',
   feature: '\uc720\uad6c',
+  lineCount: '\ud53c\ud2b8\uc120',
   noSketch: '\uc720\uad6c \uc2a4\ucf00\uce58 \uc5c6\uc74c',
+  pendingHint: '\ub05d\uc810\uc744 \ucc0d\uc73c\uba74 \uc120\uc774 \ucd94\uac00\ub429\ub2c8\ub2e4.',
   title: '\ud1a0\uce35 \ud53c\ud2b8\uc120',
+  undo: '\ub9c8\uc9c0\ub9c9 \uc9c0\uc6b0\uae30',
 };
 
 const KoreanFieldworkFeaturePitLinePanel: React.FC<Props> = ({
@@ -100,23 +105,26 @@ const KoreanFieldworkFeaturePitLinePanel: React.FC<Props> = ({
   onUpdateResourceFields,
 }) => {
   const [canvasSize, setCanvasSize] = useState(DEFAULT_CANVAS_SIZE);
-  const [activeLine, setActiveLine] = useState<FeatureSoilPitLine>();
-  const activeLineRef = useRef<FeatureSoilPitLine>();
+  const [pendingStartPoint, setPendingStartPoint] = useState<SketchPoint>();
   const sketch = useMemo(
     () => normalizeFeatureLocationSketch(
       (document.resource as Record<string, unknown>).featureLocationSketch
     ),
     [document.resource]
   );
-  const savedLine = useMemo(
-    () => normalizeFeatureSoilPitLine(
+  const savedLines = useMemo(
+    () => normalizeFeatureSoilPitLines(
+      (document.resource as Record<string, unknown>)[
+        KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.lines
+      ],
       (document.resource as Record<string, unknown>)[
         KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.line
       ]
     ),
     [document.resource]
   );
-  const visibleLine = activeLine ?? savedLine;
+  const hasSavedLines = savedLines.length > 0;
+  const canClearLine = hasSavedLines || !!pendingStartPoint;
   const relatedSoilProfilePhotoCount = useMemo(
     () => documents.filter((candidate) =>
       candidate.resource.category === KOREAN_FIELDWORK_CATEGORIES.SOIL_PROFILE_PHOTO
@@ -136,52 +144,52 @@ const KoreanFieldworkFeaturePitLinePanel: React.FC<Props> = ({
     const { height, width } = event.nativeEvent.layout;
     if (height > 0 && width > 0) setCanvasSize({ height, width });
   };
-  const startLine = (event: GestureResponderEvent) => {
+  const addLinePoint = (event: GestureResponderEvent) => {
     const point = getNormalizedPoint(event, canvasSize);
     if (!point) return;
 
-    const line: FeatureSoilPitLine = {
-      end: point,
-      start: point,
-      version: 1,
-    };
-    activeLineRef.current = line;
-    setActiveLine(line);
+    if (!pendingStartPoint) {
+      setPendingStartPoint(point);
+      return;
+    }
+    if (getPointDistance(pendingStartPoint, point) < MIN_LINE_DISTANCE) return;
+
+    setPendingStartPoint(undefined);
+    saveLines([
+      ...savedLines,
+      createFeatureSoilPitLine(pendingStartPoint, point, savedLines.length),
+    ]);
   };
-  const moveLine = (event: GestureResponderEvent) => {
-    const point = getNormalizedPoint(event, canvasSize);
-    const currentLine = activeLineRef.current;
-    if (!point || !currentLine) return;
-
-    const line = { ...currentLine, end: point };
-    activeLineRef.current = line;
-    setActiveLine(line);
-  };
-  const finishLine = (event?: GestureResponderEvent) => {
-    if (event) moveLine(event);
-
-    const line = activeLineRef.current;
-    activeLineRef.current = undefined;
-    setActiveLine(undefined);
-    if (!line || getPointDistance(line.start, line.end) < MIN_LINE_DISTANCE) return;
-
-    const updatedLine = {
+  const saveLines = (lines: FeatureSoilPitLine[]) => {
+    const updatedAt = new Date().toISOString();
+    const updatedLines = lines.map((line, index) => ({
       ...line,
-      updatedAt: new Date().toISOString(),
-    };
+      id: createFeatureSoilPitLineId(index),
+      label: `${index + 1}`,
+      updatedAt,
+      version: 1 as const,
+    }));
     onUpdateResourceFields({
+      [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.lines]:
+        JSON.stringify(updatedLines),
       [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.line]:
-        JSON.stringify(updatedLine),
+        updatedLines[0] ? JSON.stringify(updatedLines[0]) : '',
       [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.updatedAt]:
-        updatedLine.updatedAt,
+        updatedAt,
     });
   };
-  const clearLine = () => {
-    onUpdateResourceFields({
-      [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.line]: '',
-      [KOREAN_FIELDWORK_FEATURE_PIT_LINE_FIELDS.updatedAt]:
-        new Date().toISOString(),
-    });
+  const undoLastLine = () => {
+    if (pendingStartPoint) {
+      setPendingStartPoint(undefined);
+      return;
+    }
+    if (!hasSavedLines) return;
+
+    saveLines(savedLines.slice(0, -1));
+  };
+  const clearLines = () => {
+    setPendingStartPoint(undefined);
+    saveLines([]);
   };
 
   return (
@@ -193,10 +201,14 @@ const KoreanFieldworkFeaturePitLinePanel: React.FC<Props> = ({
           <Text style={styles.countText}>
             {TEXT.connectedCount} {relatedSoilProfilePhotoCount}
           </Text>
+          <Text style={styles.countText}>
+            {TEXT.lineCount} {savedLines.length}
+          </Text>
         </View>
         <View style={styles.actionRow}>
           <TouchableOpacity
             activeOpacity={0.86}
+            accessibilityLabel={TEXT.addSoilProfilePhoto}
             disabled={!canAddSoilProfilePhoto}
             onPress={() => onAddSoilProfilePhoto?.(
               document,
@@ -224,28 +236,45 @@ const KoreanFieldworkFeaturePitLinePanel: React.FC<Props> = ({
           </TouchableOpacity>
           <TouchableOpacity
             activeOpacity={0.86}
-            disabled={!savedLine}
-            onPress={clearLine}
-            style={[styles.clearButton, !savedLine && styles.clearButtonDisabled]}
+            accessibilityLabel={TEXT.undo}
+            disabled={!canClearLine}
+            onPress={undoLastLine}
+            style={[styles.clearButton, !canClearLine && styles.clearButtonDisabled]}
+            testID="featurePitLineUndoLast"
+          >
+            <MaterialIcons
+              name="undo"
+              size={15}
+              color={canClearLine ? '#344054' : '#98a2b3'}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            accessibilityLabel={TEXT.clear}
+            disabled={!canClearLine}
+            onPress={clearLines}
+            style={[styles.clearButton, !canClearLine && styles.clearButtonDisabled]}
             testID="featurePitLineClear"
           >
             <MaterialIcons
               name="delete-outline"
               size={15}
-              color={savedLine ? '#b42318' : '#98a2b3'}
+              color={canClearLine ? '#b42318' : '#98a2b3'}
             />
           </TouchableOpacity>
         </View>
       </View>
       <Text style={styles.hint}>{TEXT.drawHint}</Text>
+      {pendingStartPoint && (
+        <Text style={styles.pendingHint} testID="featurePitLinePendingHint">
+          {TEXT.pendingHint}
+        </Text>
+      )}
       <View
         onLayout={updateCanvasSize}
-        onMoveShouldSetResponder={() => true}
-        onResponderGrant={startLine}
-        onResponderMove={moveLine}
-        onResponderRelease={finishLine}
-        onResponderTerminate={finishLine}
-        onResponderTerminationRequest={() => false}
+        onMoveShouldSetResponder={() => false}
+        onResponderGrant={addLinePoint}
+        onResponderTerminationRequest={() => true}
         onStartShouldSetResponder={() => true}
         style={styles.canvas}
         testID="featurePitLineCanvas"
@@ -262,22 +291,50 @@ const KoreanFieldworkFeaturePitLinePanel: React.FC<Props> = ({
               <Text style={styles.emptyPreviewText}>{TEXT.noSketch}</Text>
             </View>
           )}
-        {visibleLine && (
-          <>
+        {savedLines.map((line, index) => (
+          <React.Fragment key={`${line.id}-${index}`}>
             <SketchLineSegment
               color="#2f5f4a"
-              end={denormalizePoint(visibleLine.end, canvasSize)}
-              start={denormalizePoint(visibleLine.start, canvasSize)}
+              end={denormalizePoint(line.end, canvasSize)}
+              start={denormalizePoint(line.start, canvasSize)}
               testID="featurePitLineSegment"
               width={4}
             />
             <LineHandle
-              point={visibleLine.start}
+              label={line.label}
+              point={line.start}
               testID="featurePitLineStart"
             />
             <LineHandle
-              point={visibleLine.end}
+              label={line.label}
+              point={line.end}
               testID="featurePitLineEnd"
+            />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.lineLabel,
+                getPointPercentStyle(getLineMidpoint(line)),
+              ]}
+              testID={`featurePitLineLabel_${index}`}
+            >
+              <Text style={styles.lineLabelText}>{line.label}</Text>
+            </View>
+          </React.Fragment>
+        ))}
+        {pendingStartPoint && (
+          <>
+            <LineHandle
+              label="+"
+              point={pendingStartPoint}
+              testID="featurePitLinePendingStart"
+            />
+            <View
+              pointerEvents="none"
+              style={[
+                styles.pendingPulse,
+                getPointPercentStyle(pendingStartPoint),
+              ]}
             />
           </>
         )}
@@ -335,18 +392,41 @@ const renderFeatureSketch = (
 };
 
 const LineHandle: React.FC<{
+  label?: string;
   point: SketchPoint;
   testID: string;
-}> = ({ point, testID }) => (
+}> = ({ label, point, testID }) => (
   <View
     pointerEvents="none"
     style={[styles.lineHandle, getPointPercentStyle(point)]}
     testID={testID}
-  />
+  >
+    {!!label && <Text style={styles.lineHandleText}>{label}</Text>}
+  </View>
 );
 
+const normalizeFeatureSoilPitLines = (
+  value: unknown,
+  legacyValue: unknown
+): FeatureSoilPitLine[] => {
+  const rawValue = typeof value === 'string' ? parseJsonObject(value) : value;
+  const rawLines = Array.isArray(rawValue)
+    ? rawValue
+    : isRecord(rawValue) && Array.isArray(rawValue.lines)
+      ? rawValue.lines
+      : [];
+  const lines = rawLines
+    .map((line, index) => normalizeFeatureSoilPitLine(line, index))
+    .filter((line): line is FeatureSoilPitLine => !!line);
+  if (lines.length > 0) return lines;
+
+  const legacyLine = normalizeFeatureSoilPitLine(legacyValue, 0);
+  return legacyLine ? [legacyLine] : [];
+};
+
 const normalizeFeatureSoilPitLine = (
-  value: unknown
+  value: unknown,
+  index: number
 ): FeatureSoilPitLine | undefined => {
   const rawValue = typeof value === 'string' ? parseJsonObject(value) : value;
   if (!isRecord(rawValue)) return undefined;
@@ -357,6 +437,12 @@ const normalizeFeatureSoilPitLine = (
 
   return {
     end,
+    id: typeof rawValue.id === 'string'
+      ? rawValue.id
+      : createFeatureSoilPitLineId(index),
+    label: typeof rawValue.label === 'string'
+      ? rawValue.label
+      : `${index + 1}`,
     start,
     updatedAt: typeof rawValue.updatedAt === 'string'
       ? rawValue.updatedAt
@@ -364,6 +450,26 @@ const normalizeFeatureSoilPitLine = (
     version: 1,
   };
 };
+
+const createFeatureSoilPitLine = (
+  start: SketchPoint,
+  end: SketchPoint,
+  index: number
+): FeatureSoilPitLine => ({
+  end,
+  id: createFeatureSoilPitLineId(index),
+  label: `${index + 1}`,
+  start,
+  version: 1,
+});
+
+const createFeatureSoilPitLineId = (index: number): string =>
+  `soil-pit-line-${index + 1}`;
+
+const getLineMidpoint = (line: FeatureSoilPitLine): SketchPoint => ({
+  x: (line.start.x + line.end.x) / 2,
+  y: (line.start.y + line.end.y) / 2,
+});
 
 const normalizeFeatureLocationSketch = (
   value: unknown
@@ -806,15 +912,42 @@ const styles = StyleSheet.create({
     top: '50%',
   },
   lineHandle: {
+    alignItems: 'center',
     backgroundColor: '#2f5f4a',
     borderColor: '#ffffff',
     borderRadius: 7,
     borderWidth: 2,
     height: 14,
+    justifyContent: 'center',
     marginLeft: -7,
     marginTop: -7,
     position: 'absolute',
     width: 14,
+  },
+  lineHandleText: {
+    color: '#ffffff',
+    fontSize: 7,
+    fontWeight: '900',
+    lineHeight: 8,
+  },
+  lineLabel: {
+    alignItems: 'center',
+    backgroundColor: '#2f5f4a',
+    borderColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 16,
+    justifyContent: 'center',
+    marginLeft: -8,
+    marginTop: -8,
+    position: 'absolute',
+    width: 16,
+  },
+  lineLabelText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: '900',
+    lineHeight: 10,
   },
   northBand: {
     alignItems: 'center',
@@ -832,6 +965,24 @@ const styles = StyleSheet.create({
     color: '#175cd3',
     fontSize: 10,
     fontWeight: '900',
+  },
+  pendingHint: {
+    color: '#2f5f4a',
+    fontSize: 11,
+    fontWeight: '800',
+    lineHeight: 15,
+    marginTop: 4,
+  },
+  pendingPulse: {
+    borderColor: '#2f5f4a',
+    borderRadius: 14,
+    borderWidth: 2,
+    height: 28,
+    marginLeft: -14,
+    marginTop: -14,
+    opacity: 0.3,
+    position: 'absolute',
+    width: 28,
   },
   title: {
     color: '#344054',
