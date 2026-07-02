@@ -576,6 +576,9 @@ const DocumentsList: React.FC = () => {
       selectedWorkbenchDocumentId,
     ]
   );
+  const shouldShowSelectedRecordWorkbench =
+    !!selectedWorkbenchDocument
+    && (activeWorkspaceTab === 'journal' || isSelectedWorkbenchExpanded);
   const selectedWorkbenchAllowedAddCategoryNames = useMemo(
     () => selectedWorkbenchDocument
       ? getAllowedAddCategoryNames(selectedWorkbenchDocument)
@@ -667,8 +670,15 @@ const DocumentsList: React.FC = () => {
     : hierarchyLabel;
   const selectWorkbenchDocument = (
     document: Document,
-    options?: { expand?: boolean }
+    options?: { expand?: boolean; toggle?: boolean }
   ) => {
+    if (options?.toggle && selectedWorkbenchDocumentId === document.resource.id) {
+      setSelectedWorkbenchDocumentId(undefined);
+      setIsSelectedWorkbenchExpanded(false);
+      setFieldNoteContinuation(undefined);
+      return;
+    }
+
     setSelectedWorkbenchDocumentId(document.resource.id);
     setIsSelectedWorkbenchExpanded(!!options?.expand);
   };
@@ -1078,7 +1088,7 @@ const DocumentsList: React.FC = () => {
         </>
         )}
 
-        {selectedWorkbenchDocument && (
+        {shouldShowSelectedRecordWorkbench && selectedWorkbenchDocument && (
           <>
             <KoreanFieldworkSelectedRecordWorkbench
               document={selectedWorkbenchDocument}
@@ -1220,7 +1230,8 @@ const DocumentsList: React.FC = () => {
               }
               investigationModeId={investigationModeId}
               selectedDocumentId={selectedWorkbenchDocument?.resource.id}
-              onOpenDocument={selectWorkbenchDocument}
+              onOpenDocument={(document) =>
+                selectWorkbenchDocument(document, { toggle: true })}
               onAddChild={openAddChildModal}
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
@@ -1241,7 +1252,8 @@ const DocumentsList: React.FC = () => {
               }
               investigationModeId={investigationModeId}
               selectedDocumentId={selectedWorkbenchDocument?.resource.id}
-              onOpenDocument={selectWorkbenchDocument}
+              onOpenDocument={(document) =>
+                selectWorkbenchDocument(document, { toggle: true })}
               onAddChild={openAddChildModal}
               onAddDocumentOfCategory={(parentDoc, categoryName) =>
                 navigateAddCategory(categoryName, parentDoc)}
