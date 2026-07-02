@@ -1,6 +1,7 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 import KoreanFieldworkDailyJournalCalendar, {
+  getBoundaryCanvasPoints,
   KOREAN_FIELDWORK_DAILY_JOURNAL_FIELDS,
 } from './KoreanFieldworkDailyJournalCalendar';
 import { KOREAN_FIELDWORK_CATEGORIES } from './korean-fieldwork-categories';
@@ -74,6 +75,29 @@ describe('KoreanFieldworkDailyJournalCalendar', () => {
     fireEvent.press(getByTestId('dailyJournalCreateLog'));
 
     expect(handleCreateDailyLog).toHaveBeenCalled();
+  });
+
+  it('projects the journal boundary as a vertical plan without stretching axes independently', () => {
+    const points = getBoundaryCanvasPoints(
+      {
+        coordinates: [
+          { latitude: 37.1, longitude: 127.1 },
+          { latitude: 37.1, longitude: 127.2 },
+          { latitude: 37.0, longitude: 127.2 },
+          { latitude: 37.0, longitude: 127.1 },
+        ],
+      },
+      { height: 230, width: 320 }
+    );
+    const horizontalDistance = points[1].x - points[0].x;
+    const verticalDistance = points[2].y - points[1].y;
+
+    expect(verticalDistance).toBeCloseTo(182, 0);
+    expect(horizontalDistance).toBeLessThan(verticalDistance);
+    expect(horizontalDistance).toBeCloseTo(
+      verticalDistance * Math.cos((37.05 * Math.PI) / 180),
+      0
+    );
   });
 
   it('stores handwriting strokes over the imported project boundary', async () => {

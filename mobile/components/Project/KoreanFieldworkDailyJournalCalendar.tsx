@@ -762,29 +762,47 @@ const getResourceValue = (
 ): unknown => (document?.resource as unknown as Record<string, unknown> | undefined)
   ?.[fieldName];
 
-const getBoundaryCanvasPoints = (
+export const getBoundaryCanvasPoints = (
   boundaryDraft: KoreanFieldworkProjectBoundaryDraft | undefined,
   canvasSize: { height: number; width: number }
 ): { x: number; y: number }[] => {
   if (!boundaryDraft || boundaryDraft.coordinates.length === 0) return [];
 
-  const longitudes = boundaryDraft.coordinates.map((point) => point.longitude);
-  const latitudes = boundaryDraft.coordinates.map((point) => point.latitude);
-  const minLongitude = Math.min(...longitudes);
-  const maxLongitude = Math.max(...longitudes);
-  const minLatitude = Math.min(...latitudes);
-  const maxLatitude = Math.max(...latitudes);
-  const longitudeRange = Math.max(maxLongitude - minLongitude, 0.000001);
-  const latitudeRange = Math.max(maxLatitude - minLatitude, 0.000001);
+  const averageLatitude = boundaryDraft.coordinates.reduce(
+    (sum, point) => sum + point.latitude,
+    0
+  ) / boundaryDraft.coordinates.length;
+  const longitudeScale = Math.max(
+    Math.cos((averageLatitude * Math.PI) / 180),
+    0.000001
+  );
+  const projectedPoints = boundaryDraft.coordinates.map((point) => ({
+    x: point.longitude * longitudeScale,
+    y: point.latitude,
+  }));
+  const xs = projectedPoints.map((point) => point.x);
+  const ys = projectedPoints.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const xRange = maxX - minX;
+  const yRange = maxY - minY;
   const padding = 24;
   const drawableWidth = Math.max(canvasSize.width - (padding * 2), 1);
   const drawableHeight = Math.max(canvasSize.height - (padding * 2), 1);
+  const scale = Math.min(
+    drawableWidth / Math.max(xRange, 0.000001),
+    drawableHeight / Math.max(yRange, 0.000001)
+  );
+  const fittedWidth = xRange * scale;
+  const fittedHeight = yRange * scale;
+  const offsetX = (canvasSize.width - fittedWidth) / 2;
+  const offsetY = (canvasSize.height - fittedHeight) / 2;
 
-  return boundaryDraft.coordinates.map((point) => ({
-    x: padding + (((point.longitude - minLongitude) / longitudeRange)
-      * drawableWidth),
-    y: padding + (((maxLatitude - point.latitude) / latitudeRange)
-      * drawableHeight),
+  return projectedPoints.map((point) => ({
+    x: offsetX + ((point.x - minX) * scale),
+    y: offsetY + ((maxY - point.y) * scale),
   }));
 };
 
